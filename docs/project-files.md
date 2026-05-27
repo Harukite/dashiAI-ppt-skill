@@ -24,6 +24,7 @@
 |-- scripts/
 |   |-- render-deck.jsx - 渲染 CLI 入口,把 deck 配置文件输出成静态 HTML。
 |   |-- update-project-docs.mjs - 文档同步脚本,更新 README、ADR 和项目文件作用说明。
+|   |-- validate-layout-showcase.mjs - 布局总览覆盖校验器,确保 all-layouts-showcase 穷举所有 canonical S01-S22 布局。
 |   `-- validate-swiss-deck.mjs - Swiss deck 静态校验器,检查合法 layout、图片槽位和禁用模式。
 |-- src/
 |   |-- components/

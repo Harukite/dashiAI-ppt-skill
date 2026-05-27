@@ -43,6 +43,7 @@ export default {
 ```bash
 npm run render:deck -- examples/component-decks/ai-ops-review.jsx output/ai-ops/ppt/index.html
 npm run validate:swiss -- output/ai-ops/ppt/index.html
+npm run showcase:update
 ```
 
 ## 新增选项

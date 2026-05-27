@@ -24,6 +24,7 @@ const descriptions = {
   'references/component-workflow.md': '组件选项工作流参考,说明新增选项和 subagent 测试要求。',
   'scripts/render-deck.jsx': '渲染 CLI 入口,把 deck 配置文件输出成静态 HTML。',
   'scripts/update-project-docs.mjs': '文档同步脚本,更新 README、ADR 和项目文件作用说明。',
+  'scripts/validate-layout-showcase.mjs': '布局总览覆盖校验器,确保 all-layouts-showcase 穷举所有 canonical S01-S22 布局。',
   'scripts/validate-swiss-deck.mjs': 'Swiss deck 静态校验器,检查合法 layout、图片槽位和禁用模式。',
   'src/components/swiss/Closing.jsx': '收尾页组件,对应 SWISS-CLOSING-ASCII。',
   'src/components/swiss/Cover.jsx': '封面组件,对应 SWISS-COVER-ASCII。',
@@ -120,6 +121,10 @@ function renderAdr() {
 ## ADR-007: 原始 Swiss 正文布局使用 canonical key
 
 原始 Swiss \`S01\` 到 \`S22\` 正文布局统一登记为 \`s01\` 到 \`s22\`。旧的语义 key 仅保留给已有示例兼容,新的正文页面优先使用 canonical key。
+
+## ADR-008: 提交前刷新全布局总览
+
+\`.githooks/pre-commit\` 会运行 \`npm run showcase:update\`,先确认 \`examples/component-decks/all-layouts-showcase.jsx\` 覆盖全部 canonical 布局,再重生成并校验 \`output/all-components-showcase/ppt/index.html\`。
 `;
 }
 
@@ -135,6 +140,8 @@ function renderReadmeSection(fileList) {
   return `## 项目文档
 
 以下文档由 \`npm run docs:update\` 同步,提交前也会由 \`.githooks/pre-commit\` 自动更新。
+
+提交前 hook 还会运行 \`npm run showcase:update\`,确保 \`all-layouts-showcase.jsx\` 覆盖全部 \`S01-S22\`,并刷新 \`output/all-components-showcase/ppt/index.html\`。
 
 - [ADR](docs/ADR.md): 当前架构决策记录
 - [项目文件作用说明](docs/project-files.md): 当前 ${sourceCount} 个源码文件的主要作用

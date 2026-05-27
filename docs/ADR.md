@@ -29,3 +29,7 @@
 ## ADR-007: 原始 Swiss 正文布局使用 canonical key
 
 原始 Swiss `S01` 到 `S22` 正文布局统一登记为 `s01` 到 `s22`。旧的语义 key 仅保留给已有示例兼容,新的正文页面优先使用 canonical key。
+
+## ADR-008: 提交前刷新全布局总览
+
+`.githooks/pre-commit` 会运行 `npm run showcase:update`,先确认 `examples/component-decks/all-layouts-showcase.jsx` 覆盖全部 canonical 布局,再重生成并校验 `output/all-components-showcase/ppt/index.html`。

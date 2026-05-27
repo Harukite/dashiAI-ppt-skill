@@ -149,6 +149,7 @@ npm run render:deck -- examples/component-decks/ai-ops-review.jsx output/my-deck
 
 ```bash
 npm run validate:swiss -- output/my-deck/ppt/index.html
+npm run showcase:update
 ```
 
 必须通过:
@@ -158,6 +159,8 @@ npm run validate:swiss -- output/my-deck/ppt/index.html
 - 不使用未登记实验版式
 - SVG 不承载文字标签
 - 顶部标题不做瑞士风禁用的居中 hack
+
+提交前 hook 会运行 `npm run showcase:update`,确保 `examples/component-decks/all-layouts-showcase.jsx` 穷举全部 canonical `s01`-`s22` 布局,并刷新当前总览 demo HTML。
 
 ### 6. 视觉检查
 

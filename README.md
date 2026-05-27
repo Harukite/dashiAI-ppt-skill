@@ -34,8 +34,7 @@ npm run validate:swiss -- output/component-demo/ppt/index.html
 渲染全部 `S01-S22` 布局总览:
 
 ```bash
-npm run render:all-layouts
-npm run validate:swiss -- output/all-components-showcase/ppt/index.html
+npm run showcase:update
 ```
 
 渲染指定 deck:
@@ -117,6 +116,8 @@ npm run validate:swiss -- output/examples/retail-launch-brief/ppt/index.html
 
 以下文档由 `npm run docs:update` 同步,提交前也会由 `.githooks/pre-commit` 自动更新。
 
+提交前 hook 还会运行 `npm run showcase:update`,确保 `all-layouts-showcase.jsx` 覆盖全部 `S01-S22`,并刷新 `output/all-components-showcase/ppt/index.html`。
+
 - [ADR](docs/ADR.md): 当前架构决策记录
-- [项目文件作用说明](docs/project-files.md): 当前 48 个源码文件的主要作用
+- [项目文件作用说明](docs/project-files.md): 当前 49 个源码文件的主要作用
 <!-- project-docs:end -->

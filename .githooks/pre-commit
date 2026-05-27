@@ -3,3 +3,4 @@ set -e
 
 node scripts/update-project-docs.mjs
 git add README.md docs/ADR.md docs/project-files.md
+npm run showcase:update
