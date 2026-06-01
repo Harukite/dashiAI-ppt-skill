@@ -2493,10 +2493,10 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       slideId: "xhs3_04-47",
       slideKey: "xhs3_04",
       layout: "XHS3-04",
-      backgroundColorToken: "--report-blue-fg",
+      backgroundColorToken: "--inverse-bg",
       colorToken: "--theme-st1-shader-ink",
       scope: "theme",
-      theme: "light",
+      theme: "dark",
     },
     "text:xhs3_04:1": {
       id: "text:xhs3_04:1",
