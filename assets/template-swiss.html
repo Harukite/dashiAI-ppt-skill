@@ -189,6 +189,45 @@
   .slide.hero{background:transparent}
   .slide.hero.grey{background:rgba(var(--surface-rgb),.86);backdrop-filter:blur(1px)}
   .slide.hero.dark{background:rgba(var(--inverse-rgb),.92);color:var(--inverse-fg)}
+  html[data-theme="light"] .slide[data-light-bg-image]{
+    background-image:var(--light-bg-image)!important;
+    background-size:cover!important;
+    background-position:center!important;
+    background-repeat:no-repeat!important
+  }
+  html[data-theme="light"] .slide[data-light-bg-image] :is(.rp-page,.xhs-frame,.xhs2-frame,.xhs3-frame){
+    background:transparent!important
+  }
+
+  .page-transition-pixels,
+  .page-transition-stage{
+    position:fixed;left:0;top:0;width:var(--deck-w);height:100vh;
+    z-index:95;pointer-events:none;display:none;overflow:hidden
+  }
+  .page-transition-pixels{color:var(--focus-mark)}
+  .page-transition-pixel{
+    position:absolute;display:block;background:currentColor;
+    transform-origin:center;will-change:transform,opacity
+  }
+  .page-transition-stage{background:var(--surface-bg);color:var(--surface-fg)}
+  .page-transition-panel{
+    position:absolute;inset:0;width:100%;height:100%;overflow:hidden;
+    will-change:transform,opacity
+  }
+  .page-transition-section-outer,
+  .page-transition-section-inner{
+    position:absolute;inset:0;width:100%;height:100%;overflow:hidden;
+    will-change:transform
+  }
+  .page-transition-copy{
+    position:absolute;inset:0;width:100%;height:100%;
+    transform-origin:center;will-change:transform
+  }
+  .page-transition-stage .slide{
+    position:absolute!important;inset:0!important;width:100%!important;height:100vh!important;
+    flex:none!important;transform:none!important;pointer-events:none!important
+  }
+  .page-transition-stage .slide[hidden]{display:flex!important}
 
   /* ============ 装饰: 极细分隔线 + 点阵矩阵 ============ */
   .rule{width:100%;height:1px;background:currentColor;opacity:.18;margin:0}
@@ -869,7 +908,7 @@
       overflow:visible!important;background:#fff!important;
       print-color-adjust:exact;-webkit-print-color-adjust:exact
     }
-    #bg-grid,#hint,#nav,#preview-toggle,#preview-panel,#overview,#image-picker-input,#media-picker-input{display:none!important}
+    #bg-grid,#hint,#nav,#preview-toggle,#preview-panel,#overview,#image-picker-input,#media-picker-input,.page-transition-pixels,.page-transition-stage{display:none!important}
     #deck{
       position:static!important;display:block!important;
       width:16in!important;height:auto!important;
@@ -881,13 +920,13 @@
       overflow:hidden!important
     }
     .slide:last-child{page-break-after:auto;break-after:auto}
-    body.motion-ready [data-anim],
-    body.motion-ready [data-animate="pipeline"] [data-anim]{
+    body.gsap-ready [data-anim],
+    body.gsap-ready [data-animate="pipeline"] [data-anim]{
       opacity:1!important;transform:none!important
     }
   }
 
-  /* ESC 索引页: 动画元素强制可见 (覆盖 motion-ready 的 opacity:0) */
+  /* ESC 索引页: 动画元素强制可见 (覆盖 gsap-ready 的 opacity:0) */
   #overview [data-anim]{opacity:1!important;transform:none!important}
   #overview .slide *{animation:none!important;transition:none!important}
 
@@ -899,18 +938,18 @@
   .card-accent .t-h-prod,.card-accent .t-body,.card-accent .t-body-emp,.card-accent h1,.card-accent h2,.card-accent h3,.card-accent h4{color:var(--focus-fg)}
   .card-accent .t-meta,.card-accent .t-cat,.card-accent .t-helper,.card-accent .t-body-sm{color:var(--focus-muted)}
 
-  /* ============ 动效 (与原模板一致) ============ */
+  /* ============ GSAP 入场动效 ============ */
   [data-anim]{opacity:1}
-  body.motion-ready [data-anim]{opacity:0}
-  body.motion-ready [data-anim="left"]{transform:translateX(-24px)}
-  body.motion-ready [data-anim="right"]{transform:translateX(24px)}
-  body.motion-ready [data-anim="line"]{opacity:0;transform:translateY(10px)}
-  body.motion-ready [data-animate="pipeline"] [data-anim]{opacity:.15}
+  body.gsap-ready [data-anim]{opacity:0}
+  body.gsap-ready [data-anim="left"]{transform:translateX(-24px)}
+  body.gsap-ready [data-anim="right"]{transform:translateX(24px)}
+  body.gsap-ready [data-anim="line"]{opacity:0;transform:translateY(10px)}
+  body.gsap-ready [data-animate="pipeline"] [data-anim]{opacity:.15}
   body.low-power #deck{transition:none!important}
   body.low-power *,
   body.low-power *::before,
   body.low-power *::after{animation:none!important;transition:none!important}
-  body.low-power.motion-ready [data-anim],
+  body.low-power.gsap-ready [data-anim],
   body.low-power [data-anim]{opacity:1!important;transform:none!important}
 
   /* ============================================================
@@ -2930,6 +2969,216 @@
   .style1-slide[data-layout="ST1-02"] .st1-pct{
     font-size:var(--fs-09)!important
   }
+  .chart-switch{
+    min-width:0;
+    max-width:100%;
+    min-height:0;
+    overflow:hidden
+  }
+  .chart-switch .chart-title{
+    flex:0 0 auto
+  }
+  .chart-switch .chart-bars,
+  .chart-switch .chart-line,
+  .chart-switch .chart-cards{
+    min-height:0;
+    max-height:100%
+  }
+  .chart-switch .chart-card-value{
+    font-size:clamp(30px,3vw,64px);
+    white-space:nowrap
+  }
+  .bt-compression-chart{
+    width:100%;
+    margin-top:2.4vh
+  }
+  .bt-compression-chart .chart-cards{
+    grid-template-columns:repeat(2,minmax(0,1fr))
+  }
+  .bt-compression-chart .chart-card-value{
+    font-size:clamp(28px,2.6vw,54px)
+  }
+  .report-slide .rp-chart-wrap{
+    min-height:0;
+    flex:1;
+    display:flex;
+    align-items:stretch
+  }
+  .rp-chart-switch{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    justify-content:center
+  }
+  .rp-chart-switch .chart-cards{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:1.1vw
+  }
+  .rp-chart-switch .chart-card{
+    min-height:0;
+    padding-top:1.1vh
+  }
+  .rp-chart-switch .chart-card-value{
+    font-size:clamp(28px,2.6vw,56px)!important
+  }
+  .rp-chart-switch .chart-card-label{
+    font-size:var(--fs-caption);
+    line-height:1.25
+  }
+  .st1-chart-switch{
+    height:57vh;
+    position:relative;
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    margin-top:2vh
+  }
+  .st1-chart-switch .chart-title{
+    color:var(--st1-muted)
+  }
+  .st1-chart-switch .chart-bars{
+    gap:1.4vh
+  }
+  .st1-chart-switch .chart-row{
+    grid-template-columns:minmax(110px,13vw) 1fr minmax(64px,7vw)
+  }
+  .st1-chart-switch .chart-label,
+  .st1-chart-switch .chart-value{
+    color:var(--st1-ink)
+  }
+  .st1-chart-switch .chart-track{
+    height:5.4vh;
+    border-radius:999px;
+    background:color-mix(in srgb,var(--st1-ink) 8%,transparent)
+  }
+  .st1-chart-switch .chart-row.cyan .chart-track span{background:var(--st1-cyan)}
+  .st1-chart-switch .chart-row.pink .chart-track span{background:var(--st1-pink)}
+  .st1-chart-switch .chart-row.lime .chart-track span{background:var(--st1-lime)}
+  .st1-chart-switch .chart-row.orange .chart-track span{background:var(--st1-orange)}
+  .st1-chart-switch .chart-row.purple .chart-track span{background:var(--st1-purple)}
+  .st1-chart-switch .chart-line{
+    height:42vh;
+    border-color:var(--st1-ink)
+  }
+  .st1-chart-switch .chart-line polyline,
+  .st1-chart-switch .chart-line circle{
+    stroke:var(--st1-pink);
+    fill:var(--st1-pink)
+  }
+  .st1-chart-switch .chart-cards{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:1vw
+  }
+  .st1-chart-switch .chart-card{
+    min-height:24vh;
+    border-color:var(--st1-ink)
+  }
+  .st1-chart-switch .chart-card.cyan .chart-card-value{color:var(--st1-cyan)}
+  .st1-chart-switch .chart-card.pink .chart-card-value{color:var(--st1-pink)}
+  .st1-chart-switch .chart-card.lime .chart-card-value{color:var(--st1-lime)}
+  .st1-chart-switch .chart-card.orange .chart-card-value{color:var(--st1-orange)}
+  .st1-chart-switch .chart-card.purple .chart-card-value{color:var(--st1-purple)}
+  .st1-chart-switch .chart-card-label{
+    color:var(--st1-muted)
+  }
+  .st2-chart-switch{
+    flex:1;
+    margin-top:4.2vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center
+  }
+  .st2-chart-switch .chart-title{
+    display:none
+  }
+  .st2-chart-switch .chart-bars{
+    gap:1.4vh
+  }
+  .st2-chart-switch .chart-row{
+    grid-template-columns:11.5vw 1fr 10.4vw;
+    gap:1.45vw;
+    align-items:center
+  }
+  .st2-chart-switch .chart-label{
+    color:var(--st2-night-fg);
+    font-family:var(--font-body-zh);
+    font-size:clamp(17px,1.35vw,26px);
+    font-weight:600;
+    text-transform:none
+  }
+  .st2-chart-switch .chart-value{
+    color:var(--st2-night-fg);
+    font-family:var(--font-title-zh);
+    font-size:clamp(22px,1.7vw,34px);
+    text-align:left
+  }
+  .st2-chart-switch .chart-track{
+    height:5vh;
+    background:var(--st2-track-bg);
+    border-left:1px solid var(--st2-track-border)
+  }
+  .st2-chart-switch .chart-track span{
+    background:var(--st2-blue)
+  }
+  .st2-chart-switch .chart-row.focus .chart-track span{
+    background:var(--st2-red)
+  }
+  .st2-chart-switch .chart-row.dim .chart-track span{
+    background:var(--st2-track-dim)
+  }
+  .st2-chart-switch .chart-line{
+    height:34vh;
+    border-color:var(--st2-rule-on-night)
+  }
+  .st2-chart-switch .chart-line polyline,
+  .st2-chart-switch .chart-line circle{
+    stroke:var(--st2-red);
+    fill:var(--st2-red)
+  }
+  .st2-chart-switch .chart-tick{
+    color:var(--st2-mute)
+  }
+  .st2-chart-switch .chart-cards{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:1vw
+  }
+  .st2-chart-switch .chart-card{
+    min-height:18vh;
+    border-color:var(--st2-rule-on-night)
+  }
+  .st2-chart-switch .chart-card-value{
+    font-size:clamp(24px,2vw,40px);
+    color:var(--st2-red)
+  }
+  .st2-chart-switch .chart-card.dim .chart-card-value{
+    color:var(--st2-down)
+  }
+  .st2-chart-switch .chart-card-label{
+    font-size:var(--fs-caption);
+    color:var(--st2-mute);
+    line-height:1.25
+  }
+  .xhs3-slide[data-layout="XHS3-11"] .xhs3-slop{
+    height:calc(100% - 14vh);
+    margin-top:7vh;
+    align-items:stretch
+  }
+  .xhs3-slide[data-layout="XHS3-11"] .xhs3-duo-media{
+    height:100%;
+    min-height:0
+  }
+  .xhs3-slide[data-layout="XHS3-11"] .xhs3-duo-media .xhs3-media{
+    height:100%;
+    min-height:0;
+    aspect-ratio:auto!important
+  }
+  .xhs3-media-placeholder-card .xhs3-media-placeholder::after{
+    display:block!important
+  }
+  .xhs3-slide:is([data-layout="XHS3-03"],[data-layout="XHS3-07"],[data-layout="XHS3-10"],[data-layout="XHS3-11"],[data-layout="XHS3-17"],[data-layout="XHS3-22"]) .xhs3-media-placeholder-card figcaption{
+    display:block!important
+  }
   .style1-slide[data-layout="ST1-04"] .st1-chip{
     font-size:var(--fs-h4)!important
   }
@@ -2988,9 +3237,17 @@
   }
   (function(){
     const KEY = 'guizang-ppt-low-power';
+    const ENTRY_KEY = 'guizang-ppt-entry-animation';
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const stored = localStorage.getItem(KEY);
+    const entryStored = localStorage.getItem(ENTRY_KEY);
     window.__lowPowerMode = stored === '1' || (stored === null && reduced);
+    window.__entryAnimationEnabled = entryStored !== '0';
+    window.__pageTransitionMode = 'none';
+    window.__setPageTransition = value => {
+      window.__pageTransitionMode = value || 'none';
+    };
+    window.__getPageTransition = () => window.__pageTransitionMode || 'none';
     function updateHint(){
       const hint = document.getElementById('hint');
       if(hint) hint.textContent = `← → 翻页 · B ${window.__lowPowerMode ? '动态' : '静态'} · ESC 索引`;
@@ -3002,8 +3259,16 @@
       if(window.__lowPowerMode && document.getAnimations){
         document.getAnimations().forEach(a=>a.cancel());
       }
+      window.__stopSlideAnimations?.();
       updateHint();
       dispatchEvent(new CustomEvent('swiss-low-power-change', {detail:{on:window.__lowPowerMode}}));
+      if(window.__playSlide) window.__playSlide(window.__currentSlideIndex || 0);
+    };
+    window.__setEntryAnimationEnabled = function(on, opts={}){
+      window.__entryAnimationEnabled = !!on;
+      if(opts.persist !== false) localStorage.setItem(ENTRY_KEY, window.__entryAnimationEnabled ? '1' : '0');
+      if(!window.__entryAnimationEnabled) window.__stopSlideAnimations?.();
+      dispatchEvent(new CustomEvent('swiss-entry-animation-change', {detail:{on:window.__entryAnimationEnabled}}));
       if(window.__playSlide) window.__playSlide(window.__currentSlideIndex || 0);
     };
     document.body.classList.toggle('low-power', window.__lowPowerMode);
@@ -3040,6 +3305,10 @@
       <label for="preview-theme">主题</label>
       <select id="preview-theme" data-preview-select="theme"></select>
     </div>
+    <div class="preview-field is-hidden" id="preview-bg-image-field">
+      <label for="preview-bg-image">背景图片</label>
+      <select id="preview-bg-image"></select>
+    </div>
     <div class="preview-field">
       <label for="preview-font">字体</label>
       <select id="preview-font" data-preview-select="font"></select>
@@ -3051,6 +3320,23 @@
     <div class="preview-field">
       <label for="preview-type-scale">字号</label>
       <select id="preview-type-scale" data-preview-select="typeScale"></select>
+    </div>
+    <div class="preview-field">
+      <label for="preview-animation">入场动画</label>
+      <select id="preview-animation">
+        <option value="on">开启</option>
+        <option value="off">关闭</option>
+      </select>
+    </div>
+    <div class="preview-field">
+      <label for="preview-transition">切换动画</label>
+      <select id="preview-transition">
+        <option value="none">无动画</option>
+        <option value="pixelReveal">动画 1 · 像素揭示</option>
+        <option value="fullscreenScroll">动画 2 · 全屏滚动</option>
+        <option value="liquidMorph">动画 3 · 液态形变</option>
+        <option value="sectionWrap">动画 4 · 连续分屏</option>
+      </select>
     </div>
     <div class="preview-field">
       <label class="preview-dev-toggle" for="preview-dev-mode">
@@ -3166,6 +3452,7 @@
   vm.state.chart = {...(vm.state.chart || {}), ...(saved.chart || {})};
   vm.state.icon = {...(vm.state.icon || {}), ...embeddedIcon, ...(saved.icon || {})};
   vm.state.shader = {...(vm.state.shader || {}), ...(saved.shader || {})};
+  vm.state.background = {...(vm.state.background || {}), ...(saved.background || {})};
   vm.state.__deckSignature = deckSignature;
 
   writeJson(textEl, vm.state.text);
@@ -3183,6 +3470,7 @@
     setSlideOrder,
     setChart,
     setShader,
+    setBackground,
     syncFromDom,
     write: writeVm,
     persist,
@@ -3237,6 +3525,14 @@
   function setShader(slideId, key){
     if(!slideId) return;
     vm.state.shader[slideId] = key;
+    writeVm();
+    persist();
+  }
+
+  function setBackground(slideId, key){
+    if(!slideId) return;
+    if(key) vm.state.background[slideId] = key;
+    else delete vm.state.background[slideId];
     writeVm();
     persist();
   }
@@ -3706,11 +4002,8 @@ function blurActiveEditableText(){
 }
 window.__blurActiveEditableText=blurActiveEditableText;
 
-function go(n){
-  blurActiveEditableText();
-  if(lock)return;
-  refreshSlideList();
-  idx=Math.max(0,Math.min(total-1,n));
+function commitSlideIndex(nextIndex){
+  idx=nextIndex;
   window.__currentSlideIndex = idx;
   applyDeckTransform();
   syncNav();
@@ -3720,7 +4013,37 @@ function go(n){
   writeStoredSlideIndex(idx);
   dispatchEvent(new CustomEvent('swiss-slide-change', {detail:{index:idx, slide:el}}));
   if(window.__playSlide) window.__playSlide(idx);
-  lock=true;requestAnimationFrame(()=>lock=false);
+}
+
+function go(n, opts={}){
+  blurActiveEditableText();
+  if(lock)return;
+  refreshSlideList();
+  const nextIndex=Math.max(0,Math.min(total-1,n));
+  const currentSlide=slides[idx];
+  const nextSlide=slides[nextIndex];
+  const mode = opts.animate === false || nextIndex === idx
+    ? 'none'
+    : (window.__getPageTransition?.() || 'none');
+  if(mode !== 'none' && typeof window.__playPageTransition === 'function' && currentSlide && nextSlide){
+    lock=true;
+    let committed=false;
+    const commit=()=>{
+      if(committed) return;
+      committed=true;
+      commitSlideIndex(nextIndex);
+    };
+    Promise.resolve(window.__playPageTransition(mode, currentSlide, nextSlide, nextIndex >= idx ? 1 : -1, commit))
+      .catch(error => console.warn('[page transition]', error))
+      .finally(() => {
+        commit();
+        requestAnimationFrame(()=>lock=false);
+      });
+    return;
+  }
+  lock=true;
+  commitSlideIndex(nextIndex);
+  requestAnimationFrame(()=>lock=false);
 }
 
 function moveSlide(fromIndex, insertIndex){
@@ -4029,7 +4352,7 @@ const initialSlideParam = new URLSearchParams(location.search).get('slide');
 const storedSlide = readStoredSlideIndex();
 const initialSlide = initialSlideParam ? Number(initialSlideParam) - 1 : (storedSlide ?? 0);
 layoutDeck();
-go(Number.isFinite(initialSlide) ? initialSlide : 0);
+go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
 </script>
 <script>
 /* =============== Preview Controller =============== */
@@ -4052,20 +4375,36 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
   const viewModel = window.__deckViewModel;
   const root = document.documentElement;
   let deckSlides = [...document.querySelectorAll('#deck .slide')];
+  const bgImageField = document.getElementById('preview-bg-image-field');
+  const bgImageSelect = document.getElementById('preview-bg-image');
   const shaderField = document.getElementById('preview-shader-field');
   const shaderSelect = document.getElementById('preview-shader');
   const chartField = document.getElementById('preview-chart-field');
   const chartSelect = document.getElementById('preview-chart');
+  const animationSelect = document.getElementById('preview-animation');
+  const transitionSelect = document.getElementById('preview-transition');
+  const LIGHT_BACKGROUND_OPTIONS = [
+    {key: '', label: '无'},
+    {key: 'indigo-porcelain', label: '靛蓝瓷', src: 'assets/screenshot-backgrounds/style-a/indigo-porcelain.webp'},
+    {key: 'forest-ink', label: '森林墨', src: 'assets/screenshot-backgrounds/style-a/forest-ink.webp'},
+    {key: 'monocle-classic', label: '经典墨线', src: 'assets/screenshot-backgrounds/style-a/monocle-classic.webp'},
+    {key: 'dune', label: '沙丘', src: 'assets/screenshot-backgrounds/style-a/dune.webp'},
+    {key: 'kraft-paper', label: '牛皮纸', src: 'assets/screenshot-backgrounds/style-a/kraft-paper.webp'},
+  ];
 
   const saved = {...readSaved(), ...(viewModel?.getState?.().tokens || {})};
   const styleVariants = window.__getStyleVariants?.() || ['a'];
   const styleLabels = {a:'风格 A', b:'风格 B', c:'风格 C'};
+  const transitionModes = ['none', 'pixelReveal', 'fullscreenScroll', 'liquidMorph', 'sectionWrap'];
   const state = {
     styleVariant: styleVariants.includes(saved.styleVariant) ? saved.styleVariant : (window.__getStyleVariant?.() || styleVariants[0]),
     theme: pickValid(options.themes, saved.theme, options.current?.theme),
     font: pickValid(options.fonts, saved.font, options.current?.font),
     fontWeight: pickValid(options.fontWeights, saved.fontWeight, options.current?.fontWeight),
     typeScale: pickValid(options.typeScales, saved.typeScale, options.current?.typeScale),
+    pageTransition: transitionModes.includes(saved.pageTransition)
+      ? saved.pageTransition
+      : (transitionModes.includes(options.current?.pageTransition) ? options.current.pageTransition : 'none'),
   };
   window.__getPreviewState = () => ({...state});
 
@@ -4179,9 +4518,11 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
   fillSelect('preview-font-weight', options.fontWeights, state.fontWeight);
   fillSelect('preview-type-scale', options.typeScales, state.typeScale);
   applyAll();
+  syncAnimationControl();
   applyStoredSlideControls();
   renderShaderControl();
   renderChartControl();
+  renderLightBackgroundControl();
 
   const bindings = {
     'preview-style': value => {
@@ -4214,6 +4555,13 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
     if(option) applyShaderBackdrop(frame, option);
   });
 
+  bgImageSelect?.addEventListener('change', () => {
+    const slide = getCurrentSlide();
+    if(!slide) return;
+    const option = LIGHT_BACKGROUND_OPTIONS.find(item => item.key === bgImageSelect.value) || LIGHT_BACKGROUND_OPTIONS[0];
+    applyLightBackground(slide, option);
+  });
+
   chartSelect?.addEventListener('change', () => {
     const frame = getCurrentChartFrame();
     if(!frame) return;
@@ -4221,15 +4569,27 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
     if(option) applyChart(frame, option);
   });
 
+  animationSelect?.addEventListener('change', () => {
+    window.__setEntryAnimationEnabled?.(animationSelect.value !== 'off');
+  });
+  transitionSelect?.addEventListener('change', () => {
+    state.pageTransition = transitionSelect.value || 'none';
+    window.__setPageTransition?.(state.pageTransition);
+    transitionSelect.blur();
+    writeSaved();
+  });
+
   addEventListener('swiss-slide-change', () => {
     refreshDeckSlides();
     renderShaderControl();
     renderChartControl();
+    renderLightBackgroundControl();
   });
   addEventListener('swiss-slide-reorder', () => {
     refreshDeckSlides();
     renderShaderControl();
     renderChartControl();
+    renderLightBackgroundControl();
   });
   addEventListener('swiss-style-variant-change', e => {
     state.styleVariant = e.detail?.variant || state.styleVariant;
@@ -4238,11 +4598,21 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
     refreshDeckSlides();
     renderShaderControl();
     renderChartControl();
+    renderLightBackgroundControl();
   });
 
+  addEventListener('preview-theme-change', () => {
+    renderLightBackgroundControl();
+  });
+  addEventListener('swiss-entry-animation-change', syncAnimationControl);
+  function syncAnimationControl(){
+    if(animationSelect) animationSelect.value = window.__entryAnimationEnabled === false ? 'off' : 'on';
+    if(transitionSelect) transitionSelect.value = state.pageTransition || 'none';
+    window.__setPageTransition?.(state.pageTransition || 'none');
+  }
+
   function getCurrentShaderFrame(){
-    const index = window.__currentSlideIndex || 0;
-    return deckSlides[index]?.querySelector('[data-shader-backdrop="true"]') || null;
+    return getCurrentSlide()?.querySelector('[data-shader-backdrop="true"]') || null;
   }
 
   function parseShaderOptions(frame){
@@ -4291,6 +4661,9 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
         const option = parseChartOptions(chartFrame).find(item => item.key === chartKey);
         if(option) applyChart(chartFrame, option, {persist:false});
       }
+      const bgKey = vmState.background?.[slideId];
+      const bgOption = LIGHT_BACKGROUND_OPTIONS.find(item => item.key === bgKey);
+      if(bgOption) applyLightBackground(slide, bgOption, {persist:false});
     });
   }
 
@@ -4312,8 +4685,7 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
   }
 
   function getCurrentChartFrame(){
-    const index = window.__currentSlideIndex || 0;
-    return deckSlides[index]?.querySelector('[data-chart-switch="true"]') || null;
+    return getCurrentSlide()?.querySelector('[data-chart-switch="true"]') || null;
   }
 
   function parseChartOptions(frame){
@@ -4467,8 +4839,43 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
   });
 
   function currentSlideId(){
+    return getCurrentSlide()?.dataset.vmSlideId || '';
+  }
+
+  function getCurrentSlide(){
     const index = window.__currentSlideIndex || 0;
-    return deckSlides[index]?.dataset.vmSlideId || '';
+    return deckSlides[index] || null;
+  }
+
+  function renderLightBackgroundControl(){
+    if(!bgImageField || !bgImageSelect) return;
+    if(state.theme !== 'light'){
+      bgImageField.classList.add('is-hidden');
+      return;
+    }
+    bgImageField.classList.remove('is-hidden');
+    if(!bgImageSelect.options.length){
+      LIGHT_BACKGROUND_OPTIONS.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.key;
+        option.textContent = item.label;
+        bgImageSelect.appendChild(option);
+      });
+    }
+    bgImageSelect.value = getCurrentSlide()?.dataset.lightBgImage || '';
+  }
+
+  function applyLightBackground(slide, option, opts = {}){
+    if(!slide) return;
+    if(!option?.key){
+      delete slide.dataset.lightBgImage;
+      slide.style.removeProperty('--light-bg-image');
+      if(opts.persist !== false) viewModel?.setBackground?.(slide.dataset.vmSlideId, '');
+      return;
+    }
+    slide.dataset.lightBgImage = option.key;
+    slide.style.setProperty('--light-bg-image', `url("${option.src}")`);
+    if(opts.persist !== false) viewModel?.setBackground?.(slide.dataset.vmSlideId, option.key);
   }
 })();
 </script>
@@ -4896,7 +5303,7 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
 
       const slides = window.__getVisibleSlides?.() || [...document.querySelectorAll('#deck .slide:not([hidden])')];
       for(let i = 0; i < slides.length; i++){
-        go(i);
+        go(i, {animate:false});
         await nextFrame();
         await nextFrame();
         const slideEl = slides[i];
@@ -5068,7 +5475,7 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
 
   function restorePptxExportState(state){
     if(!state) return;
-    go(state.index);
+    go(state.index, {animate:false});
     document.body.classList.toggle('preview-panel-open', state.panelOpen);
     document.body.classList.toggle('overview-on', state.overviewOn);
     const overview = document.getElementById('overview');
@@ -5471,8 +5878,8 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
 
   fillSelectOptions(sizeSelect, FONT_SIZE_TOKENS);
   fillSelectOptions(textMarkSelect, TEXT_MARK_OPTIONS);
-  fillSelectOptions(bgColorSelect, COLOR_TOKENS);
-  fillSelectOptions(colorSelect, COLOR_TOKENS);
+  fillSelectOptions(bgColorSelect, colorTokenOptions());
+  fillSelectOptions(colorSelect, colorTokenOptions());
   fillSelectOptions(paddingSelect, SPACE_TOKENS);
   fillSelectOptions(marginSelect, SPACE_TOKENS);
   fillSelectOptions(gapSelect, SPACE_TOKENS);
@@ -5613,9 +6020,15 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
 
   function refreshColorOptionSwatches(){
     COLOR_SELECTS.forEach(select => {
+      const selectedValue = select.value;
+      const tokens = colorTokenOptions(selectedValue);
+      fillSelectOptions(select, tokens);
+      if(selectedValue && [...select.options].some(option => option.value === selectedValue)){
+        select.value = selectedValue;
+      }
       [...select.options].forEach(option => {
         const value = option.value;
-        option.textContent = value ? `${optionLabel(value, COLOR_TOKENS)} (${value})` : optionLabel(value, COLOR_TOKENS);
+        option.textContent = value ? `${optionLabel(value, tokens)} (${value})` : optionLabel(value, tokens);
         option.style.background = '';
         option.style.color = '';
       });
@@ -5626,7 +6039,7 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
   function renderColorPalette(select){
     const palette = ensureColorPalette(select);
     palette.innerHTML = '';
-    COLOR_TOKENS.forEach(([value, label]) => {
+    colorTokenOptions(select.value).forEach(([value, label]) => {
       const button = document.createElement('button');
       const swatch = document.createElement('span');
       button.type = 'button';
@@ -5643,6 +6056,54 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
       palette.appendChild(button);
     });
     syncColorPalette(select);
+  }
+
+  function colorTokenOptions(extraValue = ''){
+    const tokens = [...COLOR_TOKENS];
+    const seen = new Set(tokens.map(([value]) => value));
+    Object.entries(currentThemeVars()).forEach(([name, value]) => {
+      if(seen.has(name) || !isColorToken(name, value)) return;
+      seen.add(name);
+      tokens.push([name, tokenLabel(name)]);
+    });
+    if(extraValue && !seen.has(extraValue)){
+      tokens.push([extraValue, tokenLabel(extraValue)]);
+    }
+    return tokens;
+  }
+
+  function currentThemeVars(){
+    const options = readPreviewOptions();
+    return options.themes?.[currentTheme()]?.vars || {};
+  }
+
+  function readPreviewOptions(){
+    try {
+      return JSON.parse(document.getElementById('preview-options')?.textContent || '{}') || {};
+    } catch {
+      return {};
+    }
+  }
+
+  function isColorToken(name, value){
+    if(!name.startsWith('--') || /-(?:rgb|mode|opacity)$/.test(name)) return false;
+    const raw = String(value || '').trim();
+    if(!raw || /gradient\(|url\(/i.test(raw) || /^\d+(?:\.\d+)?$/.test(raw) || /^\d+\s*,/.test(raw)) return false;
+    return /^(#|rgb\(|rgba\(|hsl\(|hsla\(|oklch\(|lab\(|lch\(|color\(|color-mix\(|var\()/i.test(raw);
+  }
+
+  function tokenLabel(token){
+    const existing = optionLabel(token, COLOR_TOKENS);
+    if(existing !== token) return existing;
+    return token
+      .replace(/^--theme-/, 'Theme · ')
+      .replace(/^--report-/, 'Report · ')
+      .replace(/^--bt-/, 'BT · ')
+      .replace(/^--/, '')
+      .split('-')
+      .filter(Boolean)
+      .map(part => part.toUpperCase() === part ? part : part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
   }
 
   function ensureColorPalette(select){
@@ -6205,24 +6666,281 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0);
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>lucide.createIcons();</script>
 
-<!-- Motion One 动效引擎 (与原模板一致) -->
-<script type="module">
-let motion;
-try {
-  motion = await import('./assets/motion.min.js');
-} catch(e1) {
-  try {
-    motion = await import('https://cdn.jsdelivr.net/npm/motion@11.11.17/+esm');
-  } catch(e2) {
-    console.warn('[motion] local + CDN both failed, disabling animations', e1, e2);
-    document.querySelectorAll('[data-anim]').forEach(el=>{el.style.opacity='1';el.style.transform='none'});
-    document.querySelectorAll('[data-animate="pipeline"] [data-anim]').forEach(el=>el.style.opacity='1');
-  }
+<!-- GSAP 动效引擎 -->
+<script src="assets/vendor/gsap.min.js"></script>
+<script>
+const gsapRuntime = window.gsap;
+if(!gsapRuntime){
+  console.warn('[gsap] runtime missing, disabling animations');
+  document.querySelectorAll('[data-anim]').forEach(el=>{el.style.opacity='1';el.style.transform='none'});
+  document.querySelectorAll('[data-animate="pipeline"] [data-anim]').forEach(el=>el.style.opacity='1');
 }
 
-if(motion){
-  const { animate } = motion;
-  document.body.classList.add('motion-ready');
+if(gsapRuntime){
+  const animate = createGsapAnimate(gsapRuntime);
+  document.body.classList.add('gsap-ready');
+  window.__stopSlideAnimations = (scope=document) => {
+    const root = scope instanceof Element ? scope : document;
+    gsapRuntime.killTweensOf([root, ...root.querySelectorAll('*')]);
+  };
+  window.__playPageTransition = (mode, currentSlide, nextSlide, direction, commit) => {
+    if(mode === 'pixelReveal') return playPixelRevealTransition(commit);
+    if(mode === 'fullscreenScroll') return playFullscreenScrollTransition(currentSlide, nextSlide, direction, commit);
+    if(mode === 'liquidMorph') return playLiquidMorphTransition(currentSlide, nextSlide, direction, commit);
+    if(mode === 'sectionWrap') return playSectionWrapTransition(currentSlide, nextSlide, direction, commit);
+    commit?.();
+    return Promise.resolve();
+  };
+
+  function playPixelRevealTransition(commit){
+    const overlay = ensurePixelOverlay();
+    const pixels = [...overlay.children];
+    overlay.style.color = readTransitionColor();
+    return new Promise(resolve => {
+      gsapRuntime.killTweensOf(pixels);
+      gsapRuntime.set(overlay, {display:'block'});
+      gsapRuntime.set(pixels, {scale:0, autoAlpha:1});
+      gsapRuntime.timeline({
+        onComplete(){
+          gsapRuntime.set(overlay, {display:'none'});
+          resolve();
+        }
+      })
+        .to(pixels, {
+          scale:1.04,
+          duration:.12,
+          ease:'power1.out',
+          stagger:{amount:.34, from:'random'}
+        }, 0)
+        .call(() => commit?.(), [], .42)
+        .to(pixels, {
+          scale:0,
+          duration:.12,
+          ease:'power1.in',
+          stagger:{amount:.34, from:'random'}
+        }, .48);
+    });
+  }
+
+  function ensurePixelOverlay(){
+    let overlay = document.querySelector('.page-transition-pixels');
+    if(overlay) return overlay;
+    overlay = document.createElement('div');
+    overlay.className = 'page-transition-pixels';
+    const cols = 18;
+    const rows = 10;
+    for(let y = 0; y < rows; y += 1){
+      for(let x = 0; x < cols; x += 1){
+        const pixel = document.createElement('span');
+        pixel.className = 'page-transition-pixel';
+        pixel.style.left = `${x / cols * 100}%`;
+        pixel.style.top = `${y / rows * 100}%`;
+        pixel.style.width = `${100 / cols}%`;
+        pixel.style.height = `${100 / rows}%`;
+        overlay.appendChild(pixel);
+      }
+    }
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function playFullscreenScrollTransition(currentSlide, nextSlide, direction, commit){
+    const stage = ensureTransitionStage();
+    const dir = direction >= 0 ? 1 : -1;
+    const currentPanel = createTransitionPanel(currentSlide);
+    const nextPanel = createTransitionPanel(nextSlide);
+    const currentCopy = currentPanel.querySelector('.page-transition-copy');
+    const nextCopy = nextPanel.querySelector('.page-transition-copy');
+    stage.replaceChildren(currentPanel, nextPanel);
+    return new Promise(resolve => {
+      gsapRuntime.killTweensOf([stage, currentPanel, nextPanel, currentCopy, nextCopy]);
+      gsapRuntime.set(stage, {display:'block'});
+      gsapRuntime.set(currentPanel, {yPercent:0, autoAlpha:1});
+      gsapRuntime.set(currentCopy, {yPercent:0, scaleY:1, transformOrigin:dir > 0 ? '50% 0%' : '50% 100%'});
+      gsapRuntime.set(nextPanel, {yPercent:100 * dir, autoAlpha:1});
+      gsapRuntime.set(nextCopy, {yPercent:-100 * dir, scaleY:1.16, transformOrigin:dir > 0 ? '50% 0%' : '50% 100%'});
+      gsapRuntime.timeline({
+        defaults:{duration:.86, ease:'power3.inOut'},
+        onComplete(){
+          commit?.();
+          gsapRuntime.set(stage, {display:'none'});
+          stage.replaceChildren();
+          resolve();
+        }
+      })
+        .to(currentPanel, {yPercent:-100 * dir}, 0)
+        .to(currentCopy, {scaleY:1.18}, 0)
+        .to(nextPanel, {yPercent:0}, 0)
+        .to(nextCopy, {yPercent:0, scaleY:1}, 0);
+    });
+  }
+
+  function playLiquidMorphTransition(currentSlide, nextSlide, direction, commit){
+    const stage = ensureTransitionStage();
+    const currentPanel = createTransitionPanel(currentSlide);
+    const nextPanel = createTransitionPanel(nextSlide);
+    const currentCopy = currentPanel.querySelector('.page-transition-copy');
+    const nextCopy = nextPanel.querySelector('.page-transition-copy');
+    const origin = direction >= 0 ? '62% 56%' : '38% 44%';
+    stage.replaceChildren(currentPanel, nextPanel);
+    return new Promise(resolve => {
+      gsapRuntime.killTweensOf([stage, currentPanel, nextPanel, currentCopy, nextCopy]);
+      gsapRuntime.set(stage, {display:'block'});
+      gsapRuntime.set(currentPanel, {autoAlpha:1});
+      gsapRuntime.set(currentCopy, {scale:1, filter:'blur(0px) saturate(1)'});
+      gsapRuntime.set(nextPanel, {
+        autoAlpha:1,
+        clipPath:`circle(0% at ${origin})`,
+        webkitClipPath:`circle(0% at ${origin})`
+      });
+      gsapRuntime.set(nextCopy, {scale:1.08, filter:'blur(18px) saturate(1.45)'});
+      gsapRuntime.timeline({
+        defaults:{ease:'power3.inOut'},
+        onComplete(){
+          commit?.();
+          gsapRuntime.set(stage, {display:'none'});
+          stage.replaceChildren();
+          resolve();
+        }
+      })
+        .to(currentCopy, {scale:.98, filter:'blur(8px) saturate(.86)', duration:.72}, 0)
+        .to(nextPanel, {
+          clipPath:`circle(145% at ${origin})`,
+          webkitClipPath:`circle(145% at ${origin})`,
+          duration:.92
+        }, .02)
+        .to(nextCopy, {scale:1, filter:'blur(0px) saturate(1)', duration:.92}, .02);
+    });
+  }
+
+  function playSectionWrapTransition(currentSlide, nextSlide, direction, commit){
+    const stage = ensureTransitionStage();
+    const dir = direction >= 0 ? 1 : -1;
+    const currentPanel = createTransitionPanel(currentSlide);
+    const nextWrap = createWrappedTransitionPanel(nextSlide);
+    const currentCopy = currentPanel.querySelector('.page-transition-copy');
+    stage.replaceChildren(currentPanel, nextWrap.panel);
+    return new Promise(resolve => {
+      gsapRuntime.killTweensOf([stage, currentPanel, currentCopy, nextWrap.panel, nextWrap.outer, nextWrap.inner, nextWrap.copy]);
+      gsapRuntime.set(stage, {display:'block'});
+      gsapRuntime.set(currentPanel, {autoAlpha:1, zIndex:0});
+      gsapRuntime.set(nextWrap.panel, {autoAlpha:1, zIndex:1});
+      gsapRuntime.set(nextWrap.outer, {yPercent:100 * dir});
+      gsapRuntime.set(nextWrap.inner, {yPercent:-100 * dir});
+      gsapRuntime.set(nextWrap.copy, {yPercent:15 * dir, scale:1.03});
+      gsapRuntime.timeline({
+        defaults:{duration:1.04, ease:'power1.inOut'},
+        onComplete(){
+          commit?.();
+          gsapRuntime.set(stage, {display:'none'});
+          stage.replaceChildren();
+          resolve();
+        }
+      })
+        .to(currentCopy, {yPercent:-15 * dir, scale:1.02, autoAlpha:.72}, 0)
+        .fromTo([nextWrap.outer, nextWrap.inner], {
+          yPercent:index => index ? -100 * dir : 100 * dir
+        }, {
+          yPercent:0
+        }, 0)
+        .to(nextWrap.copy, {yPercent:0, scale:1}, 0);
+    });
+  }
+
+  function createWrappedTransitionPanel(slide){
+    const panel = document.createElement('div');
+    panel.className = 'page-transition-panel';
+    const outer = document.createElement('div');
+    outer.className = 'page-transition-section-outer';
+    const inner = document.createElement('div');
+    inner.className = 'page-transition-section-inner';
+    const copy = document.createElement('div');
+    copy.className = 'page-transition-copy';
+    const clone = cloneTransitionSlide(slide);
+    copy.appendChild(clone);
+    inner.appendChild(copy);
+    outer.appendChild(inner);
+    panel.appendChild(outer);
+    return {panel, outer, inner, copy};
+  }
+
+  function ensureTransitionStage(){
+    let stage = document.querySelector('.page-transition-stage');
+    if(stage) return stage;
+    stage = document.createElement('div');
+    stage.className = 'page-transition-stage';
+    document.body.appendChild(stage);
+    return stage;
+  }
+
+  function createTransitionPanel(slide){
+    const panel = document.createElement('div');
+    panel.className = 'page-transition-panel';
+    const copy = document.createElement('div');
+    copy.className = 'page-transition-copy';
+    copy.appendChild(cloneTransitionSlide(slide));
+    panel.appendChild(copy);
+    return panel;
+  }
+
+  function cloneTransitionSlide(slide){
+    const clone = slide.cloneNode(true);
+    clone.hidden = false;
+    clone.removeAttribute('id');
+    clone.removeAttribute('aria-hidden');
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    clone.querySelectorAll('iframe').forEach(iframe => iframe.removeAttribute('src'));
+    clone.querySelectorAll('video').forEach(video => {
+      video.pause?.();
+      video.removeAttribute('src');
+    });
+    return clone;
+  }
+
+  function readTransitionColor(){
+    const style = getComputedStyle(document.documentElement);
+    return style.getPropertyValue('--theme-focus').trim()
+      || style.getPropertyValue('--focus-mark').trim()
+      || '#111111';
+  }
+
+  function createGsapAnimate(gsap){
+    return function animateWithGsap(target, keyframes, options = {}){
+      const targets = gsap.utils.toArray(target).filter(Boolean);
+      if(!targets.length) return null;
+      const fromVars = {};
+      const toVars = {
+        duration: options.duration ?? .5,
+        ease: resolveGsapEase(options.easing),
+        overwrite: 'auto',
+      };
+      Object.entries(keyframes || {}).forEach(([name, value]) => {
+        const prop = name === 'rotate' ? 'rotation' : name;
+        if(Array.isArray(value)){
+          fromVars[prop] = value[0];
+          toVars[prop] = value[value.length - 1];
+        }else{
+          toVars[prop] = value;
+        }
+      });
+      if(typeof options.delay === 'function'){
+        const timeline = gsap.timeline();
+        targets.forEach((item, index) => {
+          timeline.fromTo(item, {...fromVars}, {...toVars}, options.delay(index, targets.length));
+        });
+        return timeline;
+      }else if(options.delay){
+        toVars.delay = options.delay;
+      }
+      return gsap.fromTo(targets, fromVars, toVars);
+    };
+  }
+
+  function resolveGsapEase(easing){
+    if(easing === EASE_PROD) return 'power1.out';
+    if(easing === EASE_ENTRY_EXP) return 'power2.out';
+    return 'power2.out';
+  }
 
   /* ============================================================
      IBM Carbon Motion · 每个 recipe 服务一种表达
@@ -6237,8 +6955,85 @@ if(motion){
     return [...document.querySelectorAll('.slide')];
   }
 
+  function collectAnimTargets(slide){
+    const marked = [...slide.querySelectorAll('[data-anim]')];
+    if(marked.length) return marked;
+    const autoTargets = [
+      ...slide.querySelectorAll([
+        ':scope > header',
+        ':scope > footer',
+        ':scope [data-media-slot]',
+        ':scope [data-chart-switch="true"]',
+        ':scope [data-shader-backdrop="true"]',
+        ':scope [data-icon-slot]',
+        ':scope [data-editable-id]',
+        ':scope h1',
+        ':scope h2',
+        ':scope h3',
+        ':scope h4',
+        ':scope p',
+        ':scope li',
+        ':scope figcaption',
+        ':scope .bt-eyebrow',
+        ':scope .bt-display',
+        ':scope .bt-title',
+        ':scope .bt-body',
+        ':scope .bt-caption',
+        ':scope .bt-stage',
+        ':scope .bt-ref-list .item',
+        ':scope .bt-bottom-rule',
+        ':scope .rp-title',
+        ':scope .rp-body',
+        ':scope .rp-toc-row',
+        ':scope .rp-metric-card',
+        ':scope .rp-tile',
+        ':scope .xhs-card',
+        ':scope .xhs2-card',
+        ':scope .xhs3-card',
+        ':scope .st1-chip',
+        ':scope .st1-mascot',
+        ':scope .st2-corner',
+        ':scope .st2-cover-num',
+        ':scope .st2-cover-title',
+        ':scope .st2-cover-foot',
+        ':scope .st2-ed-col',
+      ].join(','))
+    ].filter(isAutoAnimTarget);
+    const targets = removeNestedAnimTargets(uniqueAnimTargets(autoTargets));
+    return (targets.length ? targets : [...slide.children].filter(isAutoAnimTarget)).slice(0, 40);
+  }
+
+  function isAutoAnimTarget(el){
+    if(!(el instanceof HTMLElement)) return false;
+    if(el.matches('script,style,template')) return false;
+    if(el.id === 'nav' || el.id === 'preview-panel' || el.id === 'preview-toggle') return false;
+    if(el.classList.contains('bt-shader-backdrop')) return false;
+    if(el.hidden) return false;
+    if(!el.getClientRects().length) return false;
+    return true;
+  }
+
+  function uniqueAnimTargets(items){
+    return [...new Set(items)];
+  }
+
+  function removeNestedAnimTargets(items){
+    return items.filter(item => !items.some(other => other !== item && item.contains(other)));
+  }
+
+  function playCascadeTargets(items){
+    items.forEach((el, index) => {
+      animate(el, {opacity:[0,1], y:[14,0]}, {
+        duration:.62,
+        delay:index * .036,
+        easing:EASE_ENTRY_EXP,
+      });
+    });
+  }
+
   function resetAnims(slide){
-    slide.querySelectorAll('[data-anim]').forEach(el=>{
+    window.__stopSlideAnimations?.(slide);
+    collectAnimTargets(slide).forEach(el=>{
       el.style.opacity='';
       el.style.transform='';
     });
@@ -6875,8 +7670,14 @@ if(motion){
 
   function revealStatic(slide){
     resetAnims(slide);
+    window.__stopSlideAnimations?.(slide);
     document.getAnimations?.().forEach(a=>a.cancel());
-    slide.querySelectorAll('[data-anim],.row-fill,.tl-node,.stack-block,.bar-tower,.sub-card,.col,.vrule,.kpi-cell,.card-fill,.card-accent,.card-ink')
+    collectAnimTargets(slide)
+      .forEach(el=>{
+        el.style.opacity='1';
+        el.style.transform='none';
+      });
+    slide.querySelectorAll('.row-fill,.tl-node,.stack-block,.bar-tower,.sub-card,.col,.vrule,.kpi-cell,.card-fill,.card-accent,.card-ink')
       .forEach(el=>{
         el.style.opacity='1';
         el.style.transform='none';
@@ -6888,7 +7689,7 @@ if(motion){
     if(!slide) return;
     lastIdx = i;
 
-    if(window.__lowPowerMode){
+    if(window.__lowPowerMode || window.__entryAnimationEnabled === false){
       revealStatic(slide);
       return;
     }
@@ -6896,20 +7697,18 @@ if(motion){
     resetAnims(slide);
 
     /* 关键:[data-anim] 容器很多时候只是占位标记,真正的几何动画在子元素上.
-       默认强制 reveal 所有 [data-anim] 容器, recipe 想做块入场时用 motion 的 {opacity:[0,1]} 会自动覆盖 */
+       默认强制 reveal 所有 [data-anim] 容器, recipe 想做块入场时用 GSAP 的 {opacity:[0,1]} 会自动覆盖 */
     slide.querySelectorAll('[data-anim]').forEach(el=>{
       el.style.opacity = '1';
       el.style.transform = 'none';
     });
 
-    const all = [...slide.querySelectorAll('[data-anim]')];
+    const all = collectAnimTargets(slide);
     const recipe = slide.dataset.animate;
     const fn = RECIPES[recipe];
     if(fn){ fn(slide, all); return; }
 
-    /* fallback: 平凡 fade */
-    if(all.length) animate(all, {opacity:[0,1], y:[12,0]},
-      {duration:.6, delay:i=>i*.08, easing:EASE_ENTRY_EXP});
+    if(all.length) playCascadeTargets(all);
   }
 
   window.__playSlide = playSlide;

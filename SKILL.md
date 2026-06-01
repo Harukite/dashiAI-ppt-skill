@@ -5,7 +5,7 @@ description: 根据用户目标组合登记组件,生成可离线打开和导出
 
 # 大师的AI小灶-PPT Skill
 
-生成一份**静态 HTML 横向翻页 PPT**。React 只作为生成层使用;最终交付是 `index.html` + `assets/motion.min.js`,浏览器直接打开即可。
+生成一份**静态 HTML 横向翻页 PPT**。React 只作为生成层使用;最终交付是 `index.html` + `assets/vendor/gsap.min.js`,浏览器直接打开即可。
 
 ## 使用目标
 

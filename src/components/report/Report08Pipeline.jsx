@@ -1,5 +1,6 @@
 import React from 'react';
 import { Footer, ReportSlide, TopBar } from './primitives.jsx';
+import { ChartSwitch } from '../charts/index.jsx';
 
 const rows = [
   ['Q1', '品牌重启', '$4.2M', '$6.8M', '+62%'],
@@ -10,6 +11,13 @@ const rows = [
 ];
 
 export function Report08Pipeline() {
+  const chartRows = rows.slice(0, -1).map(([quarter, project, , pipeline, delta], index) => ({
+    label: `${quarter} · ${project}`,
+    value: Number.parseFloat(pipeline.replace(/[$M]/g, '')) || 0,
+    display: `${pipeline} / ${delta}`,
+    tone: index === 1 ? 'focus' : '',
+  }));
+
   return (
     <ReportSlide layout="RP08" className="rp-cream">
       <div className="rp-page rp-pad">
@@ -18,19 +26,11 @@ export function Report08Pipeline() {
           <h1 className="rp-title">管道贡献。</h1>
           <p className="rp-body">按季度拆分的营销来源管道额，对比 2024 年基线。</p>
         </div>
-        <table className="rp-table">
-          <thead><tr><th>季度</th><th>项目</th><th>2024 管道额</th><th>2025 管道额</th><th>Δ</th></tr></thead>
-          <tbody>
-            {rows.map((row, index) => (
-              <tr className={index === rows.length - 1 ? 'total' : ''} key={row.join('-')}>
-                {row.map((cell, cellIndex) => <td className={cellIndex > 1 ? 'num' : ''} key={cell}>{cell}</td>)}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="rp-chart-wrap rp-pipeline-chart">
+          <ChartSwitch title="季度管道额" rows={chartRows} className="rp-chart-switch" />
+        </div>
         <Footer left="03 · 管道额" right="市场营销 · 2025 年终" />
       </div>
     </ReportSlide>
   );
 }
-

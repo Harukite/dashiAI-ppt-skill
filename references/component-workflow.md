@@ -9,7 +9,7 @@ token 选项在 `src/tokens/`,页面版式登记在 `src/options.jsx`:
 - `THEME_OPTIONS`: deck 级主题色,一个 deck 只选一个
 - `FONT_OPTIONS`: deck 级字体组合,一个 deck 只选一个
 - `LAYOUT_OPTIONS`: 页级版式,每页从中选一个
-- `TYPE_SCALE_OPTIONS`、`SPACING_OPTIONS`、`MOTION_OPTIONS`: 组合层 token,用于后续组件化扩展
+- `TYPE_SCALE_OPTIONS`、`SPACING_OPTIONS`: 组合层 token,用于后续组件化扩展
 
 ## Deck 配置
 

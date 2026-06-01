@@ -4,7 +4,7 @@
 
 ## ADR-001: 最终产物保持为静态 HTML
 
-最终交付仍是 `index.html`、`assets/motion.min.js` 和图片资源。React 只作为生成层使用,不进入浏览器运行时。
+最终交付仍是 `index.html`、`assets/vendor/gsap.min.js` 和图片资源。React 只作为生成层使用,不进入浏览器运行时。
 
 ## ADR-002: 可变部分使用登记选项多选一
 
@@ -12,7 +12,7 @@
 
 ## ADR-003: 模板负责浏览器运行时
 
-`assets/template-swiss.html` 负责 CSS 视觉系统、背景、翻页、导航、预览控制器和动效入口。React 组件只生成注入到 `#deck` 内的 slide markup。
+`assets/template-swiss.html` 负责 CSS 视觉系统、背景、翻页、导航、预览控制器和 GSAP 动效入口。React 组件只生成注入到 `#deck` 内的 slide markup。
 
 ## ADR-004: 输出目录是生成物
 
@@ -44,7 +44,7 @@
 
 ## ADR-011: token 与基础组件按组合维度分类
 
-`src/tokens/` 存放主题、字体、字号、间距和动效选项。`src/components/` 下按组合职责分为 `shell/`、`text/`、`media/`、`metrics/`、`charts/`、`timelines/`、`cards/`、`decorations/`、`diagrams/`。
+`src/tokens/` 存放主题、字体、字号和间距选项。`src/components/` 下按组合职责分为 `shell/`、`text/`、`media/`、`metrics/`、`charts/`、`timelines/`、`cards/`、`decorations/`、`diagrams/`。
 
 ## ADR-012: demo 同时覆盖布局穷举和运行时切换
 

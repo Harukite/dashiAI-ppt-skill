@@ -7,7 +7,7 @@
 ```text
 output/my-deck/ppt/
 ├── index.html
-├── assets/motion.min.js
+├── assets/vendor/gsap.min.js
 └── images/
 ```
 
@@ -21,7 +21,7 @@ output/my-deck/ppt/
 - `fontSet`: 从字体组合中选一个
 - 每一页: 从页面版式选项中选一个
 
-主题、字体、字号、间距和动效 token 在 [src/tokens/](/Users/jadon7/Documents/SynologyDrive/code/项目研究/guizang-ppt-skill-main/src/tokens/index.js)。页面版式登记在 [src/options.jsx](/Users/jadon7/Documents/SynologyDrive/code/项目研究/guizang-ppt-skill-main/src/options.jsx)。可组合基础组件按职责放在 [src/components/](/Users/jadon7/Documents/SynologyDrive/code/项目研究/guizang-ppt-skill-main/src/components/index.jsx),项目布局 preset 分别在 `components/blacktech/`、`components/report/`、`components/xhs/`、`components/xhs2/`、`components/xhs3/`、`components/style1/` 和 `components/style2/`。
+主题、字体、字号和间距 token 在 [src/tokens/](/Users/jadon7/Documents/SynologyDrive/code/项目研究/guizang-ppt-skill-main/src/tokens/index.js)。页面版式登记在 [src/options.jsx](/Users/jadon7/Documents/SynologyDrive/code/项目研究/guizang-ppt-skill-main/src/options.jsx)。可组合基础组件按职责放在 [src/components/](/Users/jadon7/Documents/SynologyDrive/code/项目研究/guizang-ppt-skill-main/src/components/index.jsx),项目布局 preset 分别在 `components/blacktech/`、`components/report/`、`components/xhs/`、`components/xhs2/`、`components/xhs3/`、`components/style1/` 和 `components/style2/`。
 
 ## 快速开始
 
@@ -109,7 +109,6 @@ assets/
   screenshot-backgrounds/style-a/
   screenshot-backgrounds/style-b/
   template-swiss.html
-  motion.min.js
 src/
   tokens/
   options.jsx
@@ -166,5 +165,5 @@ npm run validate:swiss -- output/goal-demo/ppt/index.html
 提交前 hook 还会运行 `npm run showcase:update`,确保 `all-layouts-showcase.jsx` 覆盖当前全部已登记布局,并刷新 `output/all-components-showcase/ppt/index.html`。
 
 - [ADR](docs/ADR.md): 当前架构决策记录
-- [项目文件作用说明](docs/project-files.md): 当前 208 个源码文件的主要作用
+- [项目文件作用说明](docs/project-files.md): 当前 206 个源码文件的主要作用
 <!-- project-docs:end -->

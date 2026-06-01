@@ -1,5 +1,5 @@
 import React from 'react';
-import { BlackTechSlide, BottomRule } from './primitives.jsx';
+import { BlackTechSlide, BottomRule, ChartSwitch } from './primitives.jsx';
 
 const defaultRows = [
   ['业务一部', '96%', '+18%'],
@@ -22,6 +22,13 @@ export function BT08Compression({
   footerLeft = 'SAMPLE / DATA SOURCE: FINANCE + CRM',
   footerRight = 'conclusion > detail',
 }) {
+  const chartRows = rows.map(([label, percentValue, delta, focus]) => ({
+    label,
+    value: Number.parseFloat(percentValue) || 0,
+    display: `${percentValue} · ${delta}`,
+    tone: focus ? 'focus' : '',
+  }));
+
   return (
     <BlackTechSlide
       layout="BT08"
@@ -36,14 +43,7 @@ export function BT08Compression({
           </div>
           <div>
             <div className="bt-small">{tableTitle}</div>
-            <table className="bt-spec">
-              <thead><tr>{columns.map(column => <th key={column}>{column}</th>)}</tr></thead>
-              <tbody>
-                {rows.map(([first, second, third, focus]) => (
-                  <tr key={first} className={focus ? 'focus' : ''}><td>{first}</td><td>{second}</td><td>{third}</td></tr>
-                ))}
-              </tbody>
-            </table>
+            <ChartSwitch title={columns.join(' / ')} rows={chartRows} className="bt-compression-chart" />
           </div>
         </div>
         <BottomRule left={footerLeft} right={footerRight} />

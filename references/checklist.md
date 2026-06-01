@@ -406,7 +406,7 @@ Hero Cover → Act Divider (hero) → 3-4 pages non-hero → Act Divider (hero)
 
 **现象**:生成后打开浏览器,翻页时内容直接"啪"地出来,没有任何节奏感——杂志风完全靠排版硬撑,少了层级展开的仪式感。
 
-**根因**:完全没给任何元素加 `data-anim`,Motion One 脚本找不到可播的元素,整页静态出现。
+**根因**:完全没给任何元素加 `data-anim`,GSAP 脚本找不到可播的元素,整页静态出现。
 
 **做法**:
 - 所有正文页,**至少给 kicker / 主标题 / lead / callout / stat-card / figure 这些叶子元素加 `data-anim`**
@@ -556,7 +556,7 @@ JS 会动态算总页数并扩展底部翻页圆点，但 `.chrome` 里的 `XX /
   □ B 键触发静态/低功耗模式,右下角提示在 `B 静态` / `B 动态` 之间切换
 
 动效
-  □ `assets/motion.min.js` 存在(本地兜底)
+  □ `assets/vendor/gsap.min.js` 存在(本地兜底)
   □ 低功耗模式下 WebGL/ASCII canvas 不再挂 RAF 循环,当前页内容仍全部可见
   □ 翻页时内容逐个淡入,不是"啪"一下全出
   □ 大引用页 `<section>` 带 `data-animate="quote"`,每行 `<span data-anim="line">`

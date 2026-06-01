@@ -225,8 +225,8 @@ export function ShaderBackdrop({ variant = 'warp' }) {
   );
 }
 
-export function ChartSwitch({ title, rows }) {
-  return <BaseChartSwitch title={title} rows={rows} className="bt-chart-switch" />;
+export function ChartSwitch({ title, rows, options, className = '' }) {
+  return <BaseChartSwitch title={title} rows={rows} options={options} className={`bt-chart-switch ${className}`.trim()} />;
 }
 
 export function BayerGrid() {

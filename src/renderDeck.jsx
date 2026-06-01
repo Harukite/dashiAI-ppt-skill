@@ -147,7 +147,7 @@ function copyRuntimeAssets(outDir) {
   const imagesDir = path.join(outDir, 'images');
   fs.mkdirSync(assetsDir, { recursive: true });
   fs.mkdirSync(imagesDir, { recursive: true });
-  fs.copyFileSync(path.join(ROOT, 'assets/motion.min.js'), path.join(assetsDir, 'motion.min.js'));
+  copyFileIfExists(path.join(ROOT, 'node_modules/gsap/dist/gsap.min.js'), path.join(assetsDir, 'vendor/gsap.min.js'));
   copyFileIfExists(path.join(ROOT, 'node_modules/pptxgenjs/dist/pptxgen.bundle.js'), path.join(assetsDir, 'vendor/pptxgen.bundle.js'));
   copyFileIfExists(path.join(ROOT, 'node_modules/html-to-image/dist/html-to-image.js'), path.join(assetsDir, 'vendor/html-to-image.js'));
   copyDirectoryIfExists(path.join(ROOT, 'node_modules/remixicon/fonts'), path.join(assetsDir, 'vendor/remixicon'));

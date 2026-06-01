@@ -62,9 +62,9 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 - 主题节奏(每页用 light / dark / hero light / hero dark 哪一个)在下文"主题节奏规划"一节有硬规则,生成前必读
 - 两件事都要在挑布局之前决定,避免返工
 
-### E. 动效系统(默认开启 · Motion One 驱动)
+### E. 动效系统(默认开启 · GSAP 驱动)
 
-**核心机制**:template.html 底部的 module script 会在翻页时触发入场动画。所有带 `data-anim` 的元素初始不可见,翻到当前页时由 Motion One 逐个淡入。
+**核心机制**:template.html 底部的脚本会在翻页时触发入场动画。所有带 `data-anim` 的元素初始不可见,翻到当前页时由 GSAP 逐个淡入。
 
 **动效策略**:在 `<section>` 上加 `data-animate="<recipe>"` 选择动画风格;每个需要入场动画的元素加 `data-anim`(可选附值,如 `left` / `right` / `line` / `step`)。
 
@@ -76,9 +76,9 @@ layouts.md 使用的所有类（`h-hero` / `h-xl` / `h-sub` / `h-md` / `lead` / 
 | `directional` | 左进 → 分割 → 右进,用于对比 | Layout 9 Before/After |
 | `pipeline` | 手动推进,按 →/空格 一步步点亮 | Layout 6 流水线 |
 
-**降级保底**:如果 motion.min.js 本地 + CDN 都加载失败,脚本会强制把所有 `data-anim` 元素设为 `opacity:1`,内容永远可读。
+**降级保底**:如果 GSAP runtime 缺失,脚本会强制把所有 `data-anim` 元素设为 `opacity:1`,内容永远可读。
 
-**不需要动效的页面**:如果某页想完全跳过动效,不加任何 `data-anim` 即可 —— Motion One 只对带标记的元素生效。
+**不需要动效的页面**:如果某页想完全跳过动效,不加任何 `data-anim` 即可 —— GSAP 只对带标记的元素生效。
 
 ---
 

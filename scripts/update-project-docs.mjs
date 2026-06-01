@@ -11,7 +11,6 @@ const descriptions = {
   'README.md': '项目入口说明,包含快速开始、当前选项和文档索引。',
   'SKILL.md': '给 Agent 使用的 skill 说明,定义 PPT 生成流程和约束。',
   'assets/imported/xhs3/images': '小红书分享3导入布局使用的本地图片资源目录,渲染时复制到最终产物。',
-  'assets/motion.min.js': '浏览器端 Motion One 动效 runtime,由渲染器复制到最终产物。',
   'assets/screenshot-backgrounds/style-a/dune.webp': 'Style A 沙丘截图背景资源。',
   'assets/screenshot-backgrounds/style-a/forest-ink.webp': 'Style A 森林墨截图背景资源。',
   'assets/screenshot-backgrounds/style-a/indigo-porcelain.webp': 'Style A 靛蓝瓷截图背景资源。',
@@ -21,7 +20,7 @@ const descriptions = {
   'assets/screenshot-backgrounds/style-b/lemon-green-dot-shadow.webp': 'Style B 柠檬绿截图背景资源。',
   'assets/screenshot-backgrounds/style-b/lemon-grid.webp': 'Style B 柠檬黄截图背景资源。',
   'assets/screenshot-backgrounds/style-b/safety-orange-halftone.webp': 'Style B 安全橙截图背景资源。',
-  'assets/template-swiss.html': '静态 PPT HTML 外壳模板,包含 CSS、背景、翻页、导航、预览控制器和动效入口。',
+  'assets/template-swiss.html': '静态 PPT HTML 外壳模板,包含 CSS、背景、翻页、导航、预览控制器和 GSAP 动效入口。',
   'assets/unicorn/automations_remix_scene.json': '可选 shader 背景使用的 Unicorn Studio 本地场景文件。',
   'assets/unicorn/blue_donut_remix_scene.json': '媒体占位组件使用的 Unicorn Studio 本地 shader 场景文件,运行时会跟随主题 focus 色替换主色。',
   'assets/unicorn/goey_balls_remix_scene.json': '可选 shader 背景使用的 Unicorn Studio 本地场景文件。',
@@ -119,7 +118,7 @@ const descriptions = {
   'src/components/swiss/Timeline.jsx': '纵向时间线 + KPI 组件,对应 S02。',
   'src/components/swiss/index.jsx': 'Swiss 组件统一导出口,供 LAYOUT_OPTIONS 引用。',
   'src/components/swiss/primitives.jsx': 'Swiss 组件共享基础件,包含 slide 外壳、画布卡、页眉、图标和 KPI 行。',
-  'src/options.jsx': '选项注册表,集中登记主题色、字体组合、字号、间距、动效和页面版式,slide() 返回可组合的 slide model。',
+  'src/options.jsx': '选项注册表,集中登记主题色、字体组合、字号、间距和页面版式,slide() 返回可组合的 slide model。',
   'src/deckComposer.jsx': '目标 deck 编排器,把用户目标 JSON 计划映射为已登记布局组件组合。',
   'src/renderDeck.jsx': '核心渲染器,先构建 Deck ViewModel,再把 React slides 注入模板并替换 CSS 变量、注入预览控制器选项。',
   'src/view-model/context.jsx': 'Slide ViewModel 的 React Context,让 SlideShell 能给每页注入稳定 VM 标识。',
@@ -167,7 +166,7 @@ function renderAdr() {
 
 ## ADR-001: 最终产物保持为静态 HTML
 
-最终交付仍是 \`index.html\`、\`assets/motion.min.js\` 和图片资源。React 只作为生成层使用,不进入浏览器运行时。
+最终交付仍是 \`index.html\`、\`assets/vendor/gsap.min.js\` 和图片资源。React 只作为生成层使用,不进入浏览器运行时。
 
 ## ADR-002: 可变部分使用登记选项多选一
 
@@ -175,7 +174,7 @@ function renderAdr() {
 
 ## ADR-003: 模板负责浏览器运行时
 
-\`assets/template-swiss.html\` 负责 CSS 视觉系统、背景、翻页、导航、预览控制器和动效入口。React 组件只生成注入到 \`#deck\` 内的 slide markup。
+\`assets/template-swiss.html\` 负责 CSS 视觉系统、背景、翻页、导航、预览控制器和 GSAP 动效入口。React 组件只生成注入到 \`#deck\` 内的 slide markup。
 
 ## ADR-004: 输出目录是生成物
 
@@ -207,7 +206,7 @@ function renderAdr() {
 
 ## ADR-011: token 与基础组件按组合维度分类
 
-\`src/tokens/\` 存放主题、字体、字号、间距和动效选项。\`src/components/\` 下按组合职责分为 \`shell/\`、\`text/\`、\`media/\`、\`metrics/\`、\`charts/\`、\`timelines/\`、\`cards/\`、\`decorations/\`、\`diagrams/\`。
+\`src/tokens/\` 存放主题、字体、字号和间距选项。\`src/components/\` 下按组合职责分为 \`shell/\`、\`text/\`、\`media/\`、\`metrics/\`、\`charts/\`、\`timelines/\`、\`cards/\`、\`decorations/\`、\`diagrams/\`。
 
 ## ADR-012: demo 同时覆盖布局穷举和运行时切换
 

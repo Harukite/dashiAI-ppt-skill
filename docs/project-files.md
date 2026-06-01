@@ -97,8 +97,7 @@
 |   |   |-- goey_balls_remix_scene.json - 可选 shader 背景使用的 Unicorn Studio 本地场景文件。
 |   |   |-- moving_into_remix_scene.json - 第 7 页可选随机 shader 背景使用的 Unicorn Studio 本地场景文件。
 |   |   `-- tech_background_remix_scene.json - 可选 shader 背景使用的 Unicorn Studio 本地场景文件。
-|   |-- motion.min.js - 浏览器端 Motion One 动效 runtime,由渲染器复制到最终产物。
-|   `-- template-swiss.html - 静态 PPT HTML 外壳模板,包含 CSS、背景、翻页、导航、预览控制器和动效入口。
+|   `-- template-swiss.html - 静态 PPT HTML 外壳模板,包含 CSS、背景、翻页、导航、预览控制器和 GSAP 动效入口。
 |-- docs/
 |   |-- ADR.md - 架构决策记录,描述当前生成链路和组件化边界。
 |   |-- import-tokenization-notes.md - 项目文档。
@@ -231,7 +230,6 @@
 |   |   |-- font-weights.js - 组件生成层 token 选项。
 |   |   |-- fonts.js - 组件生成层 token 选项。
 |   |   |-- index.js - 组件生成层 token 选项。
-|   |   |-- motion.js - 组件生成层 token 选项。
 |   |   |-- spacing.js - 组件生成层 token 选项。
 |   |   |-- themes.js - 组件生成层 token 选项。
 |   |   `-- typography.js - 组件生成层 token 选项。
@@ -239,7 +237,7 @@
 |   |   |-- context.jsx - Slide ViewModel 的 React Context,让 SlideShell 能给每页注入稳定 VM 标识。
 |   |   `-- index.jsx - Deck ViewModel 构建层,把 deck model 解析为 slide view model、token 状态和可序列化运行时模型。
 |   |-- deckComposer.jsx - 目标 deck 编排器,把用户目标 JSON 计划映射为已登记布局组件组合。
-|   |-- options.jsx - 选项注册表,集中登记主题色、字体组合、字号、间距、动效和页面版式,slide() 返回可组合的 slide model。
+|   |-- options.jsx - 选项注册表,集中登记主题色、字体组合、字号、间距和页面版式,slide() 返回可组合的 slide model。
 |   `-- renderDeck.jsx - 核心渲染器,先构建 Deck ViewModel,再把 React slides 注入模板并替换 CSS 变量、注入预览控制器选项。
 |-- .gitignore - 忽略本地依赖、生成产物和系统临时文件。
 |-- AGENTS.md - 项目级 Agent 记忆,记录本仓库长期遵守的实现约束。
