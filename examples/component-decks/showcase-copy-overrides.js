@@ -1971,6 +1971,16 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       text: "边界不是上限，能力不是瓶颈",
       fontSizeToken: "--fs-h3",
     },
+    "text:xhs2_11:3": {
+      id: "text:xhs2_11:3",
+      slide: 40,
+      slideId: "xhs2_11-40",
+      slideKey: "xhs2_11",
+      layout: "XHS2-11",
+      html: "Owner<br>治理原则范围",
+      text: "Owner 治理原则范围",
+      colorToken: "--accent-bright",
+    },
     "text:xhs2_34:6": {
       id: "text:xhs2_34:6",
       slide: 43,
