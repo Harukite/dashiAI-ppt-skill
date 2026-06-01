@@ -1349,8 +1349,7 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       slideId: "rp02-14",
       slideKey: "rp02",
       layout: "RP02",
-      backgroundColorToken: "--inverse-fg",
-      colorToken: "--text-primary",
+      backgroundColorToken: "transparent",
     },
     "text:rp02:10": {
       id: "text:rp02:10",
@@ -1807,7 +1806,6 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       html: "能力边界页 · 边界<span>边界</span>证据<br>动作由 Owner 跟进<br>能力边界边界",
       text: "能力边界页 · 边界边界证据 动作由 Owner 跟进 能力边界边界",
       fontSizeToken: "--fs-h2",
-      colorToken: "--ink",
     },
     "text:xhs3_04:7": {
       id: "text:xhs3_04:7",
@@ -1961,6 +1959,16 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       text: "培训练习页 · 目标 培训练习负责人检查P6",
       fontSizeToken: null,
     },
+    "text:xhs3_23:6": {
+      id: "text:xhs3_23:6",
+      slide: 66,
+      slideId: "xhs3_23-66",
+      slideKey: "xhs3_23",
+      layout: "XHS3-23",
+      html: "WORKSHOP BRIEF",
+      text: "WORKSHOP BRIEF",
+      colorToken: "--ink",
+    },
     "text:xhs3_23:7": {
       id: "text:xhs3_23:7",
       slide: 66,
@@ -1972,6 +1980,16 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       fontSizeToken: null,
       colorToken: "--ink",
     },
+    "text:xhs3_23:8": {
+      id: "text:xhs3_23:8",
+      slide: 66,
+      slideId: "xhs3_23-66",
+      slideKey: "xhs3_23",
+      layout: "XHS3-23",
+      html: "FIELD SIGNAL",
+      text: "FIELD SIGNAL",
+      colorToken: "--ink",
+    },
     "text:xhs3_23:9": {
       id: "text:xhs3_23:9",
       slide: 66,
@@ -1981,6 +1999,16 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       html: "AGENDA",
       text: "AGENDA",
       fontSizeToken: "--fs-h2",
+      colorToken: "--ink",
+    },
+    "text:xhs3_23:10": {
+      id: "text:xhs3_23:10",
+      slide: 66,
+      slideId: "xhs3_23-66",
+      slideKey: "xhs3_23",
+      layout: "XHS3-23",
+      html: "SIGNAL",
+      text: "SIGNAL",
       colorToken: "--ink",
     },
     "text:xhs3_23:11": {
