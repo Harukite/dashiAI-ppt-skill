@@ -2901,7 +2901,7 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       html: "治理任务列表范围<br>Owner",
       text: "治理任务列表范围 Owner",
       fontSizeToken: "--fs-h3",
-      colorToken: "--inverse-bg",
+      colorToken: "--accent-on",
     },
     "text:xhs3_20:8": {
       id: "text:xhs3_20:8",
@@ -2911,7 +2911,7 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       layout: "XHS3-20",
       html: "治理任务列表 · 范围",
       text: "治理任务列表 · 范围",
-      colorToken: "--inverse-bg",
+      colorToken: "--accent-on",
     },
     "text:xhs3_20:9": {
       id: "text:xhs3_20:9",
@@ -2921,7 +2921,7 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       layout: "XHS3-20",
       html: "这页面向真实 PPT 场景，重点是对齐范围、确认排期，并形成可追踪结论。",
       text: "这页面向真实 PPT 场景，重点是对齐范围、确认排期，并形成可追踪结论。",
-      colorToken: "--inverse-bg",
+      colorToken: "--accent-on",
     },
     "text:xhs3_20:10": {
       id: "text:xhs3_20:10",
@@ -2942,9 +2942,9 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       layout: "XHS3-20",
       html: "对齐排期和Owner",
       text: "对齐排期和Owner",
-      colorToken: "--inverse-bg",
+      colorToken: "--accent-on",
       scope: "theme",
-      theme: "light",
+      theme: "dark",
     },
     "text:xhs3_20:12": {
       id: "text:xhs3_20:12",
@@ -2954,9 +2954,9 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       layout: "XHS3-20",
       html: "治理任务列表不做泛泛介绍，只承载会中判断、负责人和下一步动作。",
       text: "治理任务列表不做泛泛介绍，只承载会中判断、负责人和下一步动作。",
-      colorToken: "--inverse-bg",
+      colorToken: "--accent-on",
       scope: "theme",
-      theme: "light",
+      theme: "dark",
     },
     "text:xhs3_20:14": {
       id: "text:xhs3_20:14",
@@ -3291,6 +3291,8 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       layout: "ST1-05",
       html: "<span>用角色化方式解释每个品牌色承担的情绪和功能。</span><span>USER SCENE · ACTION</span>",
       text: "用角色化方式解释每个品牌色承担的情绪和功能。 USER SCENE · ACTION",
+      scope: "theme",
+      theme: "dark",
     },
     "text:xhs3_24:5": {
       id: "text:xhs3_24:5",
@@ -3390,6 +3392,16 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       text: "讨论结束后，风险和动作进入待办。",
       colorToken: "--report-paper",
     },
+    "element:style2_02:3": {
+      id: "element:style2_02:3",
+      slide: 85,
+      slideId: "style2_02-85",
+      slideKey: "style2_02",
+      layout: "ST2-02",
+      backgroundColorToken: "--inverse-bg",
+      scope: "theme",
+      theme: "dark",
+    },
     "text:style2_02:3": {
       id: "text:style2_02:3",
       slide: 85,
@@ -3399,6 +3411,7 @@ export const SHOWCASE_DEV_ADJUSTMENTS = {
       html: "片单统计调性<em>片单统计</em>P8<br>片单统计素材<span>负责人</span>调性<br><span>素材</span>",
       text: "片单统计调性片单统计P8 片单统计素材负责人调性 素材",
       fontSizeToken: "--fs-h2",
+      colorToken: "--text-on-color",
     },
     "text:style2_03:9": {
       id: "text:style2_03:9",
