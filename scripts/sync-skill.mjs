@@ -229,77 +229,55 @@ function syncDistributionFiles() {
 
 function renderReadme({ packs }) {
   const version = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
-  const themes = packs.map(theme => `- \`${theme.key}\`: ${theme.label} (${theme.pageCount} 页)`).join('\n');
+  const themes = packs.map(theme => `- ${theme.label} (${theme.pageCount} 页)`).join('\n');
   return `# Dashi PPT Skill
 
-根据用户目标组合已接入主题页面,生成可离线打开和导出的静态 HTML PPT。
+Dashi PPT Skill 是一个本地 PPT 生成助手。你给它一个汇报目标、受众、页数和内容重点,它会从已接入的视觉页面中组合出一份可离线打开、可翻页、可编辑和可导出的 HTML PPT。
 
 当前版本: \`${version}\`
 
-## 安装
+## 它适合做什么
 
-把整个 \`dashi-ppt-skill\` 目录放到 Codex/Agent 的 skills 目录,例如:
+- 行业研究、融资复盘、竞品分析和趋势报告
+- 项目汇报、方案展示、路演材料和内部培训
+- 需要快速形成结构完整、视觉统一、可继续编辑的演示文稿
 
-\`\`\`text
-~/.agents/skills/dashi-ppt-skill
-\`\`\`
+## 你会得到什么
 
-安装后重新打开会话,使用 \`dashi-ppt-skill\`。
+- 一份本地 HTML PPT,打开后即可横向翻页
+- 预览页里可以继续改文字、换图片/视频、调整页面属性
+- 可以导出 HTML、PDF 或 PPTX
+- 所有输出都保存在本机,适合继续归档、修改或交付
 
-## 环境要求
+## 怎么使用
 
-- Node.js 18+
-- npm
+安装后,在 Codex/Agent 里说明要使用 \`dashi-ppt-skill\`,然后直接描述你想做的 PPT:
 
-第一次生成时脚本会在 \`project/\` 内执行 \`npm install\`,依赖版本由 \`project/package-lock.json\` 锁定。
+- 主题和目标
+- 面向谁汇报
+- 希望几页
+- 想突出的结论或内容
+- 偏好的视觉风格
 
-## 版本检查
+如果你没有指定风格,Skill 会先列出可选风格让你选择,不会直接替你决定。
 
-Skill 每次完成用户请求后会运行:
+## 当前风格
 
-\`\`\`bash
-node scripts/check_latest_version.mjs
-\`\`\`
-
-脚本会对比本地版本和 GitHub 最新版本。有新版本时输出更新提醒;无新版本或网络不可用时不输出。
-
-## 生成方式
-
-准备一个 goal JSON,然后运行:
-
-\`\`\`bash
-./scripts/render_goal_deck.sh references/examples/portfolio.json output/portfolio/ppt/index.html
-\`\`\`
-
-输出文件是:
-
-\`\`\`text
-output/portfolio/ppt/index.html
-\`\`\`
-
-也可以在任意目录运行脚本;相对输入和输出路径会按调用时所在目录解析。
-
-## 可选风格
+当前包含 ${packs.length} 套已接入风格:
 
 ${themes}
 
-用户未指定风格时,先列出这些风格并询问。
+每套风格都有独立的页面结构和视觉语言,适合不同类型的报告和展示场景。
 
-## 页面选择
+## 安装说明
 
-- 每页使用 \`layout\` + \`props\`。
-- 每套主题前 5 页是封面候选,一个 deck 只选 1 页作为封面。
-- 正文页从第 6 页以后选择。
-- 页面属性契约在 \`project/layout-manifest.json\`。
-- 主题池说明在 \`references/layout-pool.md\`。
+把整个 \`dashi-ppt-skill\` 目录放到本机 Skill 目录中,然后重新打开会话即可使用。
 
-## 字体说明
+本机需要能运行 Node.js 18+ 和 npm。首次生成时依赖会自动准备。
 
-模板默认会请求 Google Fonts。没有网络时浏览器会使用系统字体回退,页面仍可打开;如果需要完全离线且字体视觉也固定,需要另行本地化字体资源。
+## 更新提醒
 
-## 不要提交的内容
-
-\`project/node_modules\`、\`output\`、日志、系统缓存和迁移过程素材不属于 Skill 源文件,已在 \`.gitignore\` 中排除。
+Skill 会在完成任务后静默检查是否有新版本。没有新版本时不会打扰你;有新版本时才会在回复末尾提醒更新。
 `;
 }
 

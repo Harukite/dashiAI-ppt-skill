@@ -1,79 +1,47 @@
 # Dashi PPT Skill
 
-一个用 React 组件生成静态 HTML 横向翻页 PPT 的本地 skill。当前只暴露已通过接入验收的 Claude Design 主题。
+Dashi PPT Skill 是一个本地 PPT 生成助手。你给它一个汇报目标、受众、页数和内容重点,它会从已接入的视觉页面中组合出一份可离线打开、可翻页、可编辑和可导出的 HTML PPT。
 
 当前版本: `0.1.1`
 
-最终产物是普通静态文件:
+## 它适合做什么
 
-```text
-output/my-deck/ppt/
-├── index.html
-├── assets/
-└── images/
-```
+- 行业研究、融资复盘、竞品分析和趋势报告
+- 项目汇报、方案展示、路演材料和内部培训
+- 需要快速形成结构完整、视觉统一、可继续编辑的演示文稿
 
-## 当前结构
+## 你会得到什么
 
-- `themePack`: 当前支持 `theme01`、`theme02`、`theme03`、`theme04`、`theme07`、`theme08`、`theme09`、`theme10`、`theme11`、`theme12`
-- 页面组件: `src/components/themes/theme*/`,页面 key 使用 `theme01_page001` 这类格式
-- 主题登记: `src/components/themes/generated-metadata.js`
-- 布局登记: `src/options.jsx`
-- HTML 外壳: `assets/template-swiss.html`
+- 一份本地 HTML PPT,打开后即可横向翻页
+- 预览页里可以继续改文字、换图片/视频、调整页面属性
+- 可以导出 HTML、PDF 或 PPTX
+- 所有输出都保存在本机,适合继续归档、修改或交付
 
-预览页保留文本编辑、页面属性控制、图片/视频 slot、组件原生元素动画、切换动画和导出功能。页面舞台固定 16:9 等比缩放,窗口多出的区域用黑色填充。
+## 怎么使用
 
-## 快速开始
+安装后,在 Codex/Agent 里说明要使用 `dashi-ppt-skill`,然后直接描述你想做的 PPT:
 
-```bash
-npm install
-npm run render:themes
-npm run validate:swiss -- output/theme-preview/ppt/index.html
-```
+- 主题和目标
+- 面向谁汇报
+- 希望几页
+- 想突出的结论或内容
+- 偏好的视觉风格
 
-刷新全部已登记布局总览:
+如果你没有指定风格,Skill 会先列出可选风格让你选择,不会直接替你决定。
 
-```bash
-npm run showcase:update
-```
+## 当前风格
 
-渲染主题切换调试页:
+当前包含 10 套已接入风格,覆盖轻拟态、霓虹、调研图谱、黑金实验、深蓝杂志、金色指数图表等方向。每套风格都有独立的页面结构和视觉语言,适合不同类型的报告和展示场景。
 
-```bash
-npm run render:themes
-```
+## 安装说明
 
-按 JSON 计划渲染:
+把整个 `dashi-ppt-skill` 目录放到本机 Skill 目录中,然后重新打开会话即可使用。
 
-```bash
-npm run render:goal -- examples/goal-decks/annual-review.json output/goal-demo/ppt/index.html
-```
+本机需要能运行 Node.js 18+ 和 npm。首次生成时依赖会自动准备。
 
-## 版本检查
+## 更新提醒
 
-安装版 Skill 每次完成用户请求后会运行:
-
-```bash
-node scripts/check_latest_version.mjs
-```
-
-脚本会对比本地版本和 GitHub 最新版本。有新版本时输出更新提醒;无新版本或网络不可用时不输出。
-
-## 示例 Deck
-
-| 文件 | 内容主题 | 说明 |
-|---|---|---|
-| `examples/component-decks/all-themes-showcase.jsx` | 主题调试总览 | 展示全部已验收主题页面 |
-| `examples/goal-decks/annual-review.json` | AI 融资年度复盘 | 由 `render:goal` 根据 layout + props 组合 |
-| `examples/goal-decks/portfolio.json` | AI 产品作品集 | 验证另一种内容组合 |
-
-## 验证方式
-
-```bash
-npm test
-npm run showcase:update
-npm run validate:goal-copy -- output/my-deck/goal.json output/my-deck/ppt/index.html
-```
+Skill 会在完成任务后静默检查是否有新版本。没有新版本时不会打扰你;有新版本时才会在回复末尾提醒更新。
 
 <!-- project-docs:start -->
 ## 项目文档

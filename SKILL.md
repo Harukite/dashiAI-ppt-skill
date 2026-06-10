@@ -29,6 +29,7 @@ node scripts/check_latest_version.mjs
 
 ## 使用规则
 
+- 运行生成器需要 Node.js 18+ 和 npm;首次生成时渲染脚本会在 Skill 内置 `project/` 目录安装依赖。
 - 开始阶段先确认用户想要的风格。用户没有明确指定时,先列出全部可选风格并询问,不要直接生成。
 - 当前可选风格:
   - `theme01`: 01-轻拟态质感
