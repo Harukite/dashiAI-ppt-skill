@@ -8,22 +8,19 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const DEFAULT_GOAL = path.join(ROOT, 'theme-import-goal.json');
 const THEMES_DIR = path.join(ROOT, 'src/components/themes');
 const OUTPUT_DIR = path.join(ROOT, 'output');
-const MIGRATION_ONLY_DIRS = new Set(['uploads', 'screens', 'screenshots', 'shots', 'scratch']);
+const MIGRATION_ONLY_DIRS = new Set(['uploads', 'screens', 'screenshots', 'shots', 'scratch', 'scraps']);
 
-const STRUCTURAL_BLOCKS = {
-  theme05: {
-    type: 'browser_global_iife',
-    reason: '页面组件大量使用 IIFE 和 window.Pulse* 全局注册,不是可直接迁移的 ES Module。',
-    request: '请改成每页独立 React JSX ES Module,导出 default component、default props 和 controls。',
-  },
-};
+const STRUCTURAL_BLOCKS = {};
 
 setupDomStubs();
 
 const goalPath = path.resolve(process.argv[2] || DEFAULT_GOAL);
 const goal = JSON.parse(fs.readFileSync(goalPath, 'utf8'));
+const replaceAllExistingThemes = goal.replaceAllExistingThemes !== false;
+const targetedThemeKeys = new Set(goal.themes.map(theme => theme.key));
+const existingMetadata = replaceAllExistingThemes ? { themes: [], pages: [] } : readExistingMetadata();
 fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-cleanGeneratedThemeDirs();
+cleanGeneratedThemeDirs(replaceAllExistingThemes, targetedThemeKeys);
 
 const report = {
   generatedAt: new Date().toISOString(),
@@ -37,6 +34,7 @@ const warnings = [];
 
 for (const theme of goal.themes) {
   const audit = inspectTheme(goal.sourceRoot, theme);
+  const themeDir = path.join(THEMES_DIR, theme.key);
   const structuralBlock = STRUCTURAL_BLOCKS[theme.key];
   if (!audit.entryExists) {
     audit.status = 'blocked_for_claude';
@@ -55,10 +53,11 @@ for (const theme of goal.themes) {
     continue;
   }
 
+  const backupDir = !replaceAllExistingThemes ? backupThemeDir(themeDir, theme.key) : null;
   try {
-    const themeDir = path.join(THEMES_DIR, theme.key);
     const copiedSourceDir = path.join(themeDir, 'source');
-    copyThemeSource(audit.sourceDir, copiedSourceDir);
+    copyThemeSource(audit.sourceDir, copiedSourceDir, theme.key);
+    if (theme.key === 'theme05') pruneTheme05Source(copiedSourceDir);
     if (theme.key === 'theme01') patchTheme01Source(copiedSourceDir);
     if (theme.key === 'theme12') patchTheme12Source(copiedSourceDir);
     generateRuntime(theme, audit.sourceDir, themeDir);
@@ -68,6 +67,7 @@ for (const theme of goal.themes) {
     const contractReview = evaluatePropsContract(pages);
     if (contractReview.blocking) {
       fs.rmSync(themeDir, { recursive: true, force: true });
+      restoreThemeDir(backupDir, themeDir);
       audit.status = 'blocked_for_claude';
       audit.blockReason = 'controls_contract_incomplete';
       audit.pageCount = pages.length;
@@ -94,8 +94,10 @@ for (const theme of goal.themes) {
       pageCount: pages.length,
     });
     integratedPages.push(...pages);
+    removeThemeBackup(backupDir);
   } catch (error) {
     fs.rmSync(path.join(THEMES_DIR, theme.key), { recursive: true, force: true });
+    restoreThemeDir(backupDir, path.join(THEMES_DIR, theme.key));
     audit.status = 'blocked_for_claude';
     audit.blockReason = 'project_import_failed';
     audit.conclusion = error?.message || String(error);
@@ -104,8 +106,9 @@ for (const theme of goal.themes) {
   report.themes.push(audit);
 }
 
-writeGeneratedMetadata(integratedThemes, integratedPages);
-writeClientRuntime(integratedThemes);
+const finalMetadata = mergeMetadata(existingMetadata, integratedThemes, integratedPages, replaceAllExistingThemes);
+writeGeneratedMetadata(finalMetadata.themes, finalMetadata.pages);
+writeClientRuntime(finalMetadata.themes);
 writeAuditReport(report);
 writeBlockedReport(blocked);
 writeWarningReport(warnings);
@@ -152,59 +155,102 @@ function inspectTheme(sourceRoot, theme) {
   };
 }
 
-function copyThemeSource(fromDir, toDir) {
+function copyThemeSource(fromDir, toDir, themeKey) {
   fs.rmSync(toDir, { recursive: true, force: true });
   for (const file of walk(fromDir)) {
     const rel = path.relative(fromDir, file);
-    if (shouldSkipSourceFile(rel)) continue;
+    if (shouldSkipSourceFile(rel, themeKey)) continue;
     const target = path.join(toDir, rel);
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.copyFileSync(file, target);
   }
 }
 
-function shouldSkipSourceFile(rel) {
+function pruneTheme05Source(sourceDir) {
+  const componentsDir = path.join(sourceDir, 'components');
+  if (!fs.existsSync(componentsDir)) return;
+  for (const name of fs.readdirSync(componentsDir)) {
+    if (name !== 'esm') fs.rmSync(path.join(componentsDir, name), { recursive: true, force: true });
+  }
+  for (const file of walk(path.join(componentsDir, 'esm')).filter(file => file.endsWith('.jsx'))) {
+    replaceInFile(file, text => {
+      let next = text;
+      if (/^const controls\b/m.test(next)) {
+        next = next.replace(/^export const controls = [^\n]+;\n/m, 'export { controls };\n');
+      }
+      if (/^const defaults\b/m.test(next)) {
+        next = next.replace(/^export const defaults = [^\n]+;\n/m, 'export { defaults };\n');
+      }
+      return next;
+    });
+  }
+}
+
+function shouldSkipSourceFile(rel, themeKey) {
   const parts = rel.split(path.sep);
+  if (parts.some(part => part.startsWith('.'))) return true;
   if (parts.some(part => MIGRATION_ONLY_DIRS.has(part.toLowerCase()))) return true;
   const base = path.basename(rel);
-  if (base === '.DS_Store' || base === 'audit-offenders.txt') return true;
+  if (base === 'audit-offenders.txt') return true;
   if (base.toLowerCase().endsWith('.identifier')) return true;
   if (/\.(md|html)$/i.test(base)) return true;
   if (['deck-stage.js', 'tweaks-panel.jsx', 'preview-loader.js', 'preview.jsx', 'DeckApp.jsx', 'Tweaks.jsx', 'ignDemo.jsx'].includes(base)) return true;
+  if (base === 'image-slot.js' && themeKey !== 'theme04') return true;
   if (base === 'app.jsx' || base === '_preview.jsx') return true;
   return false;
 }
 
 function patchTheme01Source(sourceDir) {
   const slidesDir = path.join(sourceDir, 'slides');
-  replaceInFile(path.join(slidesDir, 'index.jsx'), text => {
-    const removeLines = new Set([
-      "import Slide03bTrendGlass, { defaultProps as p3b, controls as c3b } from './Slide03bTrendGlass.jsx';",
-      "import SlideStaggerCards, { defaultProps as pScd, controls as cScd } from './SlideStaggerCards.jsx';",
-      "import SlideFlowCascade, { defaultProps as pFlc, controls as cFlc } from './SlideFlowCascade.jsx';",
-      "import SlideTriadOrbit, { defaultProps as pTri, controls as cTri } from './SlideTriadOrbit.jsx';",
-      "import SlideIsoBars, { defaultProps as pIso, controls as cIso } from './SlideIsoBars.jsx';",
-      "  SlideStaggerCards, SlideFlowCascade, SlideTriadOrbit,",
-      "  { id: 'trend-glass', label: '纵向趋势 · 立体', component: Slide03bTrendGlass, defaultProps: p3b, controls: c3b },",
-      "  { id: 'flow-chain', label: '价值传导链路', component: SlideFlowCascade, defaultProps: pFlc, controls: cFlc },",
-      "  { id: 'four-types', label: '四类机会 · 错落卡片', component: SlideStaggerCards, defaultProps: pScd, controls: cScd },",
-      "  { id: 'triad', label: '集中度三维度 · 三元环', component: SlideTriadOrbit, defaultProps: pTri, controls: cTri },",
-      "  { id: 'iso-bars', label: '等距柱状图 · 赛道合计', component: SlideIsoBars, defaultProps: pIso, controls: cIso },",
-    ]);
-    return text
-      .split('\n')
-      .filter(line => !removeLines.has(line))
-      .join('\n')
-      .replace('  Slide03bTrendGlass, Slide13Monthly, Slide14CaseBrief, Slide15Conclusion,', '  Slide13Monthly, Slide14CaseBrief, Slide15Conclusion,')
-      .replace('  SlideHeatmap, SlideGrowthBars, SlideHeroOverlay, SlideKpiDial, SlideEvilBars, SlideIsoBars,', '  SlideHeatmap, SlideGrowthBars, SlideHeroOverlay, SlideKpiDial, SlideEvilBars,');
-  });
-  [
+  const indexFile = path.join(slidesDir, 'index.jsx');
+  replaceInFile(indexFile, text => text
+    .replace(/import Slide03bTrendGlass[^\n]*\n/, '')
+    .replace(/import SlideStaggerCards[^\n]*\n/, '')
+    .replace(/import SlideFlowCascade[^\n]*\n/, '')
+    .replace(/import SlideTriadOrbit[^\n]*\n/, '')
+    .replace(/import SlideIsoBars[^\n]*\n/, '')
+    .replace('  Slide03bTrendGlass, Slide13Monthly, Slide14CaseBrief, Slide15Conclusion,\n', '  Slide13Monthly, Slide14CaseBrief, Slide15Conclusion,\n')
+    .replace('  SlideStaggerCards, SlideFlowCascade, SlideTriadOrbit,\n', '')
+    .replace('  SlideHeatmap, SlideGrowthBars, SlideHeroOverlay, SlideKpiDial, SlideEvilBars, SlideIsoBars,\n', '  SlideHeatmap, SlideGrowthBars, SlideHeroOverlay, SlideKpiDial, SlideEvilBars,\n')
+    .replace(/  \{ id: 'trend-glass'[^\n]*\n/, '')
+    .replace(/  \{ id: 'flow-chain'[^\n]*\n/, '')
+    .replace(/  \{ id: 'four-types'[^\n]*\n/, '')
+    .replace(/  \{ id: 'triad'[^\n]*\n/, '')
+    .replace(/  \{ id: 'iso-bars'[^\n]*\n/, ''));
+  for (const name of [
     'Slide03bTrendGlass.jsx',
     'SlideFlowCascade.jsx',
     'SlideStaggerCards.jsx',
     'SlideTriadOrbit.jsx',
     'SlideIsoBars.jsx',
-  ].forEach(file => fs.rmSync(path.join(slidesDir, file), { force: true }));
+  ]) {
+    fs.rmSync(path.join(slidesDir, name), { force: true });
+  }
+  replaceInFile(path.join(slidesDir, 'SlideKit.jsx'), text => {
+    if (text.includes('onPointerDown: stopSlotNavigation')) return text;
+    return text
+      .replace(
+        '  const hostProps = interactive ? {\n',
+        '  const stopSlotNavigation = (e) => { e.stopPropagation(); };\n  const hostProps = interactive ? {\n',
+      )
+      .replace(
+        "    onClick: (e) => { e.stopPropagation(); actions.pick(slot); },\n",
+        "    onPointerDown: stopSlotNavigation,\n    onMouseDown: stopSlotNavigation,\n    onClick: (e) => { e.stopPropagation(); actions.pick(slot); },\n    onDoubleClick: stopSlotNavigation,\n    onDragOver: (e) => { e.preventDefault(); e.stopPropagation(); setHover(true); },\n    onDragLeave: () => setHover(false),\n    onDrop: (e) => {\n      e.preventDefault();\n      e.stopPropagation();\n      setHover(false);\n      actions.drop && actions.drop(slot, e.dataTransfer.files && e.dataTransfer.files[0]);\n    },\n",
+      );
+  });
+  replaceInFile(path.join(slidesDir, 'SlideHeroOverlay.jsx'), text => text
+    .replace(
+      "style={{ position: 'absolute', inset: 0, background:\n            'linear-gradient(75deg",
+      "style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background:\n            'linear-gradient(75deg",
+    )
+    .replace(
+      "style={{ position: 'absolute', inset: 0, background:\n            'linear-gradient(0deg",
+      "style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background:\n            'linear-gradient(0deg",
+    ));
+  replaceInFile(path.join(slidesDir, 'SlideImageFeature.jsx'), text => text.replace(
+    "<div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg",
+    "<div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(90deg",
+  ));
   replaceInFile(path.join(slidesDir, 'SlideStickerWall.jsx'), text => text.replace(
     /\/\/ SlideStickerWall[^\n]*\n\/\/ design language from uploads\/[^\n]*\n\/\/ black\/white\/fluorescent tones[^\n]*\n/,
     '',
@@ -271,14 +317,22 @@ function generateRuntime(theme, sourceDir, themeDir) {
   let code;
   if (theme.key === 'theme01') {
     code = registryRuntime(theme, layoutPrefix, './source/slides/index.jsx', 'slides');
+  } else if (theme.key === 'theme05') {
+    code = theme05Runtime(theme, layoutPrefix, sourceDir);
   } else if (theme.key === 'theme03') {
     code = theme03Runtime(theme, layoutPrefix, sourceDir);
   } else if (theme.key === 'theme12') {
     code = registryRuntime(theme, layoutPrefix, './source/src/index.js', 'swSlides');
   } else if (theme.key === 'theme02') {
     code = theme02Runtime(theme, layoutPrefix, sourceDir);
+    code = code
+      .replace("emphasis: 'default'", "emphasis: 'ticket'")
+      .replace(
+        "default: 'default', options: [['default', '默认发光'], ['ticket', '炫光票卡']]",
+        "default: 'ticket', options: [['default', '默认发光'], ['ticket', '炫光票卡']]",
+      );
   } else if (theme.key === 'theme06') {
-    code = previewArrayRuntime(theme, layoutPrefix, sourceDir, 'slides/_preview.jsx', 'SLIDES');
+    code = theme06Runtime(theme, layoutPrefix, sourceDir);
   } else if (theme.key === 'theme11') {
     code = previewArrayRuntime(theme, layoutPrefix, sourceDir, 'ignDemo.jsx', 'PAGES');
   } else if (theme.key === 'theme04') {
@@ -286,7 +340,7 @@ function generateRuntime(theme, sourceDir, themeDir) {
   } else if (theme.key === 'theme10') {
     code = theme10Runtime(theme, layoutPrefix, sourceDir);
   } else if (theme.key === 'theme07') {
-    code = dataPageRuntime(theme, layoutPrefix, sourceDir);
+    code = dataPageRuntime(theme, layoutPrefix, sourceDir, { includeStaticCovers: true });
   } else if (theme.key === 'theme08') {
     code = pageFilesRuntime(theme, layoutPrefix, sourceDir);
   } else if (theme.key === 'theme09') {
@@ -299,6 +353,27 @@ function generateRuntime(theme, sourceDir, themeDir) {
 
 function registryRuntime(theme, layoutPrefix, importPath, exportName) {
   return `import { normalizeRuntimePages } from '../runtime-helpers.jsx';\nimport { ${exportName} as rawPages } from '${importPath}';\n\nexport const runtimePages = normalizeRuntimePages(rawPages, { themeKey: '${theme.key}', layoutPrefix: '${layoutPrefix}' });\n`;
+}
+
+function theme06Runtime(theme, layoutPrefix, sourceDir) {
+  const baseRuntime = previewArrayRuntime(theme, layoutPrefix, sourceDir, 'slides/_preview.jsx', 'SLIDES', { exportRuntime: false });
+  const staticCovers = extractStaticCovers(sourceDir, theme.entry, section => /\bcv\b/.test(section.className));
+  const staticCss = extractStaticCoverCss(sourceDir, theme.entry, css => /\bcv\b|--cv-/.test(css));
+  return `${baseRuntime}\n${staticHtmlRuntimeBlock(staticCovers, staticCss)}\n\nconst rawPages = [...staticPages, ...sourcePages];\n\nexport const runtimePages = normalizeRuntimePages(rawPages, { themeKey: '${theme.key}', layoutPrefix: '${layoutPrefix}' });\n`;
+}
+
+function theme05Runtime(theme, layoutPrefix, sourceDir) {
+  const appText = fs.readFileSync(path.join(sourceDir, 'components/pulse-app.jsx'), 'utf8');
+  const slides = [...appText.matchAll(/\{\s*id:\s*["']([^"']+)["'],\s*label:\s*["']([^"']+)["'],\s*Comp:\s*window\.([A-Za-z0-9_]+)\s*\}/g)]
+    .map(match => ({ id: match[1], label: match[2], component: match[3] }))
+    .filter(slide => fs.existsSync(path.join(sourceDir, 'components/esm', `${slide.component}.jsx`)));
+  const importLines = slides.map((slide, index) => `import * as M${index} from './source/components/esm/${slide.component}.jsx';`);
+  const items = slides.map((slide, index) => `  { id: '${slide.id}', label: ${JSON.stringify(slide.label)}, module: M${index} }`);
+  const css = [
+    fs.readFileSync(path.join(sourceDir, 'styles/pulse-deck.css'), 'utf8'),
+    fs.readFileSync(path.join(sourceDir, 'styles/exc-covers.css'), 'utf8'),
+  ].join('\n');
+  return `import React from 'react';\nimport { normalizeRuntimePages } from '../runtime-helpers.jsx';\n${importLines.join('\n')}\n\nconst THEME05_BASE_CSS = ${JSON.stringify(css)};\nconst modules = [\n${items.join(',\n')}\n];\n\nconst rawPages = modules.map(entry => ({\n  id: entry.id,\n  label: entry.label,\n  Component: withTheme05Base(entry.module.default),\n  controls: entry.module.controls || entry.module.default?.controls || [],\n  defaultProps: entry.module.defaults || entry.module.defaultProps || entry.module.default?.defaults || {},\n}));\n\nexport const runtimePages = normalizeRuntimePages(rawPages, { themeKey: '${theme.key}', layoutPrefix: '${layoutPrefix}' });\n\nfunction withTheme05Base(Component) {\n  return function Theme05Page(props) {\n    return React.createElement(\n      React.Fragment,\n      null,\n      React.createElement('style', null, THEME05_BASE_CSS),\n      React.createElement(Component, props),\n    );\n  };\n}\n`;
 }
 
 function theme03Runtime(theme, layoutPrefix, sourceDir) {
@@ -553,12 +628,16 @@ function theme03RemoveToggleButton() {
 `;
 }
 
-function previewArrayRuntime(theme, layoutPrefix, sourceDir, sourceFile, arrayName) {
+function previewArrayRuntime(theme, layoutPrefix, sourceDir, sourceFile, arrayName, options = {}) {
   const abs = path.join(sourceDir, sourceFile);
   const text = fs.readFileSync(abs, 'utf8');
   const arrayLiteral = extractArrayLiteral(text, arrayName);
   const importLines = extractAdjustedImports(text, path.dirname(sourceFile));
-  return `import { normalizeRuntimePages } from '../runtime-helpers.jsx';\n${importLines.join('\n')}\n\nconst rawPages = ${arrayLiteral};\n\nexport const runtimePages = normalizeRuntimePages(rawPages, { themeKey: '${theme.key}', layoutPrefix: '${layoutPrefix}' });\n`;
+  const pagesName = options.exportRuntime === false ? 'sourcePages' : 'rawPages';
+  const exportLine = options.exportRuntime === false
+    ? ''
+    : `\nexport const runtimePages = normalizeRuntimePages(rawPages, { themeKey: '${theme.key}', layoutPrefix: '${layoutPrefix}' });\n`;
+  return `import React from 'react';\nimport { normalizeRuntimePages } from '../runtime-helpers.jsx';\n${importLines.join('\n')}\n\nconst ${pagesName} = ${arrayLiteral};\n${exportLine}`;
 }
 
 function theme02Runtime(theme, layoutPrefix, sourceDir) {
@@ -610,20 +689,31 @@ function theme10BaseCss(sourceDir, entry) {
   return `@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap');\n.deck-theme,.deck-theme *{box-sizing:border-box;}\n${motion}\n${scoped.replace('  *{box-sizing:border-box;}', '')}`;
 }
 
-function dataPageRuntime(theme, layoutPrefix, sourceDir) {
+function dataPageRuntime(theme, layoutPrefix, sourceDir, options = {}) {
   const html = fs.readFileSync(path.join(sourceDir, theme.entry), 'utf8');
-  const matches = [...html.matchAll(/<section\b[^>]*data-screen-label=["']([^"']*)["'][\s\S]*?<div\b[^>]*data-page=["']([^"']+)["']/g)];
   const seen = new Map();
-  matches.forEach((match, index) => {
-    const dataPage = match[2];
+  const sections = extractHtmlSections(html);
+  sections.forEach((section, index) => {
+    const dataPage = firstAttr(section.innerHtml, 'data-page');
+    if (!dataPage || !section.label) return;
     if (!seen.has(dataPage)) {
-      seen.set(dataPage, { dataPage, label: match[1] || dataPage, index });
+      seen.set(dataPage, { dataPage, label: section.label || dataPage, index });
     }
   });
   const pages = [...seen.values()].filter(page => fs.existsSync(path.join(sourceDir, 'src/pages', `${page.dataPage}.jsx`)));
   const imports = pages.map((page, index) => `import * as M${index} from './source/src/pages/${page.dataPage}.jsx';`);
   const items = pages.map((page, index) => `  { id: '${slug(page.dataPage)}', label: ${JSON.stringify(page.label)}, module: M${index} }`);
-  return `import { normalizeRuntimePages } from '../runtime-helpers.jsx';\n${imports.join('\n')}\n\nconst modules = [\n${items.join(',\n')}\n];\n\nconst rawPages = modules.map(entry => ({\n  id: entry.id,\n  label: entry.label,\n  Component: entry.module.default,\n  controls: entry.module.controls || entry.module.default?.controls || [],\n  defaultProps: entry.module.defaultProps || entry.module.defaults || entry.module.default?.defaultProps || entry.module.default?.defaults || {},\n}));\n\nexport const runtimePages = normalizeRuntimePages(rawPages, { themeKey: '${theme.key}', layoutPrefix: '${layoutPrefix}' });\n`;
+  const staticCovers = options.includeStaticCovers
+    ? extractStaticCovers(sourceDir, theme.entry, section => Boolean(section.label) && !/data-page=/.test(section.html))
+    : [];
+  const staticCss = staticCovers.length
+    ? extractStaticCoverCss(sourceDir, theme.entry, css => /\.cvpack|cover-slide/.test(css))
+    : '';
+  return `import React from 'react';\nimport { normalizeRuntimePages } from '../runtime-helpers.jsx';\n${imports.join('\n')}\n\nconst modules = [\n${items.join(',\n')}\n];\n\nconst dynamicPages = modules.map(entry => ({\n  id: entry.id,\n  label: entry.label,\n  Component: entry.module.default,\n  controls: entry.module.controls || entry.module.default?.controls || [],\n  defaultProps: entry.module.defaultProps || entry.module.defaults || entry.module.default?.defaultProps || entry.module.default?.defaults || {},\n}));\n\n${staticHtmlRuntimeBlock(staticCovers, staticCss)}\n\nconst rawPages = [...staticPages, ...dynamicPages];\n\nexport const runtimePages = normalizeRuntimePages(rawPages, { themeKey: '${theme.key}', layoutPrefix: '${layoutPrefix}' });\n`;
+}
+
+function staticHtmlRuntimeBlock(staticCovers, css) {
+  return `const STATIC_HTML_CSS = ${JSON.stringify(css)};\nconst staticCoverData = ${JSON.stringify(staticCovers, null, 2)};\n\nconst staticPages = staticCoverData.map(entry => ({\n  id: entry.id,\n  label: entry.label,\n  staticHtml: true,\n  Component: makeStaticHtmlComponent(entry),\n}));\n\nfunction makeStaticHtmlComponent(entry) {\n  return function StaticHtmlPage() {\n    return React.createElement(\n      React.Fragment,\n      null,\n      STATIC_HTML_CSS ? React.createElement('style', null, STATIC_HTML_CSS) : null,\n      React.createElement('div', {\n        className: ['imported-static-cover', entry.className].filter(Boolean).join(' '),\n        style: { position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'hidden' },\n        dangerouslySetInnerHTML: { __html: entry.innerHtml },\n      }),\n    );\n  };\n}`;
 }
 
 function pageFilesRuntime(theme, layoutPrefix, sourceDir) {
@@ -770,6 +860,58 @@ function extractStringArrayAfter(text, name) {
   return [...arrayLiteral.matchAll(/['"]([^'"]+\.jsx)['"]/g)].map(match => match[1]);
 }
 
+function extractStaticCovers(sourceDir, entry, predicate) {
+  const html = fs.readFileSync(path.join(sourceDir, entry), 'utf8');
+  return extractHtmlSections(html)
+    .filter(predicate)
+    .map((section, index) => ({
+      id: `static-cover-${String(index + 1).padStart(2, '0')}`,
+      label: section.label || `静态封面 ${index + 1}`,
+      className: section.className,
+      innerHtml: section.innerHtml,
+    }));
+}
+
+function extractStaticCoverCss(sourceDir, entry, predicate) {
+  const html = fs.readFileSync(path.join(sourceDir, entry), 'utf8');
+  const imports = extractStylesheetImports(html);
+  const css = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)]
+    .map(match => match[1])
+    .filter(predicate)
+    .join('\n')
+    .replaceAll(/deck-stage\s*>\s*section/g, '.imported-static-cover');
+  const base = '.imported-static-cover{box-sizing:border-box}.imported-static-cover *{box-sizing:border-box}';
+  return [...imports, base, css].join('\n');
+}
+
+function extractStylesheetImports(html) {
+  return [...html.matchAll(/<link\b[^>]*>/gi)]
+    .map(match => match[0])
+    .filter(tag => /rel=["']stylesheet["']/i.test(tag))
+    .map(tag => firstAttr(tag, 'href'))
+    .filter(Boolean)
+    .map(href => `@import url(${JSON.stringify(href)});`);
+}
+
+function extractHtmlSections(html) {
+  return [...html.matchAll(/<section\b([^>]*)>([\s\S]*?)<\/section>/gi)].map(match => {
+    const attrs = match[1] || '';
+    const html = match[0];
+    return {
+      attrs,
+      html,
+      innerHtml: match[2] || '',
+      className: firstAttr(attrs, 'class') || '',
+      label: firstAttr(attrs, 'data-screen-label') || firstAttr(attrs, 'data-label') || '',
+    };
+  });
+}
+
+function firstAttr(text, name) {
+  const match = new RegExp(`${name}=["']([^"']*)["']`, 'i').exec(text);
+  return match?.[1] || '';
+}
+
 function serializePages(runtimePages, theme) {
   return runtimePages.map(page => ({
     key: page.key,
@@ -779,6 +921,7 @@ function serializePages(runtimePages, theme) {
     slot: page.slot,
     label: page.label,
     bgClass: page.bgClass || '',
+    staticHtml: page.staticHtml || undefined,
     controls: serializeControls(page.controls || []),
     defaultProps: serializeValue(page.defaultProps || {}) || {},
   }));
@@ -825,8 +968,9 @@ function controlOptions(control) {
 }
 
 function evaluatePropsContract(pages) {
-  const missingTextProps = pages.filter(page => textWeight(page.defaultProps) < 20);
-  const missingControls = pages.filter(page => !(page.controls || []).length);
+  const editablePages = pages.filter(page => !page.staticHtml);
+  const missingTextProps = editablePages.filter(page => textWeight(page.defaultProps) < 20);
+  const missingControls = editablePages.filter(page => !(page.controls || []).length);
   const blocking = [];
   const warnings = [];
   if (missingTextProps.length) {
@@ -864,6 +1008,44 @@ function writeGeneratedMetadata(themes, pages) {
   );
 }
 
+function readExistingMetadata() {
+  const file = path.join(THEMES_DIR, 'generated-metadata.js');
+  if (!fs.existsSync(file)) return { themes: [], pages: [] };
+  const text = fs.readFileSync(file, 'utf8');
+  return {
+    themes: parseExportedJson(text, 'GENERATED_THEME_PACKS'),
+    pages: parseExportedJson(text, 'GENERATED_THEME_PAGES'),
+  };
+}
+
+function parseExportedJson(text, name) {
+  const match = text.match(new RegExp(`export const ${name} = ([\\s\\S]*?);\\n`));
+  return match ? JSON.parse(match[1]) : [];
+}
+
+function mergeMetadata(existing, themes, pages, replaceAll) {
+  if (replaceAll) return { themes, pages };
+  const changed = new Set(themes.map(theme => theme.key));
+  const mergedThemes = [
+    ...existing.themes.filter(theme => !changed.has(theme.key)),
+    ...themes,
+  ].sort(compareThemeKeys);
+  const mergedPages = mergedThemes.flatMap(theme => {
+    const source = changed.has(theme.key) ? pages : existing.pages;
+    return source
+      .filter(page => page.themeKey === theme.key)
+      .sort((a, b) => (a.pageNumber || 0) - (b.pageNumber || 0));
+  });
+  return { themes: mergedThemes, pages: mergedPages };
+}
+
+function compareThemeKeys(a, b) {
+  const left = Number(String(a.key || '').replace(/\D/g, ''));
+  const right = Number(String(b.key || '').replace(/\D/g, ''));
+  if (Number.isFinite(left) && Number.isFinite(right) && left !== right) return left - right;
+  return String(a.key).localeCompare(String(b.key));
+}
+
 function writeClientRuntime(themes) {
   const imports = themes
     .map(theme => `import { runtimePages as ${theme.key}Pages } from './${theme.key}/runtime.jsx';`)
@@ -872,9 +1054,11 @@ function writeClientRuntime(themes) {
   fs.writeFileSync(path.join(THEMES_DIR, 'client-runtime.jsx'), `import React from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
+import { ImageSlotActions as theme01ImageSlotActions } from './theme01/source/slides/SlideKit.jsx';
 ${imports}
 
 const mountedRoots = new WeakMap();
+const rootMediaApis = new WeakMap();
 const runtimePages = [
 ${spreads}
 ];
@@ -897,20 +1081,238 @@ function getRootApi(root) {
   return api;
 }
 
+function toArray(value) {
+  return Array.isArray(value) ? [...value] : [];
+}
+
+function stripRuntimeProps(props) {
+  const next = {};
+  for (const [key, value] of Object.entries(props || {})) {
+    if (typeof value !== 'function') next[key] = value;
+  }
+  return next;
+}
+
+function readImageFile(file) {
+  return new Promise(resolve => {
+    if (!file || !file.type?.startsWith?.('image/')) {
+      resolve(null);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const src = reader.result;
+      const img = new Image();
+      img.onload = () => resolve({ src, ratio: img.naturalWidth / img.naturalHeight });
+      img.onerror = () => resolve({ src, ratio: null });
+      img.src = src;
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
+function createMediaApi(slide, baseProps) {
+  function updateList(key, index, value) {
+    const nextList = toArray(baseProps[key]);
+    nextList[index] = value || null;
+    const nextProps = stripRuntimeProps({ ...baseProps, [key]: nextList });
+    window.__deckViewModel?.setProps?.(slide.dataset.vmSlideId, nextProps);
+    renderImportedThemeSlide(slide, nextProps);
+    window.__initEditableText?.(slide);
+    window.__syncActiveEffects?.(slide);
+  }
+
+  async function acceptFile(key, index, file) {
+    const data = await readImageFile(file);
+    if (data?.src) updateList(key, index, data.src);
+  }
+
+  function pick(key, index) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.style.display = 'none';
+    input.addEventListener('change', () => {
+      acceptFile(key, index, input.files && input.files[0]).finally(() => input.remove());
+    }, { once: true });
+    document.body.appendChild(input);
+    input.click();
+  }
+
+  return {
+    get: (key, index) => toArray(baseProps[key])[index] || null,
+    set: updateList,
+    acceptFile,
+    pick,
+  };
+}
+
+function HostImageSlot({ mediaApi, index, options = {} }) {
+  const [over, setOver] = React.useState(false);
+  const value = mediaApi.get('images', index);
+  const aspectRatio = options.ratioAR || (options.ratio ? String(options.ratio) : undefined);
+  const drop = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setOver(false);
+    mediaApi.acceptFile('images', index, event.dataTransfer.files && event.dataTransfer.files[0]);
+  };
+
+  return (
+    <div
+      data-dashi-host-image-slot="true"
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        minHeight: 0,
+        aspectRatio,
+        overflow: 'hidden',
+        cursor: 'pointer',
+        background: value
+          ? 'transparent'
+          : 'repeating-linear-gradient(135deg, rgba(0,0,0,.08) 0 12px, rgba(0,0,0,.03) 12px 24px)',
+        outline: over ? '3px solid rgba(143,227,39,.85)' : '1px dashed rgba(0,0,0,.25)',
+        outlineOffset: over ? -3 : -1,
+      }}
+      onClick={(event) => {
+        event.stopPropagation();
+        mediaApi.pick('images', index);
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        setOver(true);
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={drop}
+    >
+      {value ? (
+        <>
+          <img src={value} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <button
+            type="button"
+            aria-label="Clear image"
+            onClick={(event) => {
+              event.stopPropagation();
+              mediaApi.set('images', index, null);
+            }}
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              width: 34,
+              height: 34,
+              border: 0,
+              borderRadius: '50%',
+              background: 'rgba(0,0,0,.55)',
+              color: '#fff',
+              cursor: 'pointer',
+              fontSize: 20,
+              lineHeight: '34px',
+            }}
+          >×</button>
+        </>
+      ) : (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'grid',
+          placeItems: 'center',
+          fontFamily: 'monospace',
+          fontSize: 22,
+          letterSpacing: '.08em',
+          color: 'rgba(0,0,0,.48)',
+          textAlign: 'center',
+          padding: 18,
+        }}>
+          DROP IMAGE
+        </div>
+      )}
+    </div>
+  );
+}
+
+function withMediaHostProps(slide, baseProps) {
+  const mediaApi = createMediaApi(slide, baseProps);
+  return {
+    ...baseProps,
+    images: toArray(baseProps.images),
+    media: toArray(baseProps.media),
+    onSlotActivate: index => mediaApi.pick('images', index),
+    onSlotClear: index => mediaApi.set('images', index, null),
+    onActivate: index => mediaApi.pick('images', index),
+    onClear: index => mediaApi.set('images', index, null),
+    onMediaChange: (index, src) => mediaApi.set('media', index, src),
+    renderSlot: (index, options) => (
+      <HostImageSlot mediaApi={mediaApi} index={index} options={options} />
+    ),
+    __mediaApi: mediaApi,
+  };
+}
+
+function withImageProviders(element, mediaApi) {
+  return React.createElement(theme01ImageSlotActions.Provider, {
+    value: {
+      pick: index => mediaApi.pick('images', index),
+      clear: index => mediaApi.set('images', index, null),
+      drop: (index, file) => mediaApi.acceptFile('images', index, file),
+    },
+  }, element);
+}
+
+function getGxnSlotIndex(root, slot) {
+  const slots = [...root.querySelectorAll('.gxn-slot')];
+  const index = slots.indexOf(slot);
+  return index < 0 ? 0 : index;
+}
+
+function bindRenderedImageSlots(root, mediaApi) {
+  rootMediaApis.set(root, mediaApi);
+  if (root.dataset.mediaSlotsBound === 'true') return;
+  root.dataset.mediaSlotsBound = 'true';
+
+  root.addEventListener('dragover', event => {
+    const slot = event.target.closest?.('.gxn-slot');
+    if (!slot || !root.contains(slot)) return;
+    event.preventDefault();
+    slot.classList.add('is-dashi-drag-over');
+  });
+
+  root.addEventListener('dragleave', event => {
+    const slot = event.target.closest?.('.gxn-slot');
+    if (slot && root.contains(slot)) slot.classList.remove('is-dashi-drag-over');
+  });
+
+  root.addEventListener('drop', event => {
+    const slot = event.target.closest?.('.gxn-slot');
+    if (!slot || !root.contains(slot)) return;
+    event.preventDefault();
+    slot.classList.remove('is-dashi-drag-over');
+    const file = event.dataTransfer?.files?.[0];
+    rootMediaApis.get(root)?.acceptFile('images', getGxnSlotIndex(root, slot), file);
+  });
+}
+
 function renderImportedThemeSlide(slide, values = {}) {
   const root = slide?.querySelector?.('.imported-theme-root');
   if (!root) return false;
   const entry = entriesByKey.get(root.dataset.pageKey);
   if (!entry?.Component) return false;
   const defaults = readJson(root.dataset.propDefaults, {});
-  const componentProps = {
+  const baseProps = {
     ...(entry.defaultProps || {}),
     ...defaults,
     ...(values || {}),
   };
+  const componentProps = withMediaHostProps(slide, stripRuntimeProps(baseProps));
   flushSync(() => {
-    getRootApi(root).render(React.createElement(entry.Component, componentProps));
+    getRootApi(root).render(withImageProviders(
+      React.createElement(entry.Component, componentProps),
+      componentProps.__mediaApi,
+    ));
   });
+  bindRenderedImageSlots(root, componentProps.__mediaApi);
   root.dataset.importedThemeRuntime = 'true';
   return true;
 }
@@ -999,12 +1401,33 @@ function blockedItem(theme, audit, type, problem, request) {
   };
 }
 
-function cleanGeneratedThemeDirs() {
+function cleanGeneratedThemeDirs(replaceAll, themeKeys) {
   fs.mkdirSync(THEMES_DIR, { recursive: true });
-  for (const name of fs.readdirSync(THEMES_DIR)) {
-    if (/^theme\d\d$/.test(name)) fs.rmSync(path.join(THEMES_DIR, name), { recursive: true, force: true });
+  if (replaceAll) {
+    for (const name of fs.readdirSync(THEMES_DIR)) {
+      if (/^theme\d\d$/.test(name)) fs.rmSync(path.join(THEMES_DIR, name), { recursive: true, force: true });
+    }
+    fs.rmSync(path.join(THEMES_DIR, 'generated-metadata.js'), { force: true });
   }
-  fs.rmSync(path.join(THEMES_DIR, 'generated-metadata.js'), { force: true });
+}
+
+function backupThemeDir(themeDir, themeKey) {
+  if (!fs.existsSync(themeDir)) return null;
+  const backupDir = path.join(OUTPUT_DIR, `.theme-backup-${themeKey}-${process.pid}`);
+  fs.rmSync(backupDir, { recursive: true, force: true });
+  fs.cpSync(themeDir, backupDir, { recursive: true });
+  return backupDir;
+}
+
+function restoreThemeDir(backupDir, themeDir) {
+  if (!backupDir || !fs.existsSync(backupDir)) return;
+  fs.rmSync(themeDir, { recursive: true, force: true });
+  fs.cpSync(backupDir, themeDir, { recursive: true });
+  removeThemeBackup(backupDir);
+}
+
+function removeThemeBackup(backupDir) {
+  if (backupDir) fs.rmSync(backupDir, { recursive: true, force: true });
 }
 
 function setupDomStubs() {

@@ -1,0 +1,14 @@
+{
+  "sourceRoot": "/Volumes/大师的AI小灶 共享盘/A115 - PPT Skill 共享文件/定稿版本 html",
+  "replaceAllExistingThemes": false,
+  "themes": [
+    {
+      "key": "theme05",
+      "name": "05-PULSE 色谱图表",
+      "source": "05 - 汤帅（更新）",
+      "entry": "index.html",
+      "mode": "new",
+      "expectedPages": 0
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "sourceRoot": "/Volumes/大师的AI小灶 共享盘/A115 - PPT Skill 共享文件/定稿版本 html",
+  "replaceAllExistingThemes": false,
+  "themes": [
+    {
+      "key": "theme06",
+      "name": "06-深色数据图谱",
+      "source": "06 - 汤帅",
+      "entry": "index.html",
+      "mode": "new",
+      "expectedPages": 0
+    },
+    {
+      "key": "theme07",
+      "name": "07-冷白调研图谱",
+      "source": "07 - 汤帅",
+      "entry": "index.html",
+      "mode": "replace",
+      "expectedPages": 0
+    },
+    {
+      "key": "theme08",
+      "name": "08-黑金实验质感",
+      "source": "08 - 汤帅",
+      "entry": "deck.html",
+      "mode": "replace",
+      "expectedPages": 0
+    }
+  ]
+}

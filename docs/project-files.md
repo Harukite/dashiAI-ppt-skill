@@ -221,94 +221,93 @@
 |   |   |   |   |   |       |-- 10.png - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |   |   |       |-- 11.png - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |   |   |       `-- 12.png - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |-- src/
-|   |   |   |   |   |   |-- slides/
-|   |   |   |   |   |   |   |-- AarrrSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- AgendaSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- BcgSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- BetMatrixSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- BubbleSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CanvasSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CaseCompareSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CaseSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ChainSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ChipsSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ChronicleSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ColophonSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ComputeSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ConcentrationSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CoreweaveSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CoverBandSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CoverGridSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CoverImageSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CoverPosterSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CoverSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CumulativeSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- DoubleDiamondSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- EmbodiedSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- EscalationSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- FiveForcesSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- FlywheelSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- GallerySlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- GanttSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- GaugeSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- GeoSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- HorizonSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- HypeCycleSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- JourneySlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- LayerTableSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- MabaSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- MarimekkoSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- MethodSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- MoatSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- MonthlySlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- MosaicSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- OutlookSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ParetoSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- PeakSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- PestSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- PyramidSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- QuadrantSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- QuoteSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RadarSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RankSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RegisterSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RfmSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RiskChainSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RiskSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RoseSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RoundSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SankeySlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ScorecardSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SectionSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SectorSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ShareSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ShiftSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SpotlightSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- StatementHeroSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- StatSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SupplyChainSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SwotSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- TableSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- TakeawaySlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- TimelineSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- TornadoSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- TreemapSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- TrendSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ValuationJumpSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ValuationSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- VerticalSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- WaffleSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   `-- WaterfallSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |-- Decor.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |-- icons.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |-- ImageSlot.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |-- preset3d.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |-- presetBase.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |-- registry.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |-- theme.css - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   `-- theme.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   `-- image-slot.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   `-- src/
+|   |   |   |   |       |-- slides/
+|   |   |   |   |       |   |-- AarrrSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- AgendaSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- BcgSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- BetMatrixSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- BubbleSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CanvasSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CaseCompareSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CaseSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ChainSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ChipsSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ChronicleSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ColophonSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ComputeSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ConcentrationSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoreweaveSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoverBandSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoverGridSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoverImageSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoverPosterSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoverSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CumulativeSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- DoubleDiamondSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- EmbodiedSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- EscalationSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- FiveForcesSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- FlywheelSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- GallerySlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- GanttSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- GaugeSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- GeoSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- HorizonSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- HypeCycleSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- JourneySlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- LayerTableSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- MabaSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- MarimekkoSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- MethodSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- MoatSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- MonthlySlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- MosaicSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- OutlookSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ParetoSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- PeakSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- PestSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- PyramidSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- QuadrantSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- QuoteSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RadarSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RankSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RegisterSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RfmSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RiskChainSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RiskSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RoseSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RoundSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SankeySlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ScorecardSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SectionSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SectorSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ShareSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ShiftSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SpotlightSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- StatementHeroSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- StatSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SupplyChainSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SwotSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- TableSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- TakeawaySlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- TimelineSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- TornadoSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- TreemapSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- TrendSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ValuationJumpSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ValuationSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- VerticalSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- WaffleSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   `-- WaterfallSlide.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- Decor.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- icons.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- ImageSlot.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- preset3d.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- presetBase.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- registry.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- theme.css - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       `-- theme.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |   |-- metadata.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |   `-- runtime.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |-- theme04/
@@ -394,184 +393,452 @@
 |   |   |   |   |   `-- image-slot.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |   |-- metadata.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |   `-- runtime.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |-- theme05/
+|   |   |   |   |-- source/
+|   |   |   |   |   |-- components/
+|   |   |   |   |   |   `-- esm/
+|   |   |   |   |   |       |-- index.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseAtlas.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseBeacon.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseBenchmark.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseBigNumber.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseBreakdown.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseBubble.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseCapacity.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseCases.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseCatalog.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseCeiling.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseChain.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseChapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseChapter03.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseChapter04.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseChapter05.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseColophon.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseComposite.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseCover.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseCumulative.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseCurve.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseDelta.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseDiagram.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseDominance.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseDossier.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseEmbed.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseEndcap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseEra.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseExCover1.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseExCover2.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseExCover3.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseExCover4.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseFlow.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseFlux.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseFoundry.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseFunnel.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseGate.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseGateway.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseGrid.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseHeatmap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseHero.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseHorizon.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseImageFrame.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseIndex.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseLadder.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseLede.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseLedger.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseLocale.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseLoop.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseMatrix.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseMekko.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseMeter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseMix.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseMonolith.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseMosaic.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseNexus.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseOrbit.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseOutlook.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulsePath.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulsePeak.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulsePeakTrough.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulsePlate.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseProcess.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseProfile.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseQuadrant.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseQuote.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseRadar.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseRank.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseRegion.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseRegister.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseResource.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseRisk.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseScene.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseScorecard.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseSegment.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseShare.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseShield.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseShowcase.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseSignal.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseSlate.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseSlope.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseSnapshot.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseSource.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseSpec.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseSplit.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseSpotlight.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseSpread.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseSqueeze.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseStack.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseStacked.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseStatement.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseTrend.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseTriad.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseVerdict.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       |-- PulseVersus.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |       `-- PulseWaterfall.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   `-- styles/
+|   |   |   |   |       |-- exc-covers.css - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       `-- pulse-deck.css - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |-- metadata.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   `-- runtime.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |-- theme06/
+|   |   |   |   |-- source/
+|   |   |   |   |   `-- slides/
+|   |   |   |   |       |-- _single.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- covertheme.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- kit.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideAlliance.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideBigNumber.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideBranch.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideCases.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideCaseStudy.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideChapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideContents.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideConvert.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideCover.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideCoverA.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideCoverB.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideCoverC.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideCoverD.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideCumulative.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideDealMap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideDealStruct.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideDonut.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideFlow.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideFunnel.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideGallery.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideGeoCluster.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideHeat.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideMatrix.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideMeter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideMethod.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideOutlook.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlidePeakMedia.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlidePeakTrough.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideQuadrant.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideQuarter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideQuote.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideRadar.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideRanking.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideRecap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideResource.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideRisk.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideRoadmap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideRounds.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideSegment.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideSizeSplit.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideSpotlight.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideStatement.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideStrategy.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideSummary.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideTimeline.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideTreemap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideTrend.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- SlideValueChain.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       `-- SlideWaterfall.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |-- metadata.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   `-- runtime.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |-- theme07/
 |   |   |   |   |-- source/
-|   |   |   |   |   |-- covers/
-|   |   |   |   |   |   `-- image-slot.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |-- src/
-|   |   |   |   |   |   |-- pages/
-|   |   |   |   |   |   |   |-- AboutLabPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- AcceleratePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ActiveCapitalPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- AlignmentPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- AlliancePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- AnthropicCasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- AppendixChapterPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- AutonomyPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- AvgTicketPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- BostonPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CapitalChapterPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ChainPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ChapterPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ChipPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ClosingPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ColdStartPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CompliancePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ComputePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ConcentrationPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ContentGenPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ContentsPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CooldownPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CoreWeaveCasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CoverPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- CrossPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- DealMapPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- DealSizePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- DealStructurePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- DevToolsPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- EarlyStagePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- EcosystemPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- EducationPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- FigureCasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- FinancePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ForwardPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- GeoCenterPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- GleanCasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- HealthcarePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- InvestorMixPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- InvestorPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- KnowledgePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- LegalPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- LowCodePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- MarginPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- MatrixPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- MethodPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- MoatPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- MonthlyPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- NewYorkPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- OpenAICasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- OpenSourcePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- OutlookPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- PeakPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- PeakTroughPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- QuotePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RankingPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RegionClusterPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RegionsPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RepricingPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ResourcePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ResourceTriadPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RevenuePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RiskChapterPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RiskPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- RoboticsPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SafetyPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SalesPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- ScaleCasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SeattlePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SourcesPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SSICasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- StrategyInfraPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- StrategyVerticalPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SummaryPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SupportPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- SyndicatePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- TrendPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   |-- WaterfallPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |   `-- XaiCasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   |-- theme.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |   `-- viz.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   |-- .image-slots.state.json - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |   `-- image-slot.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |-- _delivery/
+|   |   |   |   |   |   `-- src/
+|   |   |   |   |   |       `-- pages/
+|   |   |   |   |   |           |-- CoverBizPlanPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |           |-- CoverLeanPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |           |-- CoverRetailTrainingPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |           |-- CoverRetailTrendPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |           |-- CoverSupplyChainPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |           |-- CoverSupplyStrategyPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |           `-- CoverTechLaunchPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   `-- src/
+|   |   |   |   |       |-- pages/
+|   |   |   |   |       |   |-- AboutLabPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- AcceleratePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ActiveCapitalPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- AlignmentPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- AlliancePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- AnthropicCasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- AppendixChapterPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- AutonomyPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- AvgTicketPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- BostonPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CapitalChapterPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ChainPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ChapterPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ChipPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ClosingPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ColdStartPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CompliancePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ComputePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ConcentrationPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ContentGenPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ContentsPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CooldownPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoreWeaveCasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoverBizPlanPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoverLeanPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoverPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoverRetailTrainingPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoverRetailTrendPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoverSupplyChainPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoverSupplyStrategyPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CoverTechLaunchPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- CrossPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- DealMapPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- DealSizePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- DealStructurePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- DevToolsPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- EarlyStagePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- EcosystemPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- EducationPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- FigureCasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- FinancePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ForwardPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- GeoCenterPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- GleanCasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- HealthcarePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- InvestorMixPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- InvestorPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- KnowledgePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- LegalPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- LowCodePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- MarginPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- MatrixPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- MethodPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- MoatPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- MonthlyPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- NewYorkPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- OpenAICasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- OpenSourcePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- OutlookPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- PeakPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- PeakTroughPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- QuotePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RankingPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RegionClusterPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RegionsPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RepricingPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ResourcePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ResourceTriadPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RevenuePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RiskChapterPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RiskPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- RoboticsPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SafetyPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SalesPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- ScaleCasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SeattlePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SourcesPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SSICasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- StrategyInfraPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- StrategyVerticalPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SummaryPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SupportPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- SyndicatePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- TrendPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   |-- WaterfallPage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |   `-- XaiCasePage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       |-- theme.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |       `-- viz.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |   |-- metadata.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |   `-- runtime.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |-- theme08/
 |   |   |   |   |-- source/
-|   |   |   |   |   `-- components/
-|   |   |   |   |       |-- AclPrimitives.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page01Cover.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page02Summary.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page03Chapters.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page05Trend.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page06Cross.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page07Chain.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page08Cases.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page09Heatmap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page10Ranking.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page11Quadrant.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page13Strategy.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page14Quote.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page15Chapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page16DealMap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page17Spotlight.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page18Delta.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page19Peak.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page20Pullback.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page21PeakTrough.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page22Waterfall.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page23SizeSplit.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page24BigNumber.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page25CapitalCurve.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page26Chapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page27Radar.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page28Agent.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page29Portal.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page30Matrix.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page31Triptych.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page32Mix.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page33Statement.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page34Pipeline.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page35Arch.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page36Supply.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page37Compute.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page38ChipTiers.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page39Embodied.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page41Safety.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page42Generative.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page43Education.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page44Support.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page46LowCode.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page47OpenSource.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page48Alignment.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page49Chapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page50EarlyStage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page52InvestorMix.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page53Resource.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page54Loop.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page55Ecosystem.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page56GeoAnchor.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page57NewYork.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page58Seattle.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page59Boston.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page60OtherRegions.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page61Resources.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page64Network.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page65Infra.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page66DataInfra.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page67Search.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page68Platform.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page69Knowledge.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page71Narrative.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page73Revenue.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page74Regulation.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page76Squeeze.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page77Budget.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page78Workflow.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page79Repricing.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page80Verdict.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page81Mainlines.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page82Migration.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page83Playbooks.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page84Gauge.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page85HeroSplit.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page86Dumbbell.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page87Roadmap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page88PhotoWall.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page89Chapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page90Scorecard.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       |-- Page91Quote.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
-|   |   |   |   |       `-- Page92Ribbon.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |-- components/
+|   |   |   |   |   |   |-- AclPrimitives.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page01Cover.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page02Summary.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page03Chapters.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page05Trend.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page06Cross.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page07Chain.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page08Cases.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page09Heatmap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page10Ranking.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page11Quadrant.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page13Strategy.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page14Quote.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page15Chapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page16DealMap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page17Spotlight.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page18Delta.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page19Peak.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page20Pullback.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page21PeakTrough.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page22Waterfall.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page23SizeSplit.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page24BigNumber.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page25CapitalCurve.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page26Chapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page27Radar.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page28Agent.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page29Portal.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page30Matrix.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page31Triptych.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page32Mix.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page33Statement.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page34Pipeline.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page35Arch.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page36Supply.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page37Compute.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page38ChipTiers.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page39Embodied.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page41Safety.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page42Generative.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page43Education.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page44Support.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page46LowCode.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page47OpenSource.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page48Alignment.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page49Chapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page50EarlyStage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page52InvestorMix.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page53Resource.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page54Loop.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page55Ecosystem.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page56GeoAnchor.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page57NewYork.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page58Seattle.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page59Boston.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page60OtherRegions.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page61Resources.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page64Network.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page65Infra.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page66DataInfra.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page67Search.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page68Platform.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page69Knowledge.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page71Narrative.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page73Revenue.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page74Regulation.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page76Squeeze.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page77Budget.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page78Workflow.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page79Repricing.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page80Verdict.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page81Mainlines.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page82Migration.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page83Playbooks.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page84Gauge.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page85HeroSplit.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page86Dumbbell.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page87Roadmap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page88PhotoWall.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page89Chapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page90Scorecard.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page91Quote.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- Page92Ribbon.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- PageCv2C.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- PageSupCover01.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   |-- PageSupCover02.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   |   `-- PageSupCover03.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |   `-- delivery/
+|   |   |   |   |       `-- components/
+|   |   |   |   |           |-- AclPrimitives.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page01Cover.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page02Summary.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page03Chapters.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page05Trend.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page06Cross.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page07Chain.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page08Cases.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page09Heatmap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page10Ranking.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page11Quadrant.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page13Strategy.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page14Quote.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page15Chapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page16DealMap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page17Spotlight.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page18Delta.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page19Peak.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page20Pullback.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page21PeakTrough.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page22Waterfall.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page23SizeSplit.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page24BigNumber.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page25CapitalCurve.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page26Chapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page27Radar.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page28Agent.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page29Portal.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page30Matrix.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page31Triptych.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page32Mix.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page33Statement.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page34Pipeline.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page35Arch.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page36Supply.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page37Compute.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page38ChipTiers.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page39Embodied.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page41Safety.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page42Generative.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page43Education.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page44Support.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page46LowCode.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page47OpenSource.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page48Alignment.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page49Chapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page50EarlyStage.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page52InvestorMix.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page53Resource.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page54Loop.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page55Ecosystem.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page56GeoAnchor.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page57NewYork.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page58Seattle.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page59Boston.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page60OtherRegions.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page61Resources.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page64Network.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page65Infra.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page66DataInfra.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page67Search.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page68Platform.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page69Knowledge.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page71Narrative.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page73Revenue.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page74Regulation.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page76Squeeze.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page77Budget.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page78Workflow.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page79Repricing.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page80Verdict.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page81Mainlines.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page82Migration.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page83Playbooks.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page84Gauge.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page85HeroSplit.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page86Dumbbell.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page87Roadmap.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page88PhotoWall.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page89Chapter.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page90Scorecard.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page91Quote.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- Page92Ribbon.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- PageCv2C.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- PageSupCover01.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           |-- PageSupCover02.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
+|   |   |   |   |           `-- PageSupCover03.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |   |-- metadata.js - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |   `-- runtime.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   |-- theme09/
@@ -1005,5 +1272,8 @@
 |-- package.json - 项目源码或配置文件。
 |-- README.md - 项目源码或配置文件。
 |-- SKILL.md - 项目源码或配置文件。
+|-- theme-import-goal-01-04.json - 项目源码或配置文件。
+|-- theme-import-goal-05.json - 项目源码或配置文件。
+|-- theme-import-goal-06-08.json - 项目源码或配置文件。
 `-- theme-import-goal.json - 项目源码或配置文件。
 ```

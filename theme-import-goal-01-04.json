@@ -1,0 +1,38 @@
+{
+  "sourceRoot": "/Volumes/大师的AI小灶 共享盘/PPT Skill 共享文件/定稿版本 html",
+  "replaceAllExistingThemes": false,
+  "themes": [
+    {
+      "key": "theme01",
+      "name": "01-轻拟态质感",
+      "source": "01大师-轻拟态质感-v2",
+      "entry": "index.html",
+      "mode": "replace",
+      "expectedPages": 84
+    },
+    {
+      "key": "theme02",
+      "name": "02-炫光紫绿",
+      "source": "02大师-炫光紫绿-v2",
+      "entry": "index.html",
+      "mode": "replace",
+      "expectedPages": 74
+    },
+    {
+      "key": "theme03",
+      "name": "03-深浅代码风",
+      "source": "03 大师-深浅代码风-v2",
+      "entry": "index.html",
+      "mode": "replace",
+      "expectedPages": 77
+    },
+    {
+      "key": "theme04",
+      "name": "04-玻璃糖果",
+      "source": "04 大师-玻璃糖果-v2",
+      "entry": "index.html",
+      "mode": "replace",
+      "expectedPages": 0
+    }
+  ]
+}
