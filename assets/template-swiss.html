@@ -2086,54 +2086,21 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
   if(!deck) return;
   window.__deckExportLocked = false;
 
-  window.__exportDeckPdf = async function(){
+  window.__exportDeckPdf = function(){
     if(window.__deckExportLocked) return;
     const overview = document.getElementById('overview');
-    const restoreState = {
-      index: window.__currentSlideIndex || 0,
-      panelOpen: document.body.classList.contains('preview-panel-open'),
-      overviewOn: document.body.classList.contains('overview-on'),
-      overviewDisplay: overview?.style.display || '',
-    };
-    let exportUi = null;
-    let restorePrintState = null;
     try {
-      exportUi = beginDeckExport('PDF');
-      updateDeckExport(exportUi, 0, 1, '准备打印文档...');
-      await nextFrame();
-      throwIfDeckExportCancelled(exportUi);
       window.__syncDeckPageNumbers?.();
       window.__flushEditableTextState?.();
       window.__syncDeckViewModelFromDom?.();
-      await nextFrame();
-      throwIfDeckExportCancelled(exportUi);
       document.body.classList.remove('preview-panel-open', 'overview-on');
       if(overview) overview.style.display = 'none';
       window.__layoutDeck?.();
       window.__restoreEffectIframes?.(document);
-      await window.__initUnicornScenes?.(document, {force:true});
-      await waitForUnicornFrames(document, 6000);
-      throwIfDeckExportCancelled(exportUi);
-
-      const slides = await renderPrintableSlides(exportUi);
-      throwIfDeckExportCancelled(exportUi);
-      restorePrintState = prepareLivePrintSlides(slides);
-      await nextFrame();
-      finishPrintDocumentMotion(document);
-      await nextFrame();
-      updateDeckExport(exportUi, slides.length, slides.length, '正在打开浏览器打印...');
-      await waitForPrintReady(document);
-      throwIfDeckExportCancelled(exportUi);
-      await runBrowserPrint(window);
+      runBrowserPrint(window).finally(() => window.__syncActiveEffects?.());
     } catch (error) {
-      if(isDeckExportCancelledError(error)) return;
       console.error('[export pdf]', error);
       alert('PDF 导出失败，请在浏览器控制台查看错误。');
-    } finally {
-      restorePrintState?.();
-      restorePptxExportState(restoreState);
-      endDeckExport(exportUi);
-      window.__syncActiveEffects?.();
     }
   };
 
@@ -2235,258 +2202,47 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
     }
   };
 
-  window.__exportDeckHtml = async function(){
+  window.__exportDeckHtml = function(){
     if(window.__deckExportLocked) return;
-    let exportUi = null;
     try {
-      exportUi = beginDeckExport('HTML');
-      updateDeckExport(exportUi, 0, 1, '准备页面状态...');
       window.__syncDeckPageNumbers?.();
       window.__flushEditableTextState?.();
       window.__syncDeckViewModelFromDom?.();
-      throwIfDeckExportCancelled(exportUi);
-      const slides = await renderExportHtmlSlides(exportUi);
-      throwIfDeckExportCancelled(exportUi);
-      updateDeckExport(exportUi, slides.length, slides.length, '正在生成 HTML 文件...');
-      await nextFrame();
-      const blob = new Blob([buildCleanExportHtml(slides)], {type: 'text/html;charset=utf-8'});
-      throwIfDeckExportCancelled(exportUi);
-      updateDeckExport(exportUi, slides.length, slides.length, '正在下载 HTML...');
-      await downloadBlob(blob, 'index.html');
+      const clone = document.documentElement.cloneNode(true);
+      prepareSimpleHtmlExportClone(clone);
+      const blob = new Blob(['<!DOCTYPE html>\n' + clone.outerHTML], {type: 'text/html;charset=utf-8'});
+      downloadBlob(blob, 'index.html');
     } catch (error) {
-      if(isDeckExportCancelledError(error)) return;
       console.error('[export html]', error);
       alert('HTML 导出失败，请在浏览器控制台查看错误。');
-    } finally {
-      endDeckExport(exportUi);
-      window.__syncActiveEffects?.();
     }
   };
 
-  async function renderExportHtmlSlides(exportUi){
-    const slides = getExportSourceSlides();
-    for(let index = 0; index < slides.length; index++){
-      throwIfDeckExportCancelled(exportUi);
-      updateDeckExport(exportUi, index, slides.length, `正在准备第 ${index + 1} / ${slides.length} 页`);
-      window.__ensureRuntimeSlideRendered?.(slides[index]);
-      if(index % 3 === 2) await nextFrame();
+  function prepareSimpleHtmlExportClone(clone){
+    clone.querySelector('#overview')?.remove();
+    clone.querySelector('#image-picker-input')?.remove();
+    clone.querySelector('#media-picker-input')?.remove();
+    clone.querySelector('.deck-export-overlay')?.remove();
+    clone.querySelector('.page-transition-stage')?.remove();
+    clone.querySelector('body')?.classList.remove('preview-panel-open', 'overview-on', 'exporting-deck');
+    clone.querySelectorAll('iframe[data-effect-src]').forEach(iframe => {
+      if(!iframe.getAttribute('src') && iframe.dataset.effectSrc) iframe.setAttribute('src', iframe.dataset.effectSrc);
+    });
+    clone.querySelectorAll('.bt-unicorn-frame').forEach(frame => {
+      frame.removeAttribute('data-unicorn-ready');
+    });
+    clone.querySelectorAll('.bt-unicorn-scene').forEach(scene => {
+      scene.innerHTML = '';
+      scene.removeAttribute('id');
+    });
+    const clonedPreviewOptions = clone.querySelector('#preview-options');
+    if(clonedPreviewOptions){
+      try {
+        const options = JSON.parse(clonedPreviewOptions.textContent || '{}');
+        options.current = {...options.current, ...window.__getPreviewState?.()};
+        clonedPreviewOptions.textContent = JSON.stringify(options).replace(/</g, '\\u003c');
+      } catch {}
     }
-    await nextFrame();
-    window.__initEditableText?.(document);
-    updateDeckExport(exportUi, slides.length, slides.length, `已准备 ${slides.length} 页`);
-    return slides;
-  }
-
-  function buildCleanExportHtml(sourceSlides = getExportSourceSlides()){
-    const clean = document.implementation.createHTMLDocument(document.title || 'Presentation');
-    copyRootAttributes(clean.documentElement, document.documentElement);
-    clean.head.replaceChildren();
-    copyExportHead(clean);
-
-    const body = clean.body;
-    body.className = cleanBodyClass(document.body.className);
-    body.classList.add('exported-html');
-    body.style.cssText = document.body.style.cssText || '';
-
-    const deckViewportClone = clean.createElement('div');
-    deckViewportClone.id = 'deck-viewport';
-    const deckClone = deck.cloneNode(false);
-    sourceSlides.forEach(slide => deckClone.appendChild(slide.cloneNode(true)));
-    sanitizeDeckForExport(deckClone, sourceSlides);
-    deckViewportClone.appendChild(deckClone);
-    body.appendChild(deckViewportClone);
-    appendExportRuntime(clean);
-
-    return '<!DOCTYPE html>\n' + clean.documentElement.outerHTML;
-  }
-
-  function getExportSourceSlides(){
-    return window.__getVisibleSlides?.() || [...document.querySelectorAll('#deck > .slide:not([hidden])')];
-  }
-
-  function copyRootAttributes(target, source){
-    [...source.attributes].forEach(attr => target.setAttribute(attr.name, attr.value));
-    target.classList.remove('preview-panel-open', 'overview-on');
-  }
-
-  function copyExportHead(clean){
-    [...document.head.children].forEach(node => {
-      if(node.matches?.('script')) return;
-      const copy = node.cloneNode(true);
-      if(copy.tagName === 'STYLE') copy.textContent = cleanCssForExport(copy.textContent || '');
-      clean.head.appendChild(copy);
-    });
-    const exportStyle = clean.createElement('style');
-    exportStyle.textContent = `body.exported-html #deck-viewport{z-index:10}`;
-    clean.head.appendChild(exportStyle);
-  }
-
-  function cleanCssForExport(css){
-    return css
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .split('}')
-      .map(chunk => {
-        const selector = chunk.split('{')[0] || '';
-        return /#preview|\.preview|#overview|#nav|#hint|\.page-transition|pptx-export-capturing/.test(selector)
-          ? ''
-          : chunk + '}';
-      })
-      .join('\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
-
-  function cleanBodyClass(value){
-    return (value || '')
-      .split(/\s+/)
-      .filter(name => name && ![
-        'preview-panel-open',
-        'overview-on',
-        'pptx-export-capturing',
-        'exporting-deck',
-      ].includes(name))
-      .join(' ');
-  }
-
-  function sanitizeDeckForExport(deckClone, sourceSlides = getExportSourceSlides()){
-    const visibleIds = new Set(sourceSlides
-      .map(slide => slide.dataset.vmSlideId || slide.id || slide.dataset.layout)
-      .filter(Boolean));
-
-    collectDeckSlides(deckClone).forEach(slide => {
-      const key = slide.dataset.vmSlideId || slide.id || slide.dataset.layout;
-      if(visibleIds.size && key && !visibleIds.has(key)){
-        slide.remove();
-        return;
-      }
-      slide.hidden = false;
-      slide.removeAttribute('aria-hidden');
-    });
-
-    const slides = collectDeckSlides(deckClone);
-    slides.forEach((slide, index) => {
-      const active = index === 0;
-      slide.classList.toggle('active', active);
-      if(active) slide.setAttribute('data-deck-active', '');
-      else slide.removeAttribute('data-deck-active');
-    });
-
-    deckClone.removeAttribute('style');
-    deckClone.querySelectorAll('script,template').forEach(el => el.remove());
-    deckClone.querySelectorAll('input[type="file"]').forEach(el => el.remove());
-    deckClone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
-    deckClone.querySelectorAll('.is-drag-over,.is-active').forEach(el => el.classList.remove('is-drag-over', 'is-active'));
-
-    deckClone.querySelectorAll('*').forEach(el => {
-      [
-        'data-editable-id',
-        'data-editable-skip',
-        'data-editable-ready',
-        'data-editing',
-        'data-sync-text',
-                'data-vm-slide-id',
-        'data-slide-key',
-        'data-anim',
-        'data-animate',
-      ].forEach(name => el.removeAttribute(name));
-      el.removeAttribute('spellcheck');
-      if(el.hasAttribute('role') && ['button', 'textbox'].includes(el.getAttribute('role'))) el.removeAttribute('role');
-      el.removeAttribute('tabindex');
-      if(el.getAttribute('aria-label') === '替换图片或视频') el.removeAttribute('aria-label');
-      if(el.getAttribute('title') === '点击或拖拽替换图片或视频') el.removeAttribute('title');
-    });
-
-
-  }
-
-  function appendExportRuntime(clean){
-    const script = clean.createElement('script');
-    script.textContent = '(' + cleanExportRuntime.toString() + ')();\n(' + staticUnicornRuntime.toString() + ')();';
-    clean.body.appendChild(script);
-  }
-
-  function cleanExportRuntime(){
-    const deck = document.getElementById('deck');
-    const slides = [...(deck?.children || [])].filter(el => el.classList?.contains('slide'));
-    let idx = 0;
-    let deckW = innerWidth;
-    let deckH = innerHeight;
-    let deckScale = 1;
-    function measure(){
-      const width = Math.min(Math.max(320, innerWidth), Math.max(180, innerHeight) * 16 / 9);
-      const height = width * 9 / 16;
-      return {
-        width,
-        height,
-        left: (innerWidth - width) / 2,
-        top: (innerHeight - height) / 2,
-      };
-    }
-    function layout(){
-      const stage = measure();
-      deckW = stage.width;
-      deckH = stage.height;
-      deckScale = deckW / 1920;
-      document.documentElement.style.setProperty('--deck-w', deckW + 'px');
-      document.documentElement.style.setProperty('--deck-h', deckH + 'px');
-      document.documentElement.style.setProperty('--deck-left', stage.left + 'px');
-      document.documentElement.style.setProperty('--deck-top', stage.top + 'px');
-      document.documentElement.style.setProperty('--deck-scale', String(deckScale));
-      deck.style.width = (slides.length * deckW) + 'px';
-      deck.style.height = deckH + 'px';
-      deck.style.transform = 'translateX(' + (-idx * deckW) + 'px)';
-    }
-
-    function go(next){
-      idx = Math.max(0, Math.min(slides.length - 1, next));
-      window.__currentSlideIndex = idx;
-      slides.forEach((slide, index) => {
-        const active = index === idx;
-        slide.classList.toggle('active', active);
-        if(active) slide.setAttribute('data-deck-active', '');
-        else slide.removeAttribute('data-deck-active');
-      });
-      layout();
-      syncActiveMedia();
-      dispatchEvent(new CustomEvent('swiss-slide-change', {detail: {index: idx, slide: slides[idx]}}));
-    }
-
-    function syncActiveMedia(){
-      slides.forEach((slide, index) => {
-        const active = index === idx && !document.hidden;
-        slide.querySelectorAll('video').forEach(video => {
-          if(active) video.play?.().catch(() => {});
-          else video.pause?.();
-        });
-        slide.querySelectorAll('iframe').forEach(iframe => {
-          if(!iframe.dataset.effectSrc) iframe.dataset.effectSrc = iframe.getAttribute('src') || '';
-          if(active){
-            if(!iframe.getAttribute('src') && iframe.dataset.effectSrc) iframe.setAttribute('src', iframe.dataset.effectSrc);
-          } else if(iframe.getAttribute('src')){
-            iframe.removeAttribute('src');
-          }
-        });
-      });
-    }
-
-    addEventListener('resize', layout);
-    addEventListener('visibilitychange', syncActiveMedia);
-    addEventListener('keydown', event => {
-      if(event.defaultPrevented || isDeckTypingTarget(event.target)) return;
-      if(['ArrowRight','PageDown',' '].includes(event.key)){ event.preventDefault(); go(idx + 1); }
-      else if(['ArrowLeft','PageUp'].includes(event.key)){ event.preventDefault(); go(idx - 1); }
-      else if(event.key === 'Home'){ event.preventDefault(); go(0); }
-      else if(event.key === 'End'){ event.preventDefault(); go(slides.length - 1); }
-    });
-    deck.addEventListener('mousedown', event => {
-      if(window.__isDeckInteractiveTarget?.(event.target)) return;
-      if(event.button === 0){ event.preventDefault(); go(idx + 1); }
-      else if(event.button === 2){ event.preventDefault(); go(idx - 1); }
-    });
-    deck.addEventListener('contextmenu', event => event.preventDefault());
-
-    layout();
-    go(0);
   }
 
   function staticUnicornRuntime(){
@@ -2645,73 +2401,6 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
     finishSlideCaptureMotion(slide);
     await nextFrame();
     await nextFrame();
-  }
-
-  async function renderPrintableSlides(exportUi){
-    const slides = window.__getVisibleSlides?.() || [...document.querySelectorAll('#deck > .slide:not([hidden])')];
-    for(let index = 0; index < slides.length; index++){
-      const slide = slides[index];
-      throwIfDeckExportCancelled(exportUi);
-      updateDeckExport(exportUi, index, slides.length, `正在准备第 ${index + 1} / ${slides.length} 页`);
-      await nextFrame();
-      window.__ensureRuntimeSlideRendered?.(slide);
-      finishSlideCaptureMotion(slide);
-      await nextFrame();
-    }
-    updateDeckExport(exportUi, slides.length, slides.length, `已准备 ${slides.length} 页`);
-    return slides;
-  }
-
-  async function waitForPrintReady(scope = document){
-    const doc = scope || document;
-    if(doc.fonts?.ready) {
-      await Promise.race([
-        doc.fonts.ready.catch(() => {}),
-        new Promise(resolve => setTimeout(resolve, 2500)),
-      ]);
-    }
-    const slides = doc === document
-      ? (window.__getVisibleSlides?.() || [...document.querySelectorAll('#deck > .slide:not([hidden])')])
-      : [...doc.querySelectorAll('#deck > .slide:not([hidden])')];
-    slides.forEach(slide => finishSlideCaptureMotion(slide));
-    const media = slides.flatMap(slide => [
-      ...(slide.querySelectorAll?.('img') || []),
-      ...(slide.querySelectorAll?.('video') || []),
-    ]);
-    await Promise.race([
-      Promise.all(media.map(el => new Promise(resolve => {
-        if(el.tagName === 'IMG' && el.complete) { resolve(); return; }
-        if(el.tagName === 'VIDEO' && el.readyState >= 1) { resolve(); return; }
-        el.addEventListener('load', resolve, {once:true});
-        el.addEventListener('loadedmetadata', resolve, {once:true});
-        el.addEventListener('error', resolve, {once:true});
-        el.load?.();
-      }))),
-      new Promise(resolve => setTimeout(resolve, 2500)),
-    ]);
-    await nextFrame();
-    await nextFrame();
-  }
-
-  function prepareLivePrintSlides(slides){
-    const states = slides.map(slide => ({
-      slide,
-      active: slide.classList.contains('active'),
-      deckActive: slide.hasAttribute('data-deck-active'),
-    }));
-    slides.forEach(slide => {
-      slide.classList.add('active');
-      slide.setAttribute('data-deck-active', '');
-    });
-    return () => states.forEach(({slide, active, deckActive}) => {
-      slide.classList.toggle('active', active);
-      if(deckActive) slide.setAttribute('data-deck-active', '');
-      else slide.removeAttribute('data-deck-active');
-    });
-  }
-
-  function finishPrintDocumentMotion(doc){
-    doc?.querySelectorAll?.('#deck > .slide').forEach(slide => finishSlideCaptureMotion(slide));
   }
 
   function runBrowserPrint(){
