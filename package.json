@@ -8,6 +8,7 @@
     "render:deck": "tsx scripts/render-deck.jsx",
     "render:goal": "tsx scripts/render-goal-deck.jsx",
     "render:themes": "tsx scripts/render-deck.jsx examples/component-decks/all-themes-showcase.jsx output/theme-preview/ppt/index.html",
+    "preview:https": "node scripts/serve-preview-https.mjs",
     "showcase:update": "node scripts/validate-layout-showcase.mjs && npm run render:themes && npm run validate:swiss -- output/theme-preview/ppt/index.html",
     "themes:import": "tsx scripts/import-claude-themes.jsx",
     "manifest:update": "tsx scripts/update-layout-manifest.jsx",

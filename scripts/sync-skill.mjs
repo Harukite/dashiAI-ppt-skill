@@ -32,6 +32,7 @@ function syncProjectFiles() {
   copyPath(path.join(ROOT, 'assets/template-swiss.html'), path.join(projectRoot, 'assets/template-swiss.html'));
   copyPath(path.join(ROOT, 'src'), path.join(projectRoot, 'src'));
   copyPath(path.join(ROOT, 'scripts/render-goal-deck.jsx'), path.join(projectRoot, 'scripts/render-goal-deck.jsx'));
+  copyPath(path.join(ROOT, 'scripts/serve-preview-https.mjs'), path.join(projectRoot, 'scripts/serve-preview-https.mjs'));
   copyPath(path.join(ROOT, 'scripts/validate-swiss-deck.mjs'), path.join(projectRoot, 'scripts/validate-swiss-deck.mjs'));
   copyPath(path.join(ROOT, 'scripts/validate-goal-copy.mjs'), path.join(projectRoot, 'scripts/validate-goal-copy.mjs'));
 }
@@ -45,6 +46,7 @@ function renderRuntimePackage() {
     type: 'module',
     scripts: {
       'render:goal': 'tsx scripts/render-goal-deck.jsx',
+      'preview:https': 'node scripts/serve-preview-https.mjs',
       'validate:swiss': 'node scripts/validate-swiss-deck.mjs',
       'validate:goal-copy': 'node scripts/validate-goal-copy.mjs',
     },

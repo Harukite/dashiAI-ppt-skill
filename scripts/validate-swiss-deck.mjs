@@ -37,6 +37,23 @@ if (html.includes('#deck .slide') || /\b\w*deck\w*\.querySelectorAll\(['"]\.slid
   errors.push('Deck runtime uses descendant .slide selectors. Use only #deck direct children so imported theme internals cannot be treated as pages.');
 }
 
+const downloadBlobStart = html.indexOf('function downloadBlob');
+const downloadBlobEnd = downloadBlobStart >= 0 ? html.indexOf('function releaseRetainedDownloadUrls', downloadBlobStart) : -1;
+const downloadBlobSource = downloadBlobStart >= 0 && downloadBlobEnd > downloadBlobStart
+  ? html.slice(downloadBlobStart, downloadBlobEnd)
+  : '';
+if (downloadBlobSource.includes('URL.revokeObjectURL')) {
+  errors.push('Deck export download revokes blob URLs inside downloadBlob. Keep blob URLs alive until page unload so LAN downloads can finish.');
+}
+
+if (/\.writeFile\s*\(\s*\{\s*fileName:/.test(html)) {
+  errors.push('Deck export uses library writeFile download. Generate a blob and pass it through downloadBlob so LAN downloads can finish.');
+}
+
+if (!html.includes('deck-export-cancel')) {
+  errors.push('Deck export overlay is missing a cancel button.');
+}
+
 slides.forEach((slide) => {
   const layout = slide.tag.match(/\bdata-layout="([^"]+)"/)?.[1];
 
