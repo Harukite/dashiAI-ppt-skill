@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync, createReadStream } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync, createReadStream, rmSync } from 'node:fs';
 import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
@@ -28,7 +29,13 @@ const server = https.createServer(
     key: readFileSync(CERT_KEY),
     cert: readFileSync(CERT_FILE),
   },
-  (req, res) => {
+  async (req, res) => {
+    const requestUrl = new URL(req.url || '/', 'https://local.invalid');
+    if (req.method === 'POST' && requestUrl.pathname === '/api/export-editable-pptx') {
+      await handleEditablePptxExport(req, res);
+      return;
+    }
+
     const pathname = safePathname(req.url || '/');
     const requested = path.join(SERVE_ROOT, pathname === '/' ? 'index.html' : pathname);
     const file = resolveFile(requested);
@@ -145,6 +152,88 @@ function contentType(file) {
     '.woff': 'font/woff',
     '.woff2': 'font/woff2',
   }[ext] || 'application/octet-stream';
+}
+
+async function handleEditablePptxExport(req, res) {
+  try {
+    const payload = await readJsonBody(req);
+    const [{ chromium }, { exportEditablePptxFromUrl }] = await Promise.all([
+      import('playwright-core'),
+      import('../src/export-pptx/editable.mjs'),
+    ]);
+    const browser = await chromium.launch({ headless: true, executablePath: getChromePath() });
+    const exportId = createHash('sha1').update(`${Date.now()}:${Math.random()}`).digest('hex').slice(0, 12);
+    const outDir = path.join(ROOT, 'output/editable-pptx-server');
+    const outFile = path.join(outDir, `${exportId}.pptx`);
+    const reportFile = path.join(outDir, `${exportId}.json`);
+    try {
+      const sourcePath = typeof payload.sourcePath === 'string' && payload.sourcePath.startsWith('/') ? payload.sourcePath : '/';
+      const url = `https://localhost:${PORT}${sourcePath}`;
+      await exportEditablePptxFromUrl(browser, url, {
+        outFile,
+        reportFile,
+        title: payload.title || 'Editable Deck Export',
+        snapshot: payload.snapshot || null,
+      });
+    } finally {
+      await browser.close().catch(() => {});
+    }
+
+    const filename = safeDownloadName(payload.fileName || 'presentation') + '.pptx';
+    res.writeHead(200, {
+      'content-type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'content-disposition': `attachment; filename="presentation.pptx"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+      'cache-control': 'no-store',
+    });
+    createReadStream(outFile)
+      .on('close', () => {
+        rmSync(outFile, { force: true });
+        rmSync(reportFile, { force: true });
+      })
+      .pipe(res);
+  } catch (error) {
+    console.error('[editable pptx export]', error);
+    res.writeHead(500, { 'content-type': 'application/json;charset=utf-8', 'cache-control': 'no-store' });
+    res.end(JSON.stringify({ error: error.message || 'Editable PPTX export failed' }));
+  }
+}
+
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size > 80 * 1024 * 1024) {
+        reject(new Error('Request body is too large.'));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'));
+      } catch (error) {
+        reject(error);
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+function safeDownloadName(value) {
+  return String(value || 'presentation')
+    .replace(/[\\/:*?"<>|]+/g, '')
+    .replace(/\s+/g, '-')
+    .trim()
+    .slice(0, 80) || 'presentation';
+}
+
+function getChromePath() {
+  const chrome = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  if (!existsSync(chrome)) throw new Error(`Chrome executable not found: ${chrome}`);
+  return chrome;
 }
 
 function getLocalHostname() {

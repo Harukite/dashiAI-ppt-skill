@@ -24,6 +24,8 @@ const REPLACEMENT_IMAGE = `data:image/svg+xml;base64,${REPLACEMENT_IMAGE_BYTES.t
 
 const args = new Set(process.argv.slice(2));
 const legacyRed = args.has('--legacy-red');
+const uiExport = args.has('--ui-export');
+const cliUrl = getArg('--url');
 
 if (!existsSync(CHROME_PATH)) {
   throw new Error(`Chrome executable not found: ${CHROME_PATH}
@@ -34,8 +36,60 @@ mkdirSync(OUT_DIR, { recursive: true });
 
 if (legacyRed) {
   await runLegacyRedValidation();
+} else if (uiExport) {
+  await runUiExportValidation();
 } else {
   await runEditableExportValidation();
+}
+
+async function runUiExportValidation() {
+  if (!cliUrl) throw new Error('Usage: node scripts/validate-editable-pptx-export.mjs --ui-export --url <preview-url>');
+  const url = cliUrl;
+  const pptxFile = path.join(OUT_DIR, 'ui-button-export.pptx');
+  const browser = await chromium.launch({ headless: true, executablePath: CHROME_PATH });
+  let page;
+  let mutation = null;
+  try {
+    const context = await browser.newContext({
+      acceptDownloads: true,
+      viewport: { width: 1920, height: 1080 },
+      ignoreHTTPSErrors: true,
+    });
+    page = await context.newPage();
+    page.setDefaultTimeout(90000);
+    page.on('dialog', dialog => dialog.dismiss().catch(() => {}));
+    await page.goto(`${url}${url.includes('?') ? '&' : '?'}ui_export=${Date.now()}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
+    mutation = await applyUserEdits(page);
+    const downloadPromise = page.waitForEvent('download', { timeout: 180000 });
+    await page.click('#preview-export-main');
+    await page.click('#preview-export-pptx');
+    const download = await downloadPromise;
+    await download.saveAs(pptxFile);
+  } finally {
+    await closePage(page);
+    await browser.close().catch(() => {});
+  }
+
+  const pptx = inspectPptx(pptxFile);
+  const failures = validateEditablePptxInspection(pptx, {
+    expectSlides: null,
+    mutation,
+    requireEditedText: true,
+    requireReplacementImage: true,
+  });
+  const result = {
+    mode: 'ui-export',
+    url,
+    passed: failures.length === 0,
+    pptx: summarizeInspection(pptx),
+    failures,
+  };
+  if (failures.length) {
+    console.error(JSON.stringify(result, null, 2));
+    process.exit(1);
+  }
+  console.log(JSON.stringify(result, null, 2));
 }
 
 async function runLegacyRedValidation() {
@@ -127,20 +181,15 @@ async function runEditableExportValidation() {
   const pptx = inspectPptx(pptxFile);
   const filteredPptx = inspectPptx(filteredPptxFile);
   const report = existsSync(reportFile) ? JSON.parse(readFileSync(reportFile, 'utf8')) : null;
-  const failures = [...staticFailures];
-  if (pptx.slideCount !== EXPECTED_SLIDES) failures.push(`PPTX has ${pptx.slideCount} slide(s), expected ${EXPECTED_SLIDES}.`);
-  if (pptx.textCount <= 0) failures.push('PPTX slide XML has no <a:t> editable text nodes.');
-  if (!pptx.allText.includes(EDITED_TEXT)) failures.push('User-edited text sentinel is missing from PPTX text nodes.');
-  if (pptx.shapeCount <= 0) failures.push('PPTX slide XML has no shape objects.');
-  if (pptx.pictureCount <= 0) failures.push('PPTX slide XML has no image objects.');
-  if (!pptx.mediaHashes.includes(REPLACEMENT_IMAGE_HASH)) failures.push('Replacement image hash is missing from ppt/media/*.');
-  if (REPLACEMENT_IMAGE_HASH === INITIAL_IMAGE_HASH) failures.push('Replacement image hash unexpectedly equals the initial image hash.');
-  if (!mutation?.imageSlideNumber) failures.push('Validation did not record which slide received the replacement image.');
-  else if (!pptx.slides[mutation.imageSlideNumber - 1]?.pictureMediaHashes.includes(REPLACEMENT_IMAGE_HASH)) {
-    failures.push(`Replacement image is not referenced by target slide ${mutation.imageSlideNumber}.`);
-  }
-  if (pptx.fullSlideImageOnlySlides.length) failures.push(`PPTX still has full-slide-image-only pages: ${pptx.fullSlideImageOnlySlides.join(', ')}.`);
-  if (pptx.uniqueSlideHashes !== EXPECTED_SLIDES) failures.push('Slide XML content hashes repeat; page switching may have failed.');
+  const failures = [
+    ...staticFailures,
+    ...validateEditablePptxInspection(pptx, {
+      expectSlides: EXPECTED_SLIDES,
+      mutation,
+      requireEditedText: true,
+      requireReplacementImage: true,
+    }),
+  ];
   if (filteredPptx.slideCount !== THEME_FILTER_EXPECTED_SLIDES) failures.push(`Default export ignored current theme filter: got ${filteredPptx.slideCount} slide(s), expected ${THEME_FILTER_EXPECTED_SLIDES}.`);
   if (!report?.warnings || !Array.isArray(report.warnings)) failures.push('Editable exporter did not write a warnings report.');
 
@@ -164,6 +213,25 @@ async function runEditableExportValidation() {
     process.exit(1);
   }
   console.log(JSON.stringify(result, null, 2));
+}
+
+function validateEditablePptxInspection(pptx, { expectSlides, mutation, requireEditedText = false, requireReplacementImage = false } = {}) {
+  const failures = [];
+  if (expectSlides !== null && expectSlides !== undefined && pptx.slideCount !== expectSlides) failures.push(`PPTX has ${pptx.slideCount} slide(s), expected ${expectSlides}.`);
+  if (pptx.textCount <= 0) failures.push('PPTX slide XML has no <a:t> editable text nodes.');
+  if (requireEditedText && !pptx.allText.includes(EDITED_TEXT)) failures.push('User-edited text sentinel is missing from PPTX text nodes.');
+  if (pptx.shapeCount <= 0) failures.push('PPTX slide XML has no shape objects.');
+  if (pptx.pictureCount <= 0) failures.push('PPTX slide XML has no image objects.');
+  if (requireReplacementImage) {
+    if (!pptx.mediaHashes.includes(REPLACEMENT_IMAGE_HASH)) failures.push('Replacement image hash is missing from ppt/media/*.');
+    if (REPLACEMENT_IMAGE_HASH === INITIAL_IMAGE_HASH) failures.push('Replacement image hash unexpectedly equals the initial image hash.');
+    if (mutation?.imageSlideNumber && !pptx.slides[mutation.imageSlideNumber - 1]?.pictureMediaHashes.includes(REPLACEMENT_IMAGE_HASH)) {
+      failures.push(`Replacement image is not referenced by target slide ${mutation.imageSlideNumber}.`);
+    }
+  }
+  if (pptx.fullSlideImageOnlySlides.length) failures.push(`PPTX has full-slide-image-only pages: ${pptx.fullSlideImageOnlySlides.join(', ')}.`);
+  if (expectSlides && pptx.uniqueSlideHashes !== expectSlides) failures.push('Slide XML content hashes repeat; page switching may have failed.');
+  return failures;
 }
 
 function inspectLegacyBrowserPptxPath() {
@@ -461,4 +529,9 @@ function isDirectory(file) {
   } catch {
     return false;
   }
+}
+
+function getArg(name) {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? process.argv[index + 1] : null;
 }

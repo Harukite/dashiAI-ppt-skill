@@ -103,11 +103,52 @@ export async function exportEditablePptxFromUrl(browser, url, options = {}) {
     page.setDefaultTimeout(options.timeout || 45000);
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
+    if (options.snapshot) await applyDeckSnapshot(page, options.snapshot);
     return await exportEditablePptxFromPage(page, options);
   } finally {
     await page.close().catch(() => {});
     await context.close().catch(() => {});
   }
+}
+
+async function applyDeckSnapshot(page, snapshot) {
+  await page.evaluate(async (snapshot) => {
+    window.__applyEditablePptxSnapshotText = function(scope) {
+      const textState = window.__editablePptxSnapshotTextState;
+      if (!scope || !textState || typeof textState !== 'object') return;
+      const elements = [
+        ...(scope.dataset?.editableId ? [scope] : []),
+        ...(scope.querySelectorAll?.('[data-editable-id]') || []),
+      ];
+      elements.forEach(el => {
+        const synced = el.dataset.syncText ? textState[`sync:${el.dataset.syncText}`] : undefined;
+        const value = synced !== undefined ? synced : textState[el.dataset.editableId];
+        if (value !== undefined) el.innerHTML = value;
+      });
+    };
+    const state = snapshot?.state || {};
+    if (snapshot?.themePack !== undefined) {
+      window.__setActiveThemePack?.(snapshot.themePack || '', { navigate: false });
+    }
+    if (Array.isArray(state.slideOrder)) window.__deckViewModel?.setSlideOrder?.(state.slideOrder);
+    if (Array.isArray(state.skippedSlides)) window.__deckViewModel?.setSkippedSlides?.(state.skippedSlides);
+    if (Array.isArray(state.deletedSlides)) window.__deckViewModel?.setDeletedSlides?.(state.deletedSlides);
+    if (state.text && typeof state.text === 'object') window.__deckViewModel?.setTextState?.(state.text);
+    window.__editablePptxSnapshotTextState = state.text && typeof state.text === 'object' ? state.text : {};
+    if (state.props && typeof state.props === 'object') {
+      Object.entries(state.props).forEach(([slideId, props]) => window.__deckViewModel?.setProps?.(slideId, props));
+    }
+    window.__syncDeckViewModelFromDom?.();
+    window.__layoutDeck?.();
+    const slides = window.__getVisibleSlides?.() || [...document.querySelectorAll('#deck > .slide:not([hidden])')];
+    slides.forEach(slide => {
+      window.__ensureRuntimeSlideRendered?.(slide);
+      window.__applyEditablePptxSnapshotText?.(slide);
+    });
+    const index = Math.max(0, Math.min(slides.length - 1, Number(snapshot?.currentIndex || 0)));
+    window.go?.(index, { animate: false, force: true });
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }, snapshot);
 }
 
 function addRect(slide, shape) {
@@ -154,6 +195,7 @@ async function collectEditableDeck(page, options = {}) {
         window.go?.(index, { animate: false, force: true });
         const slides = window.__getVisibleSlides?.() || [...document.querySelectorAll('#deck > .slide:not([hidden])')];
         window.__ensureRuntimeSlideRendered?.(slides[index]);
+        window.__applyEditablePptxSnapshotText?.(slides[index]);
         window.__restoreEffectIframes?.(slides[index]);
         window.__layoutDeck?.();
         await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -170,6 +212,8 @@ async function collectEditableDeck(page, options = {}) {
       }
       window.__deckExportLocked = Boolean(restore.locked);
       window.__setEditableTextMode?.(window.__canEditDeck?.());
+      delete window.__editablePptxSnapshotTextState;
+      delete window.__applyEditablePptxSnapshotText;
       delete window.__editablePptxRestoreState;
       window.__layoutDeck?.();
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
