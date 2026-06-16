@@ -25,6 +25,7 @@
     --mono:"Space Mono","JetBrains Mono",ui-monospace,monospace;
     --ease-prod:cubic-bezier(.2,0,.38,.9);
     --preview-panel-w:min(380px,92vw);
+    --slide-rail-w:184px;
     --deck-w:100vw;
     --deck-h:56.25vw;
     --deck-left:0px;
@@ -34,6 +35,7 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font-family:var(--sans-zh);letter-spacing:0}
   body{user-select:none}
+  body[data-mode="present"]{background:#000}
   #deck-viewport{position:fixed;left:var(--deck-left);top:var(--deck-top);z-index:1;width:var(--deck-w);height:var(--deck-h);overflow:hidden;background:#000}
   #deck{position:absolute;left:0;top:0;z-index:1;display:flex;will-change:transform}
   .slide{position:relative;flex:0 0 var(--deck-w);width:var(--deck-w);height:var(--deck-h);overflow:hidden;background:#02040c;color:#fff}
@@ -62,8 +64,34 @@
   #preview-toggle:hover{background:var(--pp-chip)}
   #preview-toggle svg{width:19px;height:19px}
   body.preview-panel-open #preview-toggle{opacity:0;transform:scale(.85);pointer-events:none}
+  body[data-mode="present"] #preview-toggle{display:none}
+  #present-exit-btn{position:fixed;right:18px;top:18px;z-index:35;height:36px;padding:0 13px;border:1px solid rgba(255,255,255,.24);border-radius:8px;background:rgba(20,20,20,.62);color:#fff;backdrop-filter:blur(10px);font:600 12.5px/1 var(--sans-zh);cursor:pointer;display:none}
+  #present-exit-btn:hover{background:rgba(35,35,35,.78)}
+  body[data-mode="present"] #present-exit-btn{display:block}
+  #slide-rail{position:fixed;left:0;top:0;z-index:24;width:var(--slide-rail-w);height:100vh;display:flex;flex-direction:column;background:var(--pp-bg);color:var(--pp-fg);border-right:1px solid var(--pp-divider);box-shadow:18px 0 50px rgba(0,0,0,.12);font-family:var(--sans);overflow:hidden}
+  body[data-mode="present"] #slide-rail{display:none}
+  .slide-rail-head{height:52px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 10px 0 12px;border-bottom:1px solid var(--pp-divider)}
+  .slide-rail-title{font:650 13px/1 var(--sans-zh);color:var(--pp-fg)}
+  .slide-rail-count{font:600 11px/1 var(--mono);color:var(--pp-fg2);letter-spacing:.02em}
+  #slide-rail-list{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 12px 18px;scrollbar-width:thin}
+  .rail-grid{position:relative;display:grid;grid-template-columns:1fr;gap:12px;align-items:start}
+  .rail-card{position:relative;display:grid;gap:5px;width:100%;padding:5px;border:0;border-radius:8px;background:transparent;color:var(--pp-fg);cursor:pointer;text-align:left;outline:1px solid transparent;transition:outline-color .16s,background .16s,opacity .16s,transform .2s}
+  .rail-card:hover{background:var(--pp-chip)}
+  .rail-card[aria-current="true"]{background:var(--pp-blue-soft);outline-color:var(--pp-blue)}
+  .rail-card.is-dragging{opacity:.45;cursor:grabbing}
+  .rail-thumb-frame{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:5px;background:var(--paper);box-shadow:0 0 0 1px rgba(0,0,0,.12);contain:layout paint style}
+  .rail-thumb{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;pointer-events:none;background:var(--paper);contain:layout paint style}
+  .rail-label{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 1px;font:600 11px/1.1 var(--mono);letter-spacing:.04em;color:var(--pp-fg2)}
+  .rail-skip-badge{position:absolute;right:10px;top:10px;z-index:3;padding:4px 7px;border-radius:999px;background:rgba(10,10,10,.72);color:#fff;font:600 10px/1 var(--sans-zh);pointer-events:none}
+  .rail-drop-marker{position:absolute;z-index:6;left:5px;right:5px;height:4px;display:none;border-radius:999px;background:var(--focus-mark);box-shadow:0 0 0 3px rgba(0,0,0,.08);pointer-events:none}
+  .rail-context-menu{position:fixed;z-index:130;min-width:138px;display:none;padding:5px;background:var(--pp-bg);border:1px solid var(--pp-border);border-radius:8px;box-shadow:0 14px 36px rgba(0,0,0,.22);color:var(--pp-fg)}
+  .rail-context-menu button{display:flex;align-items:center;justify-content:space-between;width:100%;height:34px;padding:0 9px;border:0;border-radius:6px;background:transparent;color:var(--pp-fg);font:500 12.5px/1 var(--sans-zh);text-align:left;cursor:pointer}
+  .rail-context-menu button:hover{background:var(--pp-blue-soft)}
+  .rail-context-menu button[disabled]{opacity:.42;cursor:not-allowed}
+  .rail-context-menu button[disabled]:hover{background:transparent}
   #preview-panel{position:fixed;right:0;top:0;z-index:24;width:var(--preview-panel-w);height:100vh;display:flex;flex-direction:column;background:var(--pp-bg);color:var(--pp-fg);border-left:1px solid var(--pp-divider);box-shadow:-20px 0 60px rgba(0,0,0,.18);transform:translateX(100%);transition:transform .24s var(--ease-prod);overflow:hidden;font-family:var(--sans);font-variant-numeric:tabular-nums;letter-spacing:0}
   body.preview-panel-open #preview-panel{transform:translateX(0)}
+  body[data-mode="present"] #preview-panel{display:none}
   #preview-panel svg{display:block;flex:0 0 auto}
   /* header */
   .preview-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 12px 14px 16px;border-bottom:1px solid var(--pp-divider)}
@@ -156,14 +184,6 @@
   .pp-export-menu button kbd{font:500 10px/1 var(--sans);color:var(--pp-fg2);padding:3px 6px;border-radius:4px;background:var(--pp-chip)}
   .pp-export-menu button:hover{background:var(--pp-blue-soft)}
   .pp-export-menu button:hover svg{color:var(--pp-blue)}
-  .overview-context-menu{position:fixed;z-index:130;min-width:138px;display:none;padding:5px;background:var(--pp-bg);border:1px solid var(--pp-border);border-radius:8px;box-shadow:0 14px 36px rgba(0,0,0,.22);color:var(--pp-fg)}
-  .overview-context-menu button{display:flex;align-items:center;justify-content:space-between;width:100%;height:34px;padding:0 9px;border:0;border-radius:6px;background:transparent;color:var(--pp-fg);font:500 12.5px/1 var(--sans-zh);text-align:left;cursor:pointer}
-  .overview-context-menu button:hover{background:var(--pp-blue-soft)}
-  .overview-context-menu button[disabled]{opacity:.42;cursor:not-allowed}
-  .overview-context-menu button[disabled]:hover{background:transparent}
-  .overview-skip-badge{position:absolute;right:8px;top:8px;z-index:3;padding:5px 8px;border-radius:999px;background:rgba(10,10,10,.72);color:#fff;font:600 11px/1 var(--sans-zh);letter-spacing:0;pointer-events:none}
-  body.overview-on #deck-viewport{visibility:hidden;content-visibility:hidden}
-  body.overview-on #deck *{animation-play-state:paused!important;transition:none!important}
   .deck-export-overlay{position:fixed;inset:0;z-index:220;display:none;align-items:center;justify-content:center;background:rgba(6,7,10,.78);backdrop-filter:blur(16px);color:#fff;pointer-events:auto}
   body.exporting-deck .deck-export-overlay{display:flex}
   .deck-export-card{width:min(360px,calc(100vw - 48px));display:grid;gap:16px;padding:22px 24px;border:1px solid rgba(255,255,255,.18);border-radius:10px;background:rgba(20,22,27,.9);box-shadow:0 22px 70px rgba(0,0,0,.42)}
@@ -218,7 +238,7 @@
   @media print{
     *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
     :root{--deck-scale:1!important}
-    #hint,#nav,#preview-toggle,#preview-panel,#overview,.deck-export-overlay,.page-transition-stage{display:none!important}
+    #hint,#nav,#preview-toggle,#preview-panel,#slide-rail,.deck-export-overlay,.page-transition-stage{display:none!important}
     html,body{width:1920px!important;height:auto!important;margin:0!important;background:#fff!important;overflow:visible!important}
     body{user-select:auto!important}
     #deck-viewport{position:static!important;left:auto!important;top:auto!important;width:1920px!important;height:auto!important;overflow:visible!important;background:#fff!important}
@@ -235,6 +255,14 @@
 <body>
 <div id="hint" aria-hidden="true"></div>
 
+<aside id="slide-rail" data-slide-rail="true" aria-label="页面缩略图目录">
+  <div class="slide-rail-head">
+    <div class="slide-rail-title">幻灯片</div>
+    <div class="slide-rail-count" id="slide-rail-count">0</div>
+  </div>
+  <div id="slide-rail-list" data-rail-scroll="true"></div>
+</aside>
+
 <div id="deck-viewport">
 <div id="deck" class="dk-scope">
 
@@ -244,6 +272,7 @@
 </div>
 
 <div id="nav" aria-hidden="true"></div>
+<button id="present-exit-btn" type="button" aria-label="退出预览">退出</button>
 
 <button id="preview-toggle" type="button" aria-controls="preview-panel" aria-expanded="false" aria-label="打开控制台" title="控制台">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="10" y2="7"/><line x1="14" y1="7" x2="20" y2="7"/><circle cx="12" cy="7" r="2"/><line x1="4" y1="12" x2="6" y2="12"/><line x1="10" y1="12" x2="20" y2="12"/><circle cx="8" cy="12" r="2"/><line x1="4" y1="17" x2="13" y2="17"/><line x1="17" y1="17" x2="20" y2="17"/><circle cx="15" cy="17" r="2"/></svg>
@@ -255,8 +284,8 @@
       <div class="preview-count" id="preview-slide-count">0 slides</div>
     </div>
     <div class="preview-head-actions">
-      <button class="pp-ib" id="preview-overview-btn" type="button" aria-label="页面总览" title="页面总览">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>
+      <button class="pp-ib" id="preview-present-btn" data-present-toggle="true" type="button" aria-label="播放预览" title="播放预览">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.8v12.4c0 .8.9 1.3 1.6.9l9.1-6.2a1 1 0 0 0 0-1.8L9.6 4.9C8.9 4.5 8 5 8 5.8Z"/></svg>
       </button>
       <button class="pp-ib preview-close" id="preview-close" type="button" aria-label="关闭" title="关闭">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
@@ -455,6 +484,9 @@
 /* =============== 导航 =============== */
 const deck=document.getElementById('deck');
 const deckViewport=document.getElementById('deck-viewport');
+const slideRail=document.getElementById('slide-rail');
+const slideRailList=document.getElementById('slide-rail-list');
+const slideRailCount=document.getElementById('slide-rail-count');
 function collectDeckSlides(root=deck){
   return [...(root?.children || [])].filter(el => el.classList?.contains('slide'));
 }
@@ -468,9 +500,60 @@ let deckLeft=0;
 let deckTop=0;
 let deckScale=1;
 let activeThemePack=document.documentElement.dataset.themePack || '';
+let deckMode='edit';
+var overviewGrid=null;
 const CURRENT_SLIDE_STORE='dashi-ppt-current-slide';
 const DECK_ASPECT_W=16;
 const DECK_ASPECT_H=9;
+document.body.dataset.mode=deckMode;
+document.body.classList.add('preview-panel-open');
+
+function isEditMode(){
+  return deckMode === 'edit';
+}
+
+function isPresentMode(){
+  return deckMode === 'present';
+}
+
+function canEditDeck(){
+  return isEditMode() && !window.__deckExportLocked;
+}
+window.__canEditDeck = canEditDeck;
+
+function setDeckMode(mode){
+  const next = mode === 'present' ? 'present' : 'edit';
+  if(deckMode === next) return;
+  deckMode = next;
+  document.body.dataset.mode = deckMode;
+  if(isPresentMode()){
+    slideRail && (slideRail.inert = true);
+    document.getElementById('preview-panel') && (document.getElementById('preview-panel').inert = true);
+    if(typeof hideRailContextMenu === 'function') hideRailContextMenu();
+    if(typeof pauseOverviewThumbs === 'function') pauseOverviewThumbs();
+    if(typeof requestOverviewClosedPrewarm === 'function') requestOverviewClosedPrewarm(700);
+    window.__setEditableTextMode?.(false);
+  }else{
+    slideRail && (slideRail.inert = false);
+    document.getElementById('preview-panel') && (document.getElementById('preview-panel').inert = false);
+    window.__setEditableTextMode?.(true);
+    if(typeof refreshRailCatalog === 'function') refreshRailCatalog();
+    if(typeof scrollOverviewToCurrent === 'function') scrollOverviewToCurrent();
+    if(typeof requestOverviewThumbRefresh === 'function') requestOverviewThumbRefresh(true);
+  }
+  layoutDeck();
+  window.__syncActiveEffects?.();
+}
+
+function enterPresentMode(){
+  setDeckMode('present');
+}
+window.__enterPresentMode = enterPresentMode;
+
+function exitPresentMode(){
+  setDeckMode('edit');
+}
+window.__exitPresentMode = exitPresentMode;
 
 function getVisibleSlides(){
   return slides;
@@ -635,9 +718,10 @@ function measureDeckStage(availableW, availableH, offsetLeft=0){
 
 function layoutDeck(){
   const panel=document.getElementById('preview-panel');
-  const panelOpen=document.body.classList.contains('preview-panel-open');
+  const panelOpen=isEditMode() && document.body.classList.contains('preview-panel-open');
   const panelW=panelOpen && panel ? panel.offsetWidth : 0;
-  const stage=measureDeckStage(innerWidth-panelW,innerHeight);
+  const railW=isEditMode() && slideRail ? slideRail.offsetWidth : 0;
+  const stage=measureDeckStage(innerWidth-railW-panelW,innerHeight,railW);
   deckW=stage.width;
   deckH=stage.height;
   deckLeft=stage.left;
@@ -664,8 +748,7 @@ function isPointInsideDeckStage(event){
 window.__isPointInsideDeckStage = isPointInsideDeckStage;
 
 deck.addEventListener('mousedown', e=>{
-  if(document.body.classList.contains('preview-panel-open')) return;
-  if(overviewOn) return;
+  if(!isPresentMode()) return;
   if(!isPointInsideDeckStage(e)) return;
   if(isDeckInteractiveTarget(e.target)) return;
   if(e.button===0){
@@ -723,17 +806,27 @@ window.__isDeckFileSlotTarget = isDeckFileSlotTarget;
 function isDeckEditableTextTarget(target){
   if(!target?.closest) return false;
   if(target.closest('[contenteditable="true"],[contenteditable="plaintext-only"],[role="textbox"]')) return true;
-  return document.body.classList.contains('preview-panel-open') && !!target.closest('[data-editable-id]');
+  return canEditDeck() && !!target.closest('[data-editable-id]');
 }
 window.__isDeckEditableTextTarget = isDeckEditableTextTarget;
 
 function isDeckInteractiveTarget(target){
   if(!(target instanceof Element)) return false;
   return !!target.closest('button,select,input,textarea,a,#preview-panel,#preview-toggle') ||
-    isDeckFileSlotTarget(target) ||
+    (canEditDeck() && isDeckFileSlotTarget(target)) ||
     isDeckEditableTextTarget(target);
 }
 window.__isDeckInteractiveTarget = isDeckInteractiveTarget;
+
+function blockPresentEditEntrypoint(e){
+  if(canEditDeck()) return;
+  const target = e.target instanceof Element ? e.target : null;
+  if(!target) return;
+  if(!target.closest('[data-editable-id]') && !isDeckFileSlotTarget(target)) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+}
+['click','dragover','drop'].forEach(type => deck.addEventListener(type, blockPresentEditEntrypoint, true));
 
 function syncAmbientGrid(){ }
 
@@ -809,11 +902,9 @@ function playTheme10Motion(slide){
 }
 
 function syncTheme10Motion(activeSlide=getActiveSlide()){
-  if(overviewOn) return;
   if(!activeSlide?.querySelector?.('.ds-slidewrap')) return;
   let tries = 0;
   function attempt(){
-    if(overviewOn) return;
     if(!activeSlide?.isConnected || !activeSlide.hasAttribute('data-deck-active')) return;
     if(playTheme10Motion(activeSlide)) return;
     if(tries++ < 15) requestAnimationFrame(attempt);
@@ -871,7 +962,6 @@ function chartMotionRole(el, boundary){
 }
 
 function syncChartGrowthMotion(activeSlide=getActiveSlide(), tries=0){
-  if(overviewOn) return;
   if(!activeSlide?.isConnected || !activeSlide.hasAttribute('data-deck-active')) return;
   const root = activeSlide?.querySelector?.('.imported-theme-root');
   if(!root) return;
@@ -900,7 +990,6 @@ function restoreEffectIframes(scope=document){
 }
 
 function syncActiveEffects(activeSlide=getActiveSlide()){
-  if(overviewOn) return;
   syncAmbientGrid(activeSlide);
   syncVideoActivity(activeSlide);
   syncIframeActivity(activeSlide);
@@ -955,6 +1044,10 @@ function commitSlideIndex(nextIndex){
   }
   writeStoredSlideIndex(idx);
   dispatchEvent(new CustomEvent('swiss-slide-change', {detail:{index:idx, slide:el}}));
+  if(isEditMode() && overviewGrid){
+    refreshOverviewCards(overviewGrid);
+    scrollOverviewToCurrent();
+  }
   preloadAdjacentSlides(idx);
   requestOverviewClosedPrewarm();
   if(window.__playSlide && !transitionEntered) window.__playSlide(idx);
@@ -1048,7 +1141,7 @@ function updateAfterCatalogMutation(previousActiveSlide, preferredIndex, detail=
   layoutDeck();
   commitSlideIndex(idx);
   persistCatalogSlideOrder();
-  if(overviewOn && !detail.skipOverviewRebuild) buildOverview();
+  if(isEditMode() && !detail.skipOverviewRebuild) refreshRailCatalog();
   dispatchEvent(new CustomEvent('swiss-slide-catalog-change', {detail}));
 }
 
@@ -1105,8 +1198,7 @@ function toggleCatalogSlideSkipped(catalogIndex){
   return true;
 }
 
-/* =============== Overview View =============== */
-var overviewOn=false;
+/* =============== Slide Rail Catalog =============== */
 let overviewDragFrom=null, overviewDidDrag=false, overviewDropIndex=null;
 let overviewSuppressClickUntil=0;
 let overviewThumbObserver=null;
@@ -1124,7 +1216,6 @@ let overviewProgressUpdateHandle=null;
 let overviewProgressThumbs=[];
 var overviewClosedPrewarmTimer=null;
 var overviewClosedPrewarmRunId=0;
-let overviewGrid=null;
 let overviewBuiltSignature='';
 let overviewDragRects=[];
 let overviewDragOverQueued=false;
@@ -1139,42 +1230,39 @@ let overviewPerfMarks=createOverviewPerfMarks();
 const overviewThumbBitmapCache=new Map();
 const OVERVIEW_THUMB_WIDTH=128;
 const OVERVIEW_THUMB_HEIGHT=72;
-const OVERVIEW_CARD_WIDTH=256;
-const OVERVIEW_CARD_PADDING=8;
-const OVERVIEW_CARD_GAP=18;
+const OVERVIEW_CARD_WIDTH=144;
+const OVERVIEW_CARD_PADDING=5;
+const OVERVIEW_CARD_GAP=12;
 const OVERVIEW_THUMB_NEAR_MARGIN=720;
 const OVERVIEW_THUMB_CACHE_LIMIT=160;
 const OVERVIEW_THUMB_QUEUE_DELAY=80;
 const OVERVIEW_SYNC_RESTORE_LIMIT=8;
 const OVERVIEW_ASPECT_W=16;
 const OVERVIEW_ASPECT_H=9;
-const ov=document.createElement('div');
-ov.id='overview';
-ov.style.cssText='position:fixed;inset:0;z-index:100;background:rgba(250,250,248,.98);display:none;overflow-y:auto;padding:4vh 4vw';
-document.body.appendChild(ov);
+const ov=slideRailList;
 const overviewMenu=document.createElement('div');
-overviewMenu.className='overview-context-menu';
+overviewMenu.className='rail-context-menu';
 document.body.appendChild(overviewMenu);
 
 overviewMenu.addEventListener('mousedown', e => e.stopPropagation());
 overviewMenu.addEventListener('click', e => e.stopPropagation());
-document.addEventListener('click', hideOverviewContextMenu);
+document.addEventListener('click', hideRailContextMenu);
 addEventListener('keydown', event => {
-  if(event.key === 'Escape') hideOverviewContextMenu();
+  if(event.key === 'Escape') hideRailContextMenu();
 });
 
-function hideOverviewContextMenu(){
+function hideRailContextMenu(){
   overviewMenu.style.display='none';
   overviewMenu.replaceChildren();
 }
 
-function showOverviewContextMenu(event, catalogIndex){
+function showRailContextMenu(event, catalogIndex){
   const catalogSlides = getCatalogSlides();
   const slide = catalogSlides[catalogIndex];
   if(!slide) return;
   event.preventDefault();
   event.stopPropagation();
-  hideOverviewContextMenu();
+  hideRailContextMenu();
 
   const skipped = isSlideSkipped(slide, allSlides.indexOf(slide));
   const skipButton = document.createElement('button');
@@ -1182,7 +1270,7 @@ function showOverviewContextMenu(event, catalogIndex){
   skipButton.textContent = skipped ? '取消跳过' : '跳过页面';
   skipButton.disabled = !skipped && slides.length <= 1;
   skipButton.onclick=()=>{
-    if(toggleCatalogSlideSkipped(catalogIndex)) hideOverviewContextMenu();
+    if(toggleCatalogSlideSkipped(catalogIndex)) hideRailContextMenu();
   };
 
   const deleteButton = document.createElement('button');
@@ -1190,7 +1278,7 @@ function showOverviewContextMenu(event, catalogIndex){
   deleteButton.textContent='删除页面';
   deleteButton.disabled = catalogSlides.length <= 1;
   deleteButton.onclick=()=>{
-    if(deleteCatalogSlide(catalogIndex)) hideOverviewContextMenu();
+    if(deleteCatalogSlide(catalogIndex)) hideRailContextMenu();
   };
 
   overviewMenu.append(skipButton, deleteButton);
@@ -1231,7 +1319,7 @@ function getOverviewDeckOrder(){
 }
 
 function getOverviewVisibleOrNearCount(){
-  if(!overviewOn) return 0;
+  if(!isEditMode()) return 0;
   return getOverviewThumbRange(overviewGrid, {includeNear:true}).cards.length;
 }
 
@@ -1275,7 +1363,7 @@ function getOverviewPerfState(){
   const cacheKeys = [...overviewThumbBitmapCache.keys()];
   let cacheDomNodeCount = 0;
   let cacheDomEntryCount = 0;
-  const visibleCards = overviewOn && overviewGrid ? getOverviewThumbRange(overviewGrid, {includeNear:false}).visibleCards : [];
+  const visibleCards = isEditMode() && overviewGrid ? getOverviewThumbRange(overviewGrid, {includeNear:false}).visibleCards : [];
   const visibleThumbs = visibleCards
     .map(card => card.querySelector('[data-overview-thumb="true"]'))
     .filter(Boolean);
@@ -1290,7 +1378,8 @@ function getOverviewPerfState(){
   }, 0);
   const activeSlide = slides[idx];
   return {
-    overviewOn,
+    overviewOn:isEditMode(),
+    railActive:isEditMode(),
     cardCount: overviewGrid ? getOverviewCards(overviewGrid).length : 0,
     renderedCount: ov.querySelectorAll('[data-overview-thumb="true"][data-overview-rendered="true"]').length,
     visibleCount: visibleThumbs.length,
@@ -1317,6 +1406,7 @@ function getOverviewPerfState(){
   };
 }
 window.__getOverviewPerfState = getOverviewPerfState;
+window.__getRailPerfState = getOverviewPerfState;
 
 function recordOverviewInteraction(type){
   overviewPerfMarks.interactions.push({type, at:performance.now()});
@@ -1351,8 +1441,9 @@ function captureOverviewCardRects(grid){
 }
 
 function captureOverviewDragRects(grid){
-  const cards = getOverviewCards(grid);
-  recordOverviewLayoutRead('dragstart', 'all-card-rects', cards.length);
+  const range = getOverviewThumbRange(grid, {includeNear:true});
+  const cards = range.cards.length ? range.cards : getOverviewCards(grid);
+  recordOverviewLayoutRead('dragstart', 'visible-card-rects', cards.length);
   overviewDragRects = cards.map((card, index) => ({
     card,
     index,
@@ -1399,54 +1490,47 @@ function animateOverviewFlow(grid, fromRects){
 
 function getOverviewDropSlot(e, grid, rects=overviewDragRects){
   if(!rects?.length) return null;
-  const x = e.clientX;
   const y = e.clientY;
   let best = null;
   rects.forEach((item, index) => {
     const rect = item.rect;
-    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const x = e.clientX;
     const dx = Math.max(rect.left - x, 0, x - rect.right);
     const dy = Math.max(rect.top - y, 0, y - rect.bottom);
     const distance = dx * dx + dy * dy;
-    if(!best || distance < best.distance) best = {item, index, rect, distance, before:x < cx};
+    if(!best || distance < best.distance) best = {item, index, rect, distance, before:y < cy};
   });
   if(!best) return null;
   const index = best.before ? best.index : best.index + 1;
   const marker = getOverviewDropMarkerRect(rects, index);
-  return marker ? {index, kind:'vertical', ...marker} : null;
+  return marker ? {index, kind:'horizontal', ...marker} : null;
 }
 
 function getOverviewDropMarkerRect(rects, index){
   const previous = rects[index - 1]?.rect;
   const next = rects[index]?.rect;
-  let gapCenter = 0;
   let y = 0;
-  let h = 0;
-  if(previous && next && Math.abs((previous.top + previous.bottom) / 2 - (next.top + next.bottom) / 2) < Math.min(previous.height, next.height) * .5){
-    gapCenter = (previous.right + next.left) / 2;
-    y = Math.min(previous.top, next.top);
-    h = Math.max(previous.height, next.height);
+  if(previous && next){
+    y = (previous.bottom + next.top) / 2;
   }else if(next){
-    gapCenter = next.left - OVERVIEW_CARD_GAP / 2;
-    y = next.top;
-    h = next.height;
+    y = next.top - OVERVIEW_CARD_GAP / 2;
   }else if(previous){
-    gapCenter = previous.right + OVERVIEW_CARD_GAP / 2;
-    y = previous.top;
-    h = previous.height;
+    y = previous.bottom + OVERVIEW_CARD_GAP / 2;
   }else{
     return null;
   }
-  return {x:gapCenter, y, h};
+  return {y};
 }
 
 function showOverviewDropMarker(marker, slot, grid){
   const gridRect = grid.getBoundingClientRect();
   marker.style.display = 'block';
-  marker.style.left = (slot.x - gridRect.left - 2) + 'px';
-  marker.style.top = (slot.y - gridRect.top) + 'px';
-  marker.style.width = '4px';
-  marker.style.height = slot.h + 'px';
+  marker.style.left = '5px';
+  marker.style.right = '5px';
+  marker.style.top = (slot.y - gridRect.top - 2) + 'px';
+  marker.style.width = 'auto';
+  marker.style.height = '4px';
 }
 
 function hideOverviewDropMarker(marker){
@@ -1480,7 +1564,7 @@ function fitOverviewThumb(wrap, sourceSize=getOverviewSourceSize()){
 function fitOverviewThumbnails(cards=null){
   const startAt = performance.now();
   const sourceSize = getOverviewSourceSize();
-  const targetCards = cards || (overviewOn && overviewGrid ? getOverviewThumbRange(overviewGrid, {includeNear:true}).cards : null);
+  const targetCards = cards || (isEditMode() && overviewGrid ? getOverviewThumbRange(overviewGrid, {includeNear:true}).cards : null);
   const wraps = targetCards
     ? targetCards.map(card => card.querySelector?.('[data-overview-thumb="true"]')).filter(Boolean)
     : ov.querySelectorAll('[data-overview-thumb="true"]');
@@ -1623,17 +1707,37 @@ function requestOverviewClosedPrewarm(delay=900){
 
 function runOverviewClosedPrewarm(){
   const runId = ++overviewClosedPrewarmRunId;
-  if(overviewOn) return;
+  if(isEditMode()) return;
   const catalogSlides = getCatalogSlides();
   const activeIndex = Math.max(0, catalogSlides.indexOf(slides[idx]));
   const start = Math.max(0, activeIndex - 2);
   const targets = catalogSlides.slice(start, start + 24);
   targets.forEach((slide, order) => {
     setTimeout(() => {
-      if(overviewOn || runId !== overviewClosedPrewarmRunId) return;
+      if(isEditMode() || runId !== overviewClosedPrewarmRunId) return;
       predecodeOverviewSlideResources(slide);
-    }, order * 24);
+      prewarmOverviewThumbCache(slide, runId);
+    }, order * 160);
   });
+}
+
+function prewarmOverviewThumbCache(slide, runId){
+  if(!slide || isEditMode() || runId !== overviewClosedPrewarmRunId) return;
+  const key = getOverviewThumbCacheKey(slide);
+  if(overviewThumbBitmapCache.has(key)) return;
+  const startAt = performance.now();
+  try{
+    const preview = createOverviewDomPreview(slide);
+    rememberOverviewThumbFromDom(slide, preview);
+    recordOverviewStage('closed-rail-thumb-prewarm', startAt, {
+      slideId:getOverviewStableSlideId(slide),
+      count:1,
+    });
+  }catch(error){
+    console.warn('[overview prewarm]', error);
+  }finally{
+    if(slide !== slides[idx]) window.__releaseRuntimeSlide?.(slide);
+  }
 }
 
 function predecodeOverviewSlideResources(slide){
@@ -1665,13 +1769,13 @@ function deferOverviewThumbUntilQuiet(wrap, delay){
   if(!wrap || wrap.dataset.overviewRendered === 'true') return;
   delete wrap.dataset.overviewQueued;
   setTimeout(() => {
-    if(!overviewOn || !wrap.isConnected || wrap.dataset.overviewRendered === 'true') return;
+    if(!isEditMode() || !wrap.isConnected || wrap.dataset.overviewRendered === 'true') return;
     queueOverviewThumb(wrap, false);
   }, delay);
 }
 
 async function renderOverviewThumb(wrap, runId=overviewThumbRunId){
-  if(!overviewOn || !wrap?.isConnected || wrap.dataset.overviewRendered === 'true') return;
+  if(!isEditMode() || !wrap?.isConnected || wrap.dataset.overviewRendered === 'true') return;
   delete wrap.dataset.overviewQueued;
   const card = wrap.closest('[data-overview-card="true"]');
   const slide = card?.__overviewSlide || getCatalogSlides()[Number(card?.dataset.index)];
@@ -1679,7 +1783,7 @@ async function renderOverviewThumb(wrap, runId=overviewThumbRunId){
   const previewStartAt = performance.now();
   const trigger = wrap.dataset.overviewTrigger || 'queue';
   try {
-    if(runId !== overviewThumbRunId || !overviewOn || !wrap.isConnected) return;
+    if(runId !== overviewThumbRunId || !isEditMode() || !wrap.isConnected) return;
     const cachedThumb = overviewThumbBitmapCache.get(getOverviewThumbCacheKey(slide));
     if(restoreOverviewThumb(wrap, cachedThumb)){
       fitOverviewThumb(wrap);
@@ -1689,7 +1793,7 @@ async function renderOverviewThumb(wrap, runId=overviewThumbRunId){
     await renderOverviewThumbDomPreview(wrap, slide);
     recordOverviewStage('dom-preview-thumbnail', previewStartAt, {slideId:getOverviewStableSlideId(slide)});
   } catch (error) {
-    if(runId !== overviewThumbRunId || !overviewOn || !wrap.isConnected) return;
+    if(runId !== overviewThumbRunId || !isEditMode() || !wrap.isConnected) return;
     console.warn('[overview thumb]', error);
     delete wrap.dataset.overviewRendered;
     wrap.dataset.overviewMode='placeholder';
@@ -1710,13 +1814,13 @@ async function renderOverviewThumb(wrap, runId=overviewThumbRunId){
 }
 
 function scheduleOverviewThumbQueue(){
-  if(overviewThumbScheduled || overviewThumbProcessing || !overviewOn) return;
+  if(overviewThumbScheduled || overviewThumbProcessing || !isEditMode()) return;
   overviewThumbScheduled=true;
   const runId = overviewThumbRunId;
   overviewThumbQueueHandle = setTimeout(async () => {
     overviewThumbQueueHandle=null;
     overviewThumbScheduled=false;
-    if(!overviewOn || runId !== overviewThumbRunId) return;
+    if(!isEditMode() || runId !== overviewThumbRunId) return;
     const sliceStartAt = performance.now();
     const budgetMs = 10;
     overviewPerfMarks.queueRuns.push({at:sliceStartAt, scheduler:'time-sliced', budgetMs, queueLength:overviewThumbQueue.length});
@@ -1725,7 +1829,7 @@ function scheduleOverviewThumbQueue(){
       return;
     }
     let processed=0;
-    while(overviewThumbQueue.length && overviewOn && runId === overviewThumbRunId){
+    while(overviewThumbQueue.length && isEditMode() && runId === overviewThumbRunId){
       if(performance.now() < overviewThumbPauseUntil) break;
       if(processed > 0 || performance.now() - sliceStartAt >= budgetMs) break;
       const wrap = overviewThumbQueue.shift();
@@ -1741,7 +1845,7 @@ function scheduleOverviewThumbQueue(){
       processed += 1;
       if(processed >= 1) break;
     }
-    if(overviewOn && runId === overviewThumbRunId && overviewThumbQueue.length) scheduleOverviewThumbQueue();
+    if(isEditMode() && runId === overviewThumbRunId && overviewThumbQueue.length) scheduleOverviewThumbQueue();
   }, OVERVIEW_THUMB_QUEUE_DELAY);
 }
 
@@ -1785,7 +1889,7 @@ function setOverviewThumbQueue(items){
 }
 
 function queueNearbyOverviewThumbs(){
-  if(!overviewOn) return;
+  if(!isEditMode()) return;
   const startAt = performance.now();
   const range = getOverviewThumbRange(overviewGrid, {includeNear:true});
   const visibleWraps = getOverviewViewportThumbs();
@@ -1804,9 +1908,9 @@ function queueNearbyOverviewThumbs(){
       return {wrap, trigger:'visible', cost:getOverviewPreviewCost(card?.__overviewSlide)};
     })
     .sort((a, b) => a.cost - b.cost);
-  const hasHeavyVisible = activeThemePack !== 'theme01' && visibleEntries.length > 16;
+  const hasHeavyVisible = activeThemePack !== 'theme01' && visibleEntries.length > 4;
   const quietDelay = Math.max(0, overviewOpenedAt + 5200 - performance.now());
-  const immediateVisibleLimit = hasHeavyVisible ? Math.max(1, Math.ceil(visibleEntries.length * 0.8)) : visibleEntries.length;
+  const immediateVisibleLimit = hasHeavyVisible ? Math.max(1, Math.ceil(visibleEntries.length * 0.75)) : visibleEntries.length;
   visibleEntries.forEach((item, index) => {
     if(hasHeavyVisible && index >= immediateVisibleLimit){
       deferOverviewThumbUntilQuiet(item.wrap, quietDelay);
@@ -1824,10 +1928,10 @@ function queueVisibleOverviewThumbs(){
 window.__queueNearbyOverviewThumbs = queueNearbyOverviewThumbs;
 
 function requestOverviewThumbRefresh(afterPause=false){
-  if(!overviewOn) return;
+  if(!isEditMode()) return;
   const refresh = () => {
     overviewThumbRefreshQueued=false;
-    if(overviewOn) queueNearbyOverviewThumbs();
+    if(isEditMode()) queueNearbyOverviewThumbs();
   };
   if(afterPause){
     setTimeout(refresh, Math.max(0, overviewThumbPauseUntil - performance.now()) + 20);
@@ -1909,13 +2013,14 @@ function markOverviewThumbDirty(slide){
     wrap.replaceChildren(createOverviewThumbPlaceholder());
     needsRefresh=true;
   });
-  if(overviewOn && needsRefresh){
+  if(isEditMode() && needsRefresh){
     deferOverviewThumbs(650, 'dirty');
     requestOverviewThumbRefresh(true);
   }
   requestOverviewProgressUpdate();
 }
 window.__markOverviewThumbDirty = markOverviewThumbDirty;
+window.__markRailThumbDirty = markOverviewThumbDirty;
 
 function createOverviewThumbPlaceholder(){
   const fragment = document.createDocumentFragment();
@@ -1953,17 +2058,17 @@ function refreshOverviewCards(grid=overviewGrid){
     card.dataset.slideKey = getOverviewSlideKey(slide);
     card.dataset.slideId = getOverviewStableSlideId(slide);
     card.dataset.overviewActive = active ? 'true' : 'false';
-    card.style.outlineColor = active ? 'var(--focus-mark)' : 'rgba(0,0,0,.16)';
-    card.style.outlineWidth = active ? '3px' : '1px';
+    card.dataset.railActive = active ? 'true' : 'false';
+    card.setAttribute('aria-current', active ? 'true' : 'false');
     const label = card.querySelector('[data-overview-label="true"]');
     if(label) label.textContent = String(index + 1).padStart(2,'0') + '/' + String(catalogTotal).padStart(2,'0');
     const skipped = isSlideSkipped(slide, allSlides.indexOf(slide));
     card.style.opacity = skipped ? '.56' : '1';
     card.style.filter = skipped ? 'saturate(.62)' : 'none';
-    let badge = card.querySelector('.overview-skip-badge');
+    let badge = card.querySelector('.rail-skip-badge');
     if(skipped && !badge){
       badge=document.createElement('div');
-      badge.className='overview-skip-badge';
+      badge.className='rail-skip-badge';
       badge.textContent='已跳过';
       card.appendChild(badge);
     }else if(!skipped && badge){
@@ -2066,7 +2171,7 @@ function createOverviewProgress(total){
 function updateOverviewProgress(){
   if(!overviewProgress) return;
   const startAt = performance.now();
-  const wraps = overviewOn ? getOverviewViewportThumbs() : [];
+  const wraps = isEditMode() ? getOverviewViewportThumbs() : [];
   const total = wraps.length;
   const done = wraps.filter(wrap => wrap.dataset.overviewRendered === 'true').length;
   const pct = total ? Math.round(done / total * 100) : 100;
@@ -2097,6 +2202,7 @@ function getOverviewViewportThumbs(){
 
 function buildOverview(fromRects=null, fromThumbs=null){
   const startAt = performance.now();
+  if(!ov) return;
   refreshSlideList();
   const catalogSlides = getCatalogSlides();
   const catalogTotal = catalogSlides.length;
@@ -2106,16 +2212,18 @@ function buildOverview(fromRects=null, fromThumbs=null){
   overviewBuiltSignature = getOverviewStructureSignature(catalogSlides);
   teardownOverviewThumbs();
   ov.innerHTML='';
-  hideOverviewContextMenu();
-  ov.appendChild(createOverviewProgress(catalogTotal));
+  hideRailContextMenu();
+  if(slideRailCount) slideRailCount.textContent = String(catalogTotal);
   const grid=document.createElement('div');
-  grid.style.cssText=`display:grid;grid-template-columns:repeat(auto-fill,minmax(${OVERVIEW_CARD_WIDTH + OVERVIEW_CARD_PADDING * 2}px,${OVERVIEW_CARD_WIDTH + OVERVIEW_CARD_PADDING * 2}px));justify-content:center;gap:${OVERVIEW_CARD_GAP + 10}px ${OVERVIEW_CARD_GAP}px;max-width:90vw;margin:0 auto;padding-bottom:4vh;position:relative`;
+  grid.className='rail-grid';
+  grid.style.cssText=`display:grid;grid-template-columns:1fr;gap:${OVERVIEW_CARD_GAP}px;position:relative`;
   const dropMarker=document.createElement('div');
   dropMarker.dataset.overviewDropMarker='true';
-  dropMarker.style.cssText='position:absolute;z-index:5;display:none;pointer-events:none;background:var(--focus-mark);border-radius:999px;box-shadow:0 0 0 4px rgba(0,0,0,.08)';
+  dropMarker.dataset.railDropMarker='true';
+  dropMarker.className='rail-drop-marker';
   let restoredThumbCount=0;
   const fullCacheRestore = performance.now() < overviewFullCacheRestoreUntil;
-  const syncRestoreLimit = fullCacheRestore ? Infinity : (activeThemePack === 'theme01' ? OVERVIEW_SYNC_RESTORE_LIMIT : 0);
+  const syncRestoreLimit = fullCacheRestore ? Infinity : (activeThemePack === 'theme01' ? OVERVIEW_SYNC_RESTORE_LIMIT : 6);
   catalogSlides.forEach((s,i)=>{
     const allIndex = allIndexBySlide.get(s) ?? allSlides.indexOf(s);
     const slideId = getSlideVmId(s, allIndex);
@@ -2123,24 +2231,30 @@ function buildOverview(fromRects=null, fromThumbs=null){
     const playableIndex = playableIndexBySlide.get(s) ?? -1;
     const card=document.createElement('div');
     card.draggable=true;
+    card.className='rail-card';
     card.__overviewSlide=s;
     card.dataset.index=i;
+    card.dataset.railCard='true';
     card.dataset.overviewCard='true';
     card.dataset.overviewActive=playableIndex===idx?'true':'false';
+    card.dataset.railActive=playableIndex===idx?'true':'false';
+    card.setAttribute('aria-current', playableIndex===idx ? 'true' : 'false');
     card.dataset.slideKey=slideId;
     card.dataset.slideId=slideId;
-    card.style.cssText=`cursor:grab;overflow:visible;position:relative;width:${OVERVIEW_CARD_WIDTH + OVERVIEW_CARD_PADDING * 2}px;padding:${OVERVIEW_CARD_PADDING}px ${OVERVIEW_CARD_PADDING}px 0;border-radius:7px;outline:${playableIndex===idx?'3px':'1px'} solid ${playableIndex===idx?'var(--focus-mark)':'rgba(0,0,0,.16)'};outline-offset:0;transition:opacity .2s,transform .2s,filter .2s;background:rgba(255,255,255,.68);opacity:${skipped?'.56':'1'};filter:${skipped?'saturate(.62)':'none'};content-visibility:auto;contain:layout paint style;contain-intrinsic-size:${OVERVIEW_CARD_WIDTH + OVERVIEW_CARD_PADDING * 2}px ${Math.round((OVERVIEW_CARD_WIDTH / OVERVIEW_ASPECT_W * OVERVIEW_ASPECT_H) + 42)}px`;
+    card.style.opacity=skipped?'.56':'1';
+    card.style.filter=skipped?'saturate(.62)':'none';
+    card.style.contentVisibility='auto';
+    card.style.containIntrinsicSize=`${OVERVIEW_CARD_WIDTH}px ${Math.round((OVERVIEW_CARD_WIDTH / OVERVIEW_ASPECT_W * OVERVIEW_ASPECT_H) + 34)}px`;
     card.onmouseenter=()=>{
       deferOverviewThumbs(650, 'hover');
     };
-    card.addEventListener('contextmenu', e => showOverviewContextMenu(e, Number(card.dataset.index)));
+    card.addEventListener('contextmenu', e => showRailContextMenu(e, Number(card.dataset.index)));
     card.addEventListener('dragstart', e=>{
       pauseOverviewThumbs();
       captureOverviewDragRects(grid);
       overviewDragFrom=Number(card.dataset.index);
       overviewDidDrag=true;
-      card.style.opacity='.45';
-      card.style.cursor='grabbing';
+      card.classList.add('is-dragging');
       e.dataTransfer.effectAllowed='move';
       e.dataTransfer.setData('text/plain', String(overviewDragFrom));
     });
@@ -2152,18 +2266,22 @@ function buildOverview(fromRects=null, fromThumbs=null){
       overviewDragRects=[];
       overviewPendingDragEvent=null;
       hideOverviewDropMarker(dropMarker);
-      card.style.opacity='1';
-      card.style.cursor='grab';
+      card.classList.remove('is-dragging');
       card.style.transform='none';
-      if(overviewOn) requestOverviewThumbRefresh(true);
+      if(isEditMode()) requestOverviewThumbRefresh(true);
     });
     const wrap=document.createElement('div');
     const frame=document.createElement('div');
+    frame.className='rail-thumb-frame';
     frame.setAttribute('data-overview-frame', 'true');
+    frame.setAttribute('data-rail-frame', 'true');
     const isDark = slideUsesDarkChrome(s);
-    frame.style.cssText='position:relative;width:100%;aspect-ratio:'+OVERVIEW_ASPECT_W+'/'+OVERVIEW_ASPECT_H+';overflow:hidden;background:'+(isDark?'var(--ink)':'var(--paper)')+';contain:layout paint style';
+    frame.style.background=isDark?'var(--ink)':'var(--paper)';
+    frame.style.contain='layout paint style';
+    wrap.className='rail-thumb';
     wrap.dataset.overviewThumb='true';
-    wrap.style.cssText='position:absolute;inset:0;width:100%;height:100%;aspect-ratio:'+OVERVIEW_ASPECT_W+'/'+OVERVIEW_ASPECT_H+';overflow:hidden;pointer-events:none;background:'+(isDark?'var(--ink)':'var(--paper)')+';contain:layout paint style';
+    wrap.dataset.railThumb='true';
+    wrap.style.background=isDark?'var(--ink)':'var(--paper)';
     const cachedThumb = fromThumbs?.[card.dataset.slideKey] || overviewThumbBitmapCache.get(getOverviewThumbCacheKey(s));
     const canRestoreNow = cachedThumb && (fromThumbs?.[card.dataset.slideKey] || restoredThumbCount < syncRestoreLimit);
     if(canRestoreNow && restoreOverviewThumb(wrap, cachedThumb)){
@@ -2173,15 +2291,15 @@ function buildOverview(fromRects=null, fromThumbs=null){
       wrap.appendChild(createOverviewThumbPlaceholder());
     }
     const label=document.createElement('div');
+    label.className='rail-label';
     label.setAttribute('data-overview-label', 'true');
-    label.style.cssText='position:static;padding:8px 2px 2px;font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:rgba(0,0,0,.66);background:transparent;pointer-events:none';
     label.textContent=String(i+1).padStart(2,'0')+'/'+String(catalogTotal).padStart(2,'0');
     frame.appendChild(wrap);
     card.appendChild(frame);
     card.appendChild(label);
     if(skipped){
       const badge=document.createElement('div');
-      badge.className='overview-skip-badge';
+      badge.className='rail-skip-badge';
       badge.textContent='已跳过';
       card.appendChild(badge);
     }
@@ -2193,7 +2311,9 @@ function buildOverview(fromRects=null, fromThumbs=null){
       if(targetIndex < 0) return;
       pauseOverviewThumbs();
       deferOverviewThumbs(650, 'click');
-      toggleOverview();go(targetIndex);
+      go(targetIndex, {animate:false});
+      refreshOverviewCards(grid);
+      scrollOverviewToCurrent();
     };
     grid.appendChild(card);
   });
@@ -2255,43 +2375,27 @@ function buildOverview(fromRects=null, fromThumbs=null){
   overviewGrid=grid;
   animateOverviewFlow(grid, fromRects);
   updateOverviewProgress();
-  recordOverviewStage('build-overview', startAt, {count:catalogTotal});
+  recordOverviewStage('build-rail-catalog', startAt, {count:catalogTotal});
 }
 
-function openOverview(){
+function refreshRailCatalog(){
   const startAt = performance.now();
   overviewOpenedAt=startAt;
-  overviewOn=true;
-  document.body.classList.add('overview-on');
-  ov.style.display='block';
   const signature = getOverviewStructureSignature();
   if(!overviewGrid || !overviewGrid.isConnected || overviewBuiltSignature !== signature){
     buildOverview();
   }else{
-    hideOverviewContextMenu();
+    hideRailContextMenu();
     refreshOverviewCards(overviewGrid);
     updateOverviewProgress();
   }
   scrollOverviewToCurrent();
-  recordOverviewStage('open-overview', startAt, {cardCount:overviewGrid ? getOverviewCards(overviewGrid).length : 0});
+  recordOverviewStage('refresh-rail-catalog', startAt, {cardCount:overviewGrid ? getOverviewCards(overviewGrid).length : 0});
 }
-
-function closeOverview(){
-  overviewOn=false;
-  document.body.classList.remove('overview-on');
-  pauseOverviewThumbs();
-  hideOverviewContextMenu();
-  ov.style.display='none';
-}
-
-function toggleOverview(){
-  if(overviewOn) closeOverview();
-  else openOverview();
-}
-window.__toggleOverview = toggleOverview;
+window.__refreshRailCatalog = refreshRailCatalog;
 
 ov.addEventListener('scroll', () => {
-  if(!overviewOn || overviewScrollQueued) return;
+  if(!isEditMode() || overviewScrollQueued) return;
   deferOverviewThumbs(650, 'scroll');
   overviewScrollQueued=true;
   requestAnimationFrame(() => {
@@ -2305,7 +2409,7 @@ ov.addEventListener('scroll', () => {
 }, {passive:true});
 
 addEventListener('resize', () => {
-  if(overviewOn){
+  if(isEditMode()){
     deferOverviewThumbs(650, 'resize');
     refreshOverviewDragRects(overviewGrid);
     const range = getOverviewThumbRange(overviewGrid, {includeNear:true});
@@ -2320,8 +2424,25 @@ const DECK_PREV_KEYS=new Set(['ArrowLeft','PageUp','ArrowUp']);
 
 function handleDeckKeyNavigation(e,{allowSpace=true}={}){
   if(window.__deckExportLocked){e.preventDefault();return;}
-  if(e.key==='Escape'){e.preventDefault();toggleOverview();return;}
-  if(overviewOn)return;
+  if(e.key==='Escape'){
+    if(isPresentMode()){
+      e.preventDefault();
+      exitPresentMode();
+    }
+    return;
+  }
+  if(isEditMode()){
+    if(e.key==='ArrowDown'){
+      e.preventDefault();
+      go(idx+1, {animate:false});
+      return;
+    }
+    if(e.key==='ArrowUp'){
+      e.preventDefault();
+      go(idx-1, {animate:false});
+    }
+    return;
+  }
   if(DECK_NEXT_KEYS.has(e.key)||(allowSpace&&e.key===' ')){
     e.preventDefault();
     if(window.__pipeAdvance && window.__pipeAdvance()) return;
@@ -2346,6 +2467,7 @@ function isDeckTypingTarget(target){
 let tx=0,ty=0;
 addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
 addEventListener('touchend',e=>{
+  if(!isPresentMode()) return;
   const dx=(e.changedTouches[0].clientX-tx);
   const dy=(e.changedTouches[0].clientY-ty);
   if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){
@@ -2359,6 +2481,7 @@ const storedSlide = readStoredSlideIndex();
 const initialSlide = initialSlideParam ? Number(initialSlideParam) - 1 : (storedSlide ?? 0);
 layoutDeck();
 go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
+refreshRailCatalog();
 
 </script>
 <script>
@@ -2704,6 +2827,7 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
         button.className = 'pp-image-btn';
         button.textContent = current ? '替换图片' : '选择图片';
         const openPicker = event => {
+          if(!canEditDeck()) return;
           event.preventDefault();
           event.stopPropagation();
           input.click();
@@ -2842,6 +2966,7 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
   }
 
   function updateCurrentProp(control, value, opts = {}){
+    if(!canEditDeck()) return;
     const slide = getCurrentSlide();
     if(!slide) return;
     const values = getSlidePropValues(slide);
@@ -2930,7 +3055,7 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
   function setOpen(open){
     document.body.classList.toggle('preview-panel-open', open);
     toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    window.__setEditableTextMode?.(open);
+    window.__setEditableTextMode?.(canEditDeck());
     requestAnimationFrame(() => {
       window.__layoutDeck?.();
       window.__fitOverviewThumbnails?.();
@@ -2941,7 +3066,9 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
   toggle.addEventListener('mousedown', e => e.stopPropagation());
   toggle.addEventListener('click', () => setOpen(!document.body.classList.contains('preview-panel-open')));
   close?.addEventListener('click', () => setOpen(false));
-  document.getElementById('preview-overview-btn')?.addEventListener('click', () => window.__toggleOverview?.());
+  document.getElementById('preview-present-btn')?.addEventListener('click', () => window.__enterPresentMode?.());
+  document.getElementById('present-exit-btn')?.addEventListener('click', () => window.__exitPresentMode?.());
+  setOpen(document.body.classList.contains('preview-panel-open'));
 
   // merged export dropdown
   const exportWrap = document.getElementById('preview-export-wrap');
@@ -2984,7 +3111,6 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
 
   window.__exportDeckPdf = async function(){
     if(window.__deckExportLocked) return;
-    const overview = document.getElementById('overview');
     const restoreState = captureExportViewState();
     let exportUi = null;
     let restorePrintState = null;
@@ -2995,8 +3121,7 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
       window.__flushEditableTextState?.();
       window.__syncDeckViewModelFromDom?.();
       throwIfDeckExportCancelled(exportUi);
-      document.body.classList.remove('preview-panel-open', 'overview-on');
-      if(overview) overview.style.display = 'none';
+      setDeckMode('present');
       window.__layoutDeck?.();
       window.__restoreEffectIframes?.(document);
       const slides = await materializeExportSlides(exportUi, 'PDF');
@@ -3051,16 +3176,8 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
       pptx.subject = 'Exported from HTML preview';
       pptx.title = document.title || 'Presentation';
 
-      const overview = document.getElementById('overview');
-      restoreState = {
-        index: window.__currentSlideIndex || 0,
-        panelOpen: document.body.classList.contains('preview-panel-open'),
-        overviewOn: document.body.classList.contains('overview-on'),
-        overviewDisplay: overview?.style.display || '',
-      };
-
-      document.body.classList.remove('preview-panel-open', 'overview-on');
-      if(overview) overview.style.display = 'none';
+      restoreState = captureExportViewState();
+      setDeckMode('present');
       window.__layoutDeck?.();
       window.__restoreEffectIframes?.(document);
       await window.__initUnicornScenes?.(document, {force:true});
@@ -3170,22 +3287,18 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
   }
 
   function captureExportViewState(){
-    const overview = document.getElementById('overview');
     return {
       index: window.__currentSlideIndex || 0,
+      mode: deckMode,
       panelOpen: document.body.classList.contains('preview-panel-open'),
-      overviewOn: document.body.classList.contains('overview-on'),
-      overviewDisplay: overview?.style.display || '',
     };
   }
 
   function restoreExportViewState(state){
     if(!state) return;
     go(state.index, {animate:false, force:true});
+    setDeckMode(state.mode === 'present' ? 'present' : 'edit');
     document.body.classList.toggle('preview-panel-open', state.panelOpen);
-    document.body.classList.toggle('overview-on', state.overviewOn);
-    const overview = document.getElementById('overview');
-    if(overview) overview.style.display = state.overviewDisplay;
     document.getElementById('preview-toggle')?.setAttribute('aria-expanded', state.panelOpen ? 'true' : 'false');
     window.__layoutDeck?.();
   }
@@ -3195,12 +3308,12 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
     materializeHtmlExportViewModel(clone, visibleSlides);
     await inlineLocalScriptsForHtmlExport(clone);
     await embedUnicornAssetsForExport(clone);
-    clone.querySelector('#overview')?.remove();
+    clone.querySelector('#slide-rail')?.remove();
     clone.querySelector('#image-picker-input')?.remove();
     clone.querySelector('#media-picker-input')?.remove();
     clone.querySelector('.deck-export-overlay')?.remove();
     clone.querySelector('.page-transition-stage')?.remove();
-    clone.querySelector('body')?.classList.remove('preview-panel-open', 'overview-on', 'exporting-deck');
+    clone.querySelector('body')?.classList.remove('preview-panel-open', 'exporting-deck');
     clone.querySelectorAll('iframe[data-effect-src]').forEach(iframe => {
       if(!iframe.getAttribute('src') && iframe.dataset.effectSrc) iframe.setAttribute('src', iframe.dataset.effectSrc);
     });
@@ -3667,10 +3780,8 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
   function restorePptxExportState(state){
     if(!state) return;
     go(state.index, {animate:false, force:true});
+    setDeckMode(state.mode === 'present' ? 'present' : 'edit');
     document.body.classList.toggle('preview-panel-open', state.panelOpen);
-    document.body.classList.toggle('overview-on', state.overviewOn);
-    const overview = document.getElementById('overview');
-    if(overview) overview.style.display = state.overviewDisplay;
     document.getElementById('preview-toggle')?.setAttribute('aria-expanded', state.panelOpen ? 'true' : 'false');
     window.__layoutDeck?.();
   }
@@ -3764,7 +3875,7 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
 
   function syncEditableMode(scope = deck, on){
     const root = scope instanceof Element ? scope : deck;
-    const enabled = on ?? document.body.classList.contains('preview-panel-open');
+    const enabled = on ?? canEditDeck();
     const editable = [
       ...(root.dataset?.editableId ? [root] : []),
       ...(root.querySelectorAll?.('[data-editable-id]') || []),
@@ -3783,7 +3894,7 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
   }
 
   function handleEditablePointerDown(e){
-    if(!document.body.classList.contains('preview-panel-open')) return;
+    if(!canEditDeck()) return;
     if(e.defaultPrevented || (e.button !== undefined && e.button !== 0)) return;
     const target = e.target instanceof Element ? e.target : null;
     if(!target || !deck.contains(target)) return;
@@ -3834,7 +3945,7 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
 	  function handleFocusIn(e){
 	    const el = e.target.closest('[data-editable-id]');
 	    if(!el || !deck.contains(el)) return;
-	    if(!document.body.classList.contains('preview-panel-open')){
+	    if(!canEditDeck()){
 	      el.blur();
 	      return;
 	    }
@@ -3867,6 +3978,7 @@ go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
 	  }
 
   function saveTextElement(el){
+    if(!canEditDeck()) return;
     const key = el.dataset.editableId;
     if(!key) return;
     textState[key] = el.innerHTML;

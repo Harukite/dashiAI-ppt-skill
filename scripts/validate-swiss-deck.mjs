@@ -191,7 +191,7 @@ if (!/transitionEntered[\s\S]{0,500}__playSlide/.test(commitSlideSource) || !/!t
 }
 
 const overviewBuildStart = html.indexOf('function buildOverview');
-const overviewBuildEnd = overviewBuildStart >= 0 ? html.indexOf('function toggleOverview', overviewBuildStart) : -1;
+const overviewBuildEnd = overviewBuildStart >= 0 ? html.indexOf('function refreshRailCatalog', overviewBuildStart) : -1;
 const overviewBuildSource = overviewBuildStart >= 0 && overviewBuildEnd > overviewBuildStart
   ? html.slice(overviewBuildStart, overviewBuildEnd)
   : '';
@@ -225,30 +225,34 @@ const overviewDragOverEnd = overviewDragOverStart >= 0 ? html.indexOf("});", ove
 const overviewDragOverSource = overviewDragOverStart >= 0 && overviewDragOverEnd > overviewDragOverStart
   ? html.slice(overviewDragOverStart, overviewDragOverEnd)
   : '';
-if (!/OVERVIEW_CARD_WIDTH/.test(html) || !/grid-template-columns:\s*repeat\(auto-fill/.test(html)) {
-  errors.push('Overview grid must use fixed-size cards with auto wrapping instead of loose equal-width columns.');
+if (!/OVERVIEW_CARD_WIDTH/.test(html) || !/className\s*=\s*['"]rail-grid['"]/.test(overviewBuildSource) || !/grid-template-columns:1fr/.test(overviewBuildSource)) {
+  errors.push('Slide rail must use fixed-size vertical thumbnail cards instead of the old full-screen overview grid.');
 }
 
-if (!/data-overview-frame/.test(html) || !/data-overview-label/.test(html)) {
-  errors.push('Overview cards must keep the selected border outside the thumbnail and move page numbers below the image.');
+if (!/data-rail-card/.test(html) && !/dataset\.railCard/.test(html)) {
+  errors.push('Slide rail cards must be represented as first-class catalog items.');
+}
+
+if (!/data-overview-frame/.test(html) || !/data-overview-label/.test(html) || !/data-rail-frame/.test(html)) {
+  errors.push('Slide rail cards must keep the selected border outside the thumbnail and move page numbers below the image.');
 }
 
 if (/position:absolute;left:0;bottom:0/.test(overviewBuildSource)) {
   errors.push('Overview page number label is still overlaid on the thumbnail image.');
 }
 
-if (!/dataset\.overviewProgress\s*=\s*['"]true['"]/.test(html)
-  || !/const wraps = overviewOn \? getOverviewViewportThumbs\(\) : \[\]/.test(html)
-  || !/overviewProgress\.box\.hidden\s*=\s*!show/.test(html)) {
-  errors.push('Overview progress must be lazy-aware and hide once the current viewport thumbnails are ready.');
+if (/ov\.appendChild\(createOverviewProgress/.test(overviewBuildSource)) {
+  errors.push('Slide rail must not show the old sticky overview progress bar.');
 }
 
 if (/buildOverview\(/.test(overviewDropSource) || !/applyOverviewReorderLocally/.test(html)) {
   errors.push('Overview drag/drop reorder must update the overview DOM locally instead of rebuilding the whole overview.');
 }
 
-if (/best\.before\s*\?\s*best\.rect\.left\s*:\s*best\.rect\.right/.test(overviewDropSlotSource) || !/gapCenter/.test(overviewDropSlotSource)) {
-  errors.push('Overview drop marker must sit between cards, not on a card edge.');
+if (/best\.before\s*\?\s*best\.rect\.left\s*:\s*best\.rect\.right/.test(overviewDropSlotSource)
+  || !/kind:\s*['"]horizontal['"]/.test(overviewDropSlotSource)
+  || !/previous\.bottom\s*\+\s*next\.top/.test(overviewDropSlotSource)) {
+  errors.push('Slide rail drop marker must sit horizontally between vertical cards.');
 }
 
 if (!/overviewBuiltSignature/.test(html) || !/refreshOverviewCards/.test(html)) {
@@ -271,8 +275,12 @@ if (!/queueNearbyOverviewThumbs\(/.test(html) || !/OVERVIEW_THUMB_NEAR_MARGIN/.t
   errors.push('Overview should queue visible thumbnails and a small nearby buffer instead of the full deck.');
 }
 
-if (!/pauseOverviewThumbs\(\)[\s\S]{0,300}overviewDragFrom/.test(overviewBuildSource) || !/pauseOverviewThumbs\(\)[\s\S]{0,220}toggleOverview\(\);go/.test(overviewBuildSource)) {
-  errors.push('Overview drag and page click interactions must pause thumbnail generation before user interaction work.');
+if (!/pauseOverviewThumbs\(\)[\s\S]{0,300}overviewDragFrom/.test(overviewBuildSource) || !/pauseOverviewThumbs\(\)[\s\S]{0,260}go\(targetIndex/.test(overviewBuildSource)) {
+  errors.push('Slide rail drag and page click interactions must pause thumbnail generation before user interaction work.');
+}
+
+if (!/deckMode/.test(html) || !/body\.dataset\.mode/.test(html) || /window\.__toggleOverview\s*=|function\s+(openOverview|closeOverview|toggleOverview)\b|overview-on|var\s+overviewOn|let\s+overviewOn|const\s+overviewOn/.test(html)) {
+  errors.push('Deck UI must expose only edit/present modes and must not keep the legacy overview mode path.');
 }
 
 if (!/window\.__getOverviewPerfState\s*=/.test(html) || !/window\.__resetOverviewPerfMarks\s*=/.test(html)) {

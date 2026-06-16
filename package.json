@@ -14,6 +14,8 @@
     "manifest:update": "tsx scripts/update-layout-manifest.jsx",
     "skill:sync": "node scripts/sync-skill.mjs",
     "validate:swiss": "node scripts/validate-swiss-deck.mjs",
+    "validate:editor-presenter-modes": "npm run render:themes && node scripts/validate-editor-presenter-modes.mjs",
+    "validate:editor-presenter-modes:only": "node scripts/validate-editor-presenter-modes.mjs",
     "validate:overview-performance": "npm run render:themes && node scripts/validate-overview-performance.mjs",
     "validate:overview-performance:only": "node scripts/validate-overview-performance.mjs",
     "validate:goal-copy": "node scripts/validate-goal-copy.mjs",
