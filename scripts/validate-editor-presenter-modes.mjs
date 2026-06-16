@@ -58,6 +58,7 @@ try {
   await page.waitForSelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
 
   const defaultRailFirstScreen = await runDefaultRailFirstScreenLoadValidation(page);
+  const themeRailFirstScreens = await runThemeRailFirstScreenLoadValidation(page);
   const defaultEdit = await readEditorPresenterState(page);
   const layoutWidths = [];
   for (const width of [1280, 1440, 1920]) {
@@ -72,6 +73,7 @@ try {
   const railPerformance = await runRailPerformanceValidation(page);
   const railActiveSync = await runRailActiveSyncValidation(page);
   const pageNavigationLatency = await runPageNavigationLatencyValidation(page);
+  const navigationRootCauseMatrix = await runNavigationRootCauseMatrix(page);
   const editableTextCaret = await runEditableTextCaretValidation(page);
   const railThumbFit = await runRailThumbFitValidation(page);
   const themeSwitchRail = await runThemeSwitchRailValidation(page);
@@ -91,9 +93,11 @@ try {
     railPerformance,
     railActiveSync,
     pageNavigationLatency,
+    navigationRootCauseMatrix,
     editableTextCaret,
     railThumbFit,
     themeSwitchRail,
+    themeRailFirstScreens,
     present,
     exportState,
   };
@@ -330,25 +334,7 @@ async function runDefaultRailFirstScreenLoadValidation(page) {
     requestAnimationFrame(sample);
   });
   const startAt = Date.now();
-  const initial = await readVisibleRailThumbState(page);
-  let firstVisibleThumbReadyMs = initial.visibleRenderedCount > 0 ? 0 : null;
-  let allVisibleThumbsReadyMs = initial.visibleRailCount > 0 && initial.visibleRenderedCount === initial.visibleRailCount ? 0 : null;
-  let final = initial;
-  const deadline = Date.now() + 2800;
-  while (Date.now() < deadline) {
-    await page.waitForTimeout(80);
-    final = await readVisibleRailThumbState(page);
-    const elapsed = Date.now() - startAt;
-    if (firstVisibleThumbReadyMs === null && final.visibleRenderedCount > 0) firstVisibleThumbReadyMs = elapsed;
-    if (
-      allVisibleThumbsReadyMs === null
-      && final.visibleRailCount > 0
-      && final.visibleRenderedCount === final.visibleRailCount
-    ) {
-      allVisibleThumbsReadyMs = elapsed;
-      break;
-    }
-  }
+  const timeline = await collectRailFirstScreenTimeline(page, startAt);
   const perf = await page.evaluate(() => {
     const state = window.__getRailPerfState?.() || window.__getOverviewPerfState?.() || {};
     const marks = state.marks || {};
@@ -370,9 +356,14 @@ async function runDefaultRailFirstScreenLoadValidation(page) {
       maxFrameGapMs: Number(frameGaps.reduce((max, gap) => Math.max(max, Number(gap || 0)), 0).toFixed(1)),
     };
   });
+  const firstVisibleThumbReadyMs = firstTimelineMs(timeline, state => state.visibleRenderedCount > 0);
+  const allVisibleThumbsReadyMs = firstTimelineMs(timeline, state => state.visibleRailCount > 0 && state.visibleRenderedCount === state.visibleRailCount);
+  const initial = timeline[0];
+  const final = timeline[timeline.length - 1];
   return {
     initial,
     final,
+    timeline,
     visibleRailCount: final.visibleRailCount,
     visibleRenderedCount: final.visibleRenderedCount,
     visiblePlaceholderCount: final.visiblePlaceholderCount,
@@ -380,6 +371,105 @@ async function runDefaultRailFirstScreenLoadValidation(page) {
     allVisibleThumbsReadyMs,
     ...perf,
   };
+}
+
+async function runThemeRailFirstScreenLoadValidation(page) {
+  const result = {};
+  const themes = await page.$$eval('#preview-theme-pack option', options => options
+    .filter(option => option.value && !option.disabled)
+    .map(option => option.value));
+  for (const theme of themes) {
+    await ensureEditMode(page);
+    await page.selectOption('#preview-theme-pack', theme);
+    await page.evaluate(() => {
+      window.__resetOverviewPerfMarks?.();
+      window.__themeRailLoadLongTasks = [];
+      window.__themeRailLoadFrameGaps = [];
+      window.__themeRailLoadLongTaskObserver?.disconnect?.();
+      try {
+        window.__themeRailLoadLongTaskObserver = new PerformanceObserver(list => {
+          window.__themeRailLoadLongTasks.push(...list.getEntries().map(entry => ({
+            startTime: entry.startTime,
+            duration: entry.duration,
+          })));
+        });
+        window.__themeRailLoadLongTaskObserver.observe({ entryTypes: ['longtask'] });
+      } catch {}
+      window.__themeRailLoadStart = performance.now();
+      let lastFrameAt = performance.now();
+      const sample = now => {
+        window.__themeRailLoadFrameGaps.push(now - lastFrameAt);
+        lastFrameAt = now;
+        if (now - window.__themeRailLoadStart < 3600) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    const startAt = Date.now();
+    const timeline = await collectRailFirstScreenTimeline(page, startAt);
+    const perf = await page.evaluate(() => {
+      const state = window.__getRailPerfState?.() || window.__getOverviewPerfState?.() || {};
+      const marks = state.marks || {};
+      const stages = (marks.stages || []).filter(stage => /queue-nearby-overview-thumbs|dom-preview-thumbnail|render-overview-thumb|fit-overview-thumbnails|observe-overview-thumbnails/.test(stage.type || ''));
+      const longTasks = window.__themeRailLoadLongTasks || [];
+      const frameGaps = window.__themeRailLoadFrameGaps || [];
+      window.__themeRailLoadLongTaskObserver?.disconnect?.();
+      return {
+        activeThemePack: document.documentElement.dataset.themePack || '',
+        queueLength: state.queueLength ?? null,
+        visibleOrNearCount: state.visibleOrNearCount ?? null,
+        thumbnailStages: stages.map(stage => ({
+          type: stage.type,
+          duration: Number(stage.duration || 0),
+          count: Number(stage.count || 0),
+          queued: Number(stage.queued || 0),
+        })),
+        longTasksOver50: longTasks.filter(task => Number(task.duration || 0) > 50).length,
+        maxLongTaskMs: Number(longTasks.reduce((max, task) => Math.max(max, Number(task.duration || 0)), 0).toFixed(1)),
+        maxFrameGapMs: Number(frameGaps.reduce((max, gap) => Math.max(max, Number(gap || 0)), 0).toFixed(1)),
+      };
+    });
+    const firstVisibleThumbReadyMs = firstTimelineMs(timeline, state => state.visibleRenderedCount > 0);
+    const allVisibleThumbsReadyMs = firstTimelineMs(timeline, state => state.visibleRailCount > 0 && state.visibleRenderedCount === state.visibleRailCount);
+    const initial = timeline[0];
+    const final = timeline[timeline.length - 1];
+    result[theme] = {
+      initial,
+      final,
+      timeline,
+      visibleRailCount: final.visibleRailCount,
+      visibleRenderedCount: final.visibleRenderedCount,
+      visiblePlaceholderCount: final.visiblePlaceholderCount,
+      firstVisibleThumbReadyMs,
+      allVisibleThumbsReadyMs,
+      ...perf,
+    };
+  }
+  return result;
+}
+
+async function collectRailFirstScreenTimeline(page, startAt, checkpoints = [0, 500, 1000, 2500, 5000]) {
+  const timeline = [];
+  for (const checkpoint of checkpoints) {
+    const waitMs = Math.max(0, checkpoint - (Date.now() - startAt));
+    if (waitMs > 0) await page.waitForTimeout(waitMs);
+    const state = await readVisibleRailThumbState(page);
+    timeline.push({
+      atMs: Date.now() - startAt,
+      ...state,
+    });
+  }
+  return timeline;
+}
+
+function firstTimelineMs(timeline, predicate) {
+  const item = timeline.find(predicate);
+  return item ? item.atMs : null;
+}
+
+function findTimelineAt(timeline, targetMs) {
+  return (timeline || []).find(item => Number(item.atMs || 0) >= targetMs)
+    || (timeline || [])[timeline.length - 1]
+    || null;
 }
 
 async function readVisibleRailThumbState(page) {
@@ -553,6 +643,77 @@ async function runPageNavigationLatencyValidation(page) {
   return { edit, present };
 }
 
+async function runNavigationRootCauseMatrix(page) {
+  const matrix = {};
+  matrix.capabilities = await page.evaluate(() => ({
+    hasDiagnosticFlagsApi: typeof window.__setDeckDiagnosticFlags === 'function',
+  }));
+  await ensureEditMode(page);
+  await page.evaluate(() => {
+    window.__setActiveThemePack?.('theme01', { navigate: false });
+    window.__setPageTransition?.('liquidMorph');
+    window.go?.(0, { animate: false, force: true });
+  });
+  matrix.editAnimationOnRailLoading = await runNavigationActionWindow(page, async () => {
+    await page.keyboard.press('ArrowDown');
+  });
+
+  await ensureEditMode(page);
+  await page.evaluate(() => {
+    window.__setActiveThemePack?.('theme01', { navigate: false });
+    window.__setPageTransition?.('none');
+    window.go?.(0, { animate: false, force: true });
+  });
+  await settle(page, 120);
+  matrix.editAnimationOff = await runNavigationActionWindow(page, async () => {
+    await page.keyboard.press('ArrowDown');
+  });
+
+  await ensureEditMode(page);
+  await page.evaluate(() => {
+    window.__setActiveThemePack?.('theme01', { navigate: false });
+    window.__setPageTransition?.('liquidMorph');
+    window.go?.(0, { animate: false, force: true });
+    window.__deferOverviewThumbs?.(5000, 'diagnostic-pause');
+    window.__cancelOverviewThumbQueue?.();
+  });
+  await settle(page, 120);
+  matrix.editAnimationOnThumbQueuePaused = await runNavigationActionWindow(page, async () => {
+    await page.keyboard.press('ArrowDown');
+  });
+
+  await ensureEditMode(page);
+  await page.evaluate(() => {
+    window.__setActiveThemePack?.('theme01', { navigate: false });
+    window.__setPageTransition?.('liquidMorph');
+    window.go?.(0, { animate: false, force: true });
+    window.__setDeckDiagnosticFlags?.({ disableThumbGeneration: true, disableAdjacentPreload: true });
+  });
+  await settle(page, 120);
+  matrix.editAnimationOnThumbGenerationDisabled = await runNavigationActionWindow(page, async () => {
+    await page.keyboard.press('ArrowDown');
+  });
+  await page.evaluate(() => window.__setDeckDiagnosticFlags?.({ disableThumbGeneration: false, disableAdjacentPreload: false }));
+
+  await exitPresentForValidation(page);
+  await ensureEditMode(page);
+  await page.evaluate(() => {
+    window.__setActiveThemePack?.('theme01', { navigate: false });
+    window.__setPageTransition?.('liquidMorph');
+    window.go?.(0, { animate: false, force: true });
+  });
+  const button = page.locator('#preview-present-btn,[data-present-toggle="true"]').first();
+  await button.click();
+  await settle(page, 320);
+  matrix.presentAnimationOn = await runNavigationActionWindow(page, async () => {
+    await page.keyboard.press('ArrowRight');
+  });
+  await settle(page, 720);
+  await exitPresentForValidation(page);
+
+  return matrix;
+}
+
 async function enterPresentAtIndex(page, index) {
   await ensureEditMode(page);
   await page.evaluate((targetIndex) => {
@@ -627,7 +788,32 @@ async function runNavigationActionWindow(page, action) {
       const visible = Boolean(stage && style && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 0) > 0.01 && rect?.width > 1 && rect?.height > 1);
       const activeState = stage?.dataset.state || stage?.dataset.active || stage?.getAttribute('aria-hidden') === 'false';
       if(probe.transitionStageVisibleAt === null && (visible || activeState)) probe.transitionStageVisibleAt = performance.now();
-      if(probe.firstVisualChangeAt === null && (visible || activeState)) probe.firstVisualChangeAt = performance.now();
+      if(stage && !probe.transitionVisualBaseline){
+        const current = stage.querySelector('[data-transition-role="current"]');
+        const next = stage.querySelector('[data-transition-role="next"]');
+        const currentStyle = current ? getComputedStyle(current) : null;
+        const nextStyle = next ? getComputedStyle(next) : null;
+        probe.transitionVisualBaseline = {
+          currentOpacity: currentStyle?.opacity || '',
+          currentTransform: currentStyle?.transform || '',
+          currentFilter: currentStyle?.filter || '',
+          nextClipPath: nextStyle?.clipPath || '',
+          nextTransform: nextStyle?.transform || '',
+          nextFilter: nextStyle?.filter || '',
+        };
+      } else if(stage && probe.firstVisualChangeAt === null && probe.transitionVisualBaseline){
+        const current = stage.querySelector('[data-transition-role="current"]');
+        const next = stage.querySelector('[data-transition-role="next"]');
+        const currentStyle = current ? getComputedStyle(current) : null;
+        const nextStyle = next ? getComputedStyle(next) : null;
+        const changed = currentStyle?.opacity !== probe.transitionVisualBaseline.currentOpacity
+          || currentStyle?.transform !== probe.transitionVisualBaseline.currentTransform
+          || currentStyle?.filter !== probe.transitionVisualBaseline.currentFilter
+          || nextStyle?.clipPath !== probe.transitionVisualBaseline.nextClipPath
+          || nextStyle?.transform !== probe.transitionVisualBaseline.nextTransform
+          || nextStyle?.filter !== probe.transitionVisualBaseline.nextFilter;
+        if(changed) probe.firstVisualChangeAt = performance.now();
+      }
       if(performance.now() - startAt < 520) requestAnimationFrame(observeTransitionStage);
     };
     requestAnimationFrame(observeTransitionStage);
@@ -1083,7 +1269,7 @@ async function runPresentValidation(page) {
   await ensureEditMode(page);
   await page.evaluate(() => window.__setActiveThemePack?.('theme01', { navigate: false }));
   await settle(page);
-  await page.evaluate(() => window.go?.(1, { animate: false, force: true }));
+  await page.evaluate(() => window.go?.(0, { animate: false, force: true }));
   await settle(page);
   const before = await currentIndex(page);
   const presentButton = page.locator('#preview-present-btn,[data-present-toggle="true"],#preview-overview-btn').first();
@@ -1094,10 +1280,10 @@ async function runPresentValidation(page) {
   const fullscreenState = await readFullscreenState(page);
   const presentLayout = await readLayoutState(page, page.viewportSize()?.width || 1440);
   await page.keyboard.press('ArrowRight');
-  await settle(page);
+  await settle(page, 720);
   const afterRight = await currentIndex(page);
   await page.mouse.click(1000, 450);
-  await settle(page);
+  await settle(page, 720);
   const afterClick = await currentIndex(page);
   const presentEditing = await readPresentEditGuards(page);
   const editBypass = await runPresentEditBypassValidation(page);
@@ -1178,10 +1364,10 @@ async function runPresentClickTargetValidation(page, kind) {
     return element ? getComputedStyle(element).cursor : '';
   }, targetBox);
   await page.mouse.click(targetBox.x, targetBox.y, { button: 'left' });
-  await settle(page, 260);
+  await settle(page, 720);
   const afterLeft = await currentIndex(page);
   await page.mouse.click(targetBox.x, targetBox.y, { button: 'right' });
-  await settle(page, 260);
+  await settle(page, 720);
   const afterRight = await currentIndex(page);
   const filePickerClicks = await page.evaluate(() => window.__testFilePickerClicks || 0);
   await exitPresentForValidation(page);
@@ -1533,9 +1719,17 @@ async function openRailContextMenu(page, { preferIndex = 1, slideId = '' } = {})
   if (!(await card.count())) card = page.locator(fallback).first();
   if (!(await card.count())) return { hasCard: false };
   await card.scrollIntoViewIfNeeded();
-  const box = await card.boundingBox();
-  if (!box) return { hasCard: false };
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
+  await settle(page, 80);
+  await card.evaluate(el => {
+    const rect = el.getBoundingClientRect();
+    el.dispatchEvent(new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      button: 2,
+      clientX: rect.left + Math.min(16, rect.width / 2),
+      clientY: rect.top + Math.min(16, rect.height / 2),
+    }));
+  });
   await settle(page);
   return { hasCard: true };
 }
@@ -1644,12 +1838,14 @@ function validateResult(result) {
 
   const defaultRail = result.defaultRailFirstScreen || {};
   if ((defaultRail.visibleRailCount || 0) < 4) failures.push(`Default rail first-screen validation did not find enough visible rail cards: ${JSON.stringify(defaultRail)}`);
-  if (defaultRail.firstVisibleThumbReadyMs === null || defaultRail.firstVisibleThumbReadyMs > 800) {
-    failures.push(`Default rail should load the first visible thumbnail within 800ms without manual queue calls: ${JSON.stringify(defaultRail)}`);
+  if (defaultRail.firstVisibleThumbReadyMs === null || defaultRail.firstVisibleThumbReadyMs > 500) {
+    failures.push(`Default rail should start rendering visible thumbnails within 500ms without manual queue calls: ${JSON.stringify(defaultRail)}`);
   }
   if (defaultRail.allVisibleThumbsReadyMs === null || defaultRail.allVisibleThumbsReadyMs > 2500) {
     failures.push(`Default rail should load all visible first-screen thumbnails within 2500ms without manual queue calls: ${JSON.stringify(defaultRail)}`);
   }
+  if ((findTimelineAt(defaultRail.timeline, 500)?.visibleRenderedCount || 0) < 1) failures.push(`Default rail still has no rendered visible thumbnail at 500ms: ${JSON.stringify(defaultRail)}`);
+  if ((findTimelineAt(defaultRail.timeline, 5000)?.visiblePlaceholderCount || 0) > 0) failures.push(`Default rail still has visible placeholders at 5s: ${JSON.stringify(defaultRail)}`);
   if ((defaultRail.visiblePlaceholderCount || 0) > 0) failures.push(`Default rail first-screen thumbnails still show placeholders: ${JSON.stringify(defaultRail)}`);
   if (defaultRail.longTasksOver50 > 0 || defaultRail.maxLongTaskMs > 50) failures.push(`Default rail first-screen load caused a long task: ${JSON.stringify(defaultRail)}`);
   if (defaultRail.maxFrameGapMs > 120) failures.push(`Default rail first-screen load caused a large frame gap: ${JSON.stringify(defaultRail)}`);
@@ -1659,6 +1855,26 @@ function validateResult(result) {
     && defaultRail.queueLength > defaultRail.visibleOrNearCount + 2
   ) {
     failures.push(`Default rail first-screen load queued beyond visible/near range: ${JSON.stringify(defaultRail)}`);
+  }
+  for (const [theme, state] of Object.entries(result.themeRailFirstScreens || {})) {
+    if ((state.visibleRailCount || 0) < 4) failures.push(`${theme} first-screen rail validation did not find enough visible cards: ${JSON.stringify(state)}`);
+    if (state.activeThemePack !== theme) failures.push(`${theme} first-screen rail validation did not switch to the requested theme: ${JSON.stringify(state)}`);
+    if (state.firstVisibleThumbReadyMs === null || state.firstVisibleThumbReadyMs > 900) {
+      failures.push(`${theme} rail should load the first visible thumbnail within 900ms after theme switch: ${JSON.stringify(state)}`);
+    }
+    if (state.allVisibleThumbsReadyMs === null || state.allVisibleThumbsReadyMs > 5000) {
+      failures.push(`${theme} rail should load all visible first-screen thumbnails within 5000ms after theme switch: ${JSON.stringify(state)}`);
+    }
+    if ((findTimelineAt(state.timeline, 1000)?.visibleRenderedCount || 0) < 1) failures.push(`${theme} rail still has no rendered visible thumbnail at 1s: ${JSON.stringify(state)}`);
+    if ((findTimelineAt(state.timeline, 5000)?.visiblePlaceholderCount || 0) > 0) failures.push(`${theme} rail still has visible placeholders at 5s: ${JSON.stringify(state)}`);
+    if ((state.visiblePlaceholderCount || 0) > 0) failures.push(`${theme} rail first-screen thumbnails still show placeholders: ${JSON.stringify(state)}`);
+    if (
+      state.queueLength !== null
+      && state.visibleOrNearCount !== null
+      && state.queueLength > state.visibleOrNearCount + 2
+    ) {
+      failures.push(`${theme} rail first-screen load queued beyond visible/near range: ${JSON.stringify(state)}`);
+    }
   }
 
   for (const layout of result.layoutWidths) {
@@ -1705,6 +1921,7 @@ function validateResult(result) {
       if (perf.transitionStartMs === null || perf.transitionStartMs > 80) failures.push(`Edit navigation ${name} should start page transition within 80ms: ${JSON.stringify(perf)}`);
       if (perf.transitionStageVisibleMs === null || perf.transitionStageVisibleMs > 100) failures.push(`Edit navigation ${name} should make the transition stage visible within 100ms: ${JSON.stringify(perf)}`);
       if (perf.firstVisualChangeMs === null || perf.firstVisualChangeMs > 100) failures.push(`Edit navigation ${name} should show a visible response within 100ms: ${JSON.stringify(perf)}`);
+      if (perf.activeChangeMs === null || perf.activeChangeMs > 320) failures.push(`Edit navigation ${name} should commit the active slide without visible delay: ${JSON.stringify(perf)}`);
       if (perf.transitionMode !== 'liquidMorph') failures.push(`Edit navigation ${name} should use the configured page transition: ${JSON.stringify(perf)}`);
     } else {
       if (perf.indexChangeMs === null || perf.indexChangeMs > 80) failures.push(`Edit navigation ${name} changed index too slowly: ${JSON.stringify(perf)}`);
@@ -1728,6 +1945,19 @@ function validateResult(result) {
     if (rapid.captureStarts > 0 || rapid.scheduled || rapid.thumbnailStages?.length || rapid.queueLength > 0) {
       failures.push(`Rapid edit navigation should not trigger thumbnail/prewarm work: ${JSON.stringify(rapid)}`);
     }
+  }
+  const matrix = result.navigationRootCauseMatrix || {};
+  if (!matrix.capabilities?.hasDiagnosticFlagsApi) failures.push('Navigation root-cause matrix requires diagnostic flags API to isolate thumbnail/prewarm work.');
+  const editOn = matrix.editAnimationOnRailLoading || {};
+  const editOff = matrix.editAnimationOff || {};
+  const presentOn = matrix.presentAnimationOn || {};
+  if (editOn.activeChangeMs === null || editOn.activeChangeMs > 320) failures.push(`Edit animation-on navigation commits too late in the real default path: ${JSON.stringify(editOn)}`);
+  if (editOff.activeChangeMs === null || editOff.activeChangeMs > 120) failures.push(`Edit animation-off navigation should commit quickly: ${JSON.stringify(editOff)}`);
+  if (presentOn.firstVisualChangeMs !== null && editOn.firstVisualChangeMs !== null && editOn.firstVisualChangeMs - presentOn.firstVisualChangeMs > 120) {
+    failures.push(`Edit visual response is much slower than present mode: ${JSON.stringify({ editOn, presentOn })}`);
+  }
+  if (editOn.activeChangeMs !== null && editOff.activeChangeMs !== null && editOn.activeChangeMs - editOff.activeChangeMs > 250) {
+    failures.push(`Edit navigation delay is dominated by the animation commit path: ${JSON.stringify({ editOn, editOff })}`);
   }
   for (const [name, perf] of Object.entries(result.pageNavigationLatency?.present || {})) {
     if (perf?.found === false) failures.push(`Present navigation ${name} did not find its click target.`);

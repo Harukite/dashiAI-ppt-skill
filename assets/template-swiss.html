@@ -533,6 +533,7 @@ let activeThemePack=document.documentElement.dataset.themePack || '';
 let deckMode='edit';
 var overviewGrid=null;
 let adjacentPreloadTimer=null;
+const deckDiagnosticFlags={disableThumbGeneration:false,disableAdjacentPreload:false};
 const CURRENT_SLIDE_STORE='dashi-ppt-current-slide';
 const DECK_ASPECT_W=16;
 const DECK_ASPECT_H=9;
@@ -551,6 +552,11 @@ function canEditDeck(){
   return isEditMode() && !window.__deckExportLocked;
 }
 window.__canEditDeck = canEditDeck;
+window.__setDeckDiagnosticFlags = flags => {
+  Object.assign(deckDiagnosticFlags, flags || {});
+  return {...deckDiagnosticFlags};
+};
+window.__getDeckDiagnosticFlags = () => ({...deckDiagnosticFlags});
 
 function setDeckMode(mode){
   const next = mode === 'present' ? 'present' : 'edit';
@@ -570,7 +576,6 @@ function setDeckMode(mode){
     window.__setEditableTextMode?.(true);
     if(typeof refreshRailCatalog === 'function') refreshRailCatalog();
     if(typeof scrollOverviewToCurrent === 'function') scrollOverviewToCurrent();
-    if(typeof requestOverviewThumbRefresh === 'function') requestOverviewThumbRefresh(true);
   }
   layoutDeck();
   window.__syncActiveEffects?.();
@@ -768,6 +773,7 @@ function startTransitionSlideEnter(slide){
 window.__startTransitionSlideEnter = startTransitionSlideEnter;
 
 function preloadAdjacentSlides(activeIndex=idx, opts={}){
+  if(deckDiagnosticFlags.disableAdjacentPreload) return;
   const targets = [activeIndex + 1, activeIndex - 1]
     .filter(index => index >= 0 && index < slides.length)
     .map(index => slides[index])
@@ -795,11 +801,10 @@ function setActiveThemePack(themePack, opts={}){
   refreshSlideList();
   renderNav();
   layoutDeck();
-  if(opts.navigate !== false) go(0, {animate:false});
+  if(opts.navigate !== false) go(0, {animate:false, skipThumbPause:true});
   else commitSlideIndex(idx);
   if(isEditMode() && overviewGrid){
     refreshRailCatalog();
-    requestOverviewThumbRefresh(true);
   }
 }
 window.__setActiveThemePack=setActiveThemePack;
@@ -1187,7 +1192,7 @@ function go(n, opts={}){
     }
     return;
   }
-  if(isEditMode()) pauseOverviewThumbs();
+  if(isEditMode() && !opts.force && !opts.skipThumbPause) pauseOverviewThumbs();
   refreshSlideList();
   if(total <= 0){
     lock=true;
@@ -1210,7 +1215,7 @@ function go(n, opts={}){
       committed=true;
       commitSlideIndex(nextIndex, opts);
     };
-    Promise.resolve(window.__playPageTransition(mode, currentSlide, nextSlide, nextIndex >= idx ? 1 : -1, commit))
+    Promise.resolve(window.__playPageTransition(mode, currentSlide, nextSlide, nextIndex >= idx ? 1 : -1, commit, opts))
       .catch(error => console.warn('[page transition]', error))
       .finally(() => {
         commit();
@@ -1414,8 +1419,7 @@ let overviewPendingDropMarker=null;
 let overviewPendingDropGrid=null;
 let overviewPendingDeckCommit=null;
 let overviewDropSequence=0;
-let overviewOpenedAt=0;
-let overviewFullCacheRestoreUntil=0;
+let overviewRestoreAllCachedThumbsOnNextBuild=false;
 let overviewPerfMarks=createOverviewPerfMarks();
 const overviewThumbBitmapCache=new Map();
 const OVERVIEW_THUMB_WIDTH=128;
@@ -1813,7 +1817,7 @@ function pauseOverviewThumbs(){
 }
 
 function teardownOverviewThumbs(){
-  pauseOverviewThumbs();
+  cancelOverviewThumbQueue();
   if(overviewProgressUpdateHandle !== null){
     clearTimeout(overviewProgressUpdateHandle);
     overviewProgressUpdateHandle=null;
@@ -1972,18 +1976,6 @@ function getOverviewPreviewCost(slide){
   return elementCount + mediaCount * 8;
 }
 
-function deferOverviewThumbUntilQuiet(wrap, delay){
-  if(!wrap || wrap.dataset.overviewRendered === 'true') return;
-  delete wrap.dataset.overviewQueued;
-  const runId = overviewThumbRunId;
-  const timer = setTimeout(() => {
-    overviewDeferredThumbTimers.delete(timer);
-    if(runId !== overviewThumbRunId || !isEditMode() || !wrap.isConnected || wrap.dataset.overviewRendered === 'true') return;
-    queueOverviewThumb(wrap, false);
-  }, delay);
-  overviewDeferredThumbTimers.add(timer);
-}
-
 async function renderOverviewThumb(wrap, runId=overviewThumbRunId){
   if(!isEditMode() || !wrap?.isConnected || wrap.dataset.overviewRendered === 'true') return;
   delete wrap.dataset.overviewQueued;
@@ -1999,13 +1991,6 @@ async function renderOverviewThumb(wrap, runId=overviewThumbRunId){
       fitOverviewThumb(wrap);
       recordOverviewStage('dom-cache-restore', previewStartAt, {slideId:getOverviewStableSlideId(slide)});
       return;
-    }
-    if(activeThemePack !== 'theme01'){
-      const quietUntil = overviewOpenedAt + 5200;
-      if(performance.now() < quietUntil){
-        deferOverviewThumbUntilQuiet(wrap, Math.max(120, quietUntil - performance.now() + 80));
-        return;
-      }
     }
     await renderOverviewThumbDomPreview(wrap, slide);
     recordOverviewStage('dom-preview-thumbnail', previewStartAt, {slideId:getOverviewStableSlideId(slide)});
@@ -2030,8 +2015,18 @@ async function renderOverviewThumb(wrap, runId=overviewThumbRunId){
   }
 }
 
-function scheduleOverviewThumbQueue(){
-  if(overviewThumbScheduled || overviewThumbProcessing || !isEditMode()) return;
+function scheduleOverviewThumbQueue(opts={}){
+  const immediate = !!opts.immediate;
+  if(overviewThumbProcessing || !isEditMode()) return;
+  if(overviewThumbScheduled){
+    if(immediate && overviewThumbQueueHandle !== null){
+      clearTimeout(overviewThumbQueueHandle);
+      overviewThumbQueueHandle=null;
+      overviewThumbScheduled=false;
+    }else{
+      return;
+    }
+  }
   overviewThumbScheduled=true;
   const runId = overviewThumbRunId;
   overviewThumbQueueHandle = setTimeout(async () => {
@@ -2063,7 +2058,7 @@ function scheduleOverviewThumbQueue(){
       if(processed >= 1) break;
     }
     if(isEditMode() && runId === overviewThumbRunId && overviewThumbQueue.length) scheduleOverviewThumbQueue();
-  }, OVERVIEW_THUMB_QUEUE_DELAY);
+  }, immediate ? 0 : OVERVIEW_THUMB_QUEUE_DELAY);
 }
 
 function queueOverviewThumb(wrap, priority=false){
@@ -2083,10 +2078,10 @@ function queueOverviewThumb(wrap, priority=false){
   wrap.dataset.overviewTrigger = priority ? 'visible' : 'near';
   if(priority) overviewThumbQueue.unshift(wrap);
   else overviewThumbQueue.push(wrap);
-  scheduleOverviewThumbQueue();
+  scheduleOverviewThumbQueue({immediate:priority});
 }
 
-function setOverviewThumbQueue(items){
+function setOverviewThumbQueue(items, opts={}){
   const next=[];
   const queued=new Set();
   items.forEach(item => {
@@ -2102,15 +2097,21 @@ function setOverviewThumbQueue(items){
     if(!queued.has(wrap) && wrap?.dataset) delete wrap.dataset.overviewQueued;
   });
   overviewThumbQueue=next;
-  if(overviewThumbQueue.length) scheduleOverviewThumbQueue();
+  if(overviewThumbQueue.length) scheduleOverviewThumbQueue({immediate:!!opts.immediate});
 }
 
-function queueNearbyOverviewThumbs(){
+function queueNearbyOverviewThumbs(opts={}){
   if(!isEditMode()) return;
   const startAt = performance.now();
   const range = getOverviewThumbRange(overviewGrid, {includeNear:true});
   const visibleWraps = getOverviewViewportThumbs();
   overviewProgressThumbs = visibleWraps;
+  if(deckDiagnosticFlags.disableThumbGeneration){
+    setOverviewThumbQueue([]);
+    recordOverviewLayoutRead('queue-nearby', 'range-card-metrics', range.cards.length);
+    recordOverviewStage('queue-nearby-overview-thumbs', startAt, {count:range.cards.length, queued:0, disabled:true});
+    return;
+  }
   let activeWrap = null;
   const activeKey = getOverviewSlideKey(slides[idx]);
   range.cards.forEach(card => {
@@ -2118,32 +2119,15 @@ function queueNearbyOverviewThumbs(){
     if(card?.dataset.slideKey === activeKey) activeWrap = wrap;
   });
   const items = [];
-  const quietDelay = Math.max(0, overviewOpenedAt + 5200 - performance.now());
-  const deferHeavyOpen = activeThemePack !== 'theme01' && quietDelay > 0;
-  if(activeWrap){
-    if(deferHeavyOpen) deferOverviewThumbUntilQuiet(activeWrap, quietDelay);
-    else items.push({wrap:activeWrap, trigger:'active'});
-  }
+  if(activeWrap) items.push({wrap:activeWrap, trigger:'active'});
   const visibleEntries = visibleWraps
     .map(wrap => {
       const card = wrap.closest('[data-overview-card="true"]');
       return {wrap, trigger:'visible', cost:getOverviewPreviewCost(card?.__overviewSlide)};
     })
     .sort((a, b) => a.cost - b.cost);
-  const hasHeavyVisible = activeThemePack !== 'theme01' && visibleEntries.length > 4;
-  const immediateVisibleLimit = hasHeavyVisible ? Math.max(1, Math.ceil(visibleEntries.length * 0.75)) : visibleEntries.length;
-  visibleEntries.forEach((item, index) => {
-    if(deferHeavyOpen){
-      deferOverviewThumbUntilQuiet(item.wrap, quietDelay);
-      return;
-    }
-    if(hasHeavyVisible && index >= immediateVisibleLimit){
-      deferOverviewThumbUntilQuiet(item.wrap, quietDelay);
-      return;
-    }
-    items.push(item);
-  });
-  setOverviewThumbQueue(items);
+  visibleEntries.forEach(item => items.push(item));
+  setOverviewThumbQueue(items, {immediate:!!opts.immediate});
   recordOverviewLayoutRead('queue-nearby', 'range-card-metrics', range.cards.length);
   recordOverviewStage('queue-nearby-overview-thumbs', startAt, {count:range.cards.length, queued:items.length});
 }
@@ -2152,14 +2136,14 @@ function queueVisibleOverviewThumbs(){
 }
 window.__queueNearbyOverviewThumbs = queueNearbyOverviewThumbs;
 
-function requestOverviewThumbRefresh(afterPause=false){
+function requestOverviewThumbRefresh(afterPause=false, opts={}){
   if(!isEditMode()) return;
   const runId = overviewThumbRunId;
   const refresh = () => {
     overviewThumbRefreshTimer=null;
     overviewThumbRefreshQueued=false;
     if(runId !== overviewThumbRunId) return;
-    if(isEditMode()) queueNearbyOverviewThumbs();
+    if(isEditMode()) queueNearbyOverviewThumbs({immediate:!!opts.priority});
   };
   if(afterPause){
     if(overviewThumbRefreshTimer !== null) clearTimeout(overviewThumbRefreshTimer);
@@ -2477,8 +2461,9 @@ function buildOverview(fromRects=null, fromThumbs=null){
   dropMarker.dataset.railDropMarker='true';
   dropMarker.className='rail-drop-marker';
   let restoredThumbCount=0;
-  const fullCacheRestore = performance.now() < overviewFullCacheRestoreUntil;
-  const syncRestoreLimit = fullCacheRestore ? Infinity : (activeThemePack === 'theme01' ? OVERVIEW_SYNC_RESTORE_LIMIT : 6);
+  const fullCacheRestore = overviewRestoreAllCachedThumbsOnNextBuild;
+  overviewRestoreAllCachedThumbsOnNextBuild=false;
+  const syncRestoreLimit = fullCacheRestore ? Infinity : OVERVIEW_SYNC_RESTORE_LIMIT;
   catalogSlides.forEach((s,i)=>{
     const allIndex = allIndexBySlide.get(s) ?? allSlides.indexOf(s);
     const slideId = getSlideVmId(s, allIndex);
@@ -2608,7 +2593,7 @@ function buildOverview(fromRects=null, fromThumbs=null){
     const targetIndex = applyOverviewReorderLocally(grid, overviewDragFrom, slot.index, beforeRects);
     overviewDidDrag=targetIndex !== null;
     if(overviewDidDrag){
-      overviewFullCacheRestoreUntil = performance.now() + 15000;
+      overviewRestoreAllCachedThumbsOnNextBuild=true;
       dropMark.to=targetIndex;
       dropMark.localDomCommittedAt = performance.now();
       dropMark.overviewOrderAfterLocalDom = getOverviewOrderFromCards(grid);
@@ -2636,7 +2621,6 @@ function buildOverview(fromRects=null, fromThumbs=null){
 function refreshRailCatalog(){
   const startAt = performance.now();
   cancelOverviewThumbQueue();
-  overviewOpenedAt=startAt;
   const signature = getOverviewStructureSignature();
   if(!overviewGrid || !overviewGrid.isConnected || overviewBuiltSignature !== signature){
     buildOverview();
@@ -2646,7 +2630,7 @@ function refreshRailCatalog(){
     updateOverviewProgress();
   }
   scrollOverviewToCurrent();
-  requestOverviewThumbRefresh(false);
+  requestOverviewThumbRefresh(false, {priority:true});
   recordOverviewStage('refresh-rail-catalog', startAt, {cardCount:overviewGrid ? getOverviewCards(overviewGrid).length : 0});
 }
 window.__refreshRailCatalog = refreshRailCatalog;
@@ -2738,7 +2722,7 @@ const initialSlideParam = new URLSearchParams(location.search).get('slide');
 const storedSlide = readStoredSlideIndex();
 const initialSlide = initialSlideParam ? Number(initialSlideParam) - 1 : (storedSlide ?? 0);
 layoutDeck();
-go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false});
+go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false, skipThumbPause:true});
 refreshRailCatalog();
 
 </script>
@@ -4332,7 +4316,7 @@ refreshRailCatalog();
     return clone;
   }
   window.__prepareTransitionClone = prepareTransitionClone;
-	  window.__playPageTransition = function(mode, currentSlide, nextSlide, direction, commit){
+	  window.__playPageTransition = function(mode, currentSlide, nextSlide, direction, commit, opts={}){
 	    if(!window.gsap || mode !== 'liquidMorph') { commit?.(); return Promise.resolve(); }
 	    const stage = document.createElement('div');
 	    stage.className = 'page-transition-stage is-active';
@@ -4352,6 +4336,7 @@ refreshRailCatalog();
       };
 	    let tl = gsap.timeline({defaults:{ease:'power3.inOut'}});
 	    gsap.set(next, {scale:1.02, filter:'blur(18px)', clipPath:'circle(0% at 50% 52%)', autoAlpha:1});
+      if(opts.commitEarly || document.body.dataset.mode === 'edit') requestAnimationFrame(() => commit?.());
 	    tl.to(current, {scale:.985, filter:'blur(12px)', autoAlpha:.18, duration:.45}, 0)
 	      .to(next, {clipPath:'circle(142% at 50% 52%)', filter:'blur(0px)', scale:1, duration:.58, ease:'power4.inOut'}, 0)
         .add(startTargetEnter, 0.23);
