@@ -3458,7 +3458,36 @@ refreshRailCatalog();
       themePack: document.documentElement.dataset.themePack || '',
       currentIndex: window.__currentSlideIndex || 0,
       state: window.__getDeckViewModelState?.() || {},
+      canvasSnapshots: collectEditablePptxCanvasSnapshots(),
     };
+  }
+
+  function collectEditablePptxCanvasSnapshots(){
+    const slides = window.__getVisibleSlides?.() || [...document.querySelectorAll('#deck > .slide:not([hidden])')];
+    const out = [];
+    slides.forEach((slide, slideIndex) => {
+      const slideRect = slide.getBoundingClientRect();
+      if(!slideRect.width || !slideRect.height) return;
+      slide.querySelectorAll('canvas').forEach((canvas, canvasIndex) => {
+        const style = getComputedStyle(canvas);
+        const rect = canvas.getBoundingClientRect();
+        if(style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || 1) <= 0.01) return;
+        if(rect.width <= 1 || rect.height <= 1) return;
+        try {
+          const data = canvas.toDataURL('image/png');
+          out.push({
+            slideIndex,
+            canvasIndex,
+            data,
+            left: (rect.left - slideRect.left) / slideRect.width * 100,
+            top: (rect.top - slideRect.top) / slideRect.height * 100,
+            width: rect.width / slideRect.width * 100,
+            height: rect.height / slideRect.height * 100,
+          });
+        } catch {}
+      });
+    });
+    return out;
   }
 
   window.__exportDeckHtml = async function(){
