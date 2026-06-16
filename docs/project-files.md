@@ -36,7 +36,8 @@
 |   |-- validate-goal-copy.mjs - 本地命令脚本。
 |   |-- validate-layout-showcase.mjs - 本地命令脚本。
 |   |-- validate-overview-performance.mjs - 本地命令脚本。
-|   `-- validate-swiss-deck.mjs - 本地命令脚本。
+|   |-- validate-swiss-deck.mjs - 本地命令脚本。
+|   `-- validate-url-state.mjs - 本地命令脚本。
 |-- src/
 |   |-- components/
 |   |   |-- shell/

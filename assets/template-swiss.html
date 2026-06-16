@@ -352,20 +352,37 @@
   if(!vmEl) return;
 
   const STORE = 'dashi-ppt-view-model';
+  const URL_STATE_PARAM = 'deckState';
+  const URL_STATE_MAX_LENGTH = 60000;
+  const URL_STATE_DEBOUNCE_MS = 260;
   const vm = readJson(vmEl, {});
   vm.state = vm.state || {};
   const embeddedText = readJson(textEl, {});
-  const deckSignature = createDeckSignature(vm, {...(vm.state?.text || {}), ...embeddedText});
-  const saved = readSaved(deckSignature);
-  vm.state.slideOrder = saved.slideOrder || vm.state.slideOrder || (vm.slides || []).map(slide => slide.id);
-  vm.state.skippedSlides = saved.skippedSlides || vm.state.skippedSlides || [];
-  vm.state.deletedSlides = saved.deletedSlides || vm.state.deletedSlides || [];
-  vm.state.text = {...(vm.state.text || {}), ...embeddedText, ...(saved.text || {})};
-  vm.state.props = {...(vm.state.props || {}), ...(saved.props || {})};
+  const baseThemePack = document.documentElement.dataset.themePack || '';
+  const baseState = {
+    slideOrder: [...(vm.state.slideOrder || (vm.slides || []).map(slide => slide.id))],
+    skippedSlides: uniqueIds(vm.state.skippedSlides || []),
+    deletedSlides: uniqueIds(vm.state.deletedSlides || []),
+    duplicatedSlides: Array.isArray(vm.state.duplicatedSlides) ? [...vm.state.duplicatedSlides] : [],
+    text: {...(vm.state.text || {}), ...embeddedText},
+    props: {...(vm.state.props || {})},
+  };
+  const urlStateStatus = {param:URL_STATE_PARAM, limit:URL_STATE_MAX_LENGTH, loaded:false, tooLarge:false, lastError:''};
+  const deckSignature = createDeckSignature(vm, baseState.text);
+  const urlState = readUrlEditState(deckSignature);
+  const restored = urlState?.state || {};
+  const saved = urlState ? {} : readSaved(deckSignature);
+  vm.state.slideOrder = hasOwn(restored, 'slideOrder') ? restored.slideOrder : (saved.slideOrder || baseState.slideOrder);
+  vm.state.skippedSlides = hasOwn(restored, 'skippedSlides') ? restored.skippedSlides : (saved.skippedSlides || baseState.skippedSlides);
+  vm.state.deletedSlides = hasOwn(restored, 'deletedSlides') ? restored.deletedSlides : (saved.deletedSlides || baseState.deletedSlides);
+  vm.state.duplicatedSlides = hasOwn(restored, 'duplicatedSlides') ? restored.duplicatedSlides : (saved.duplicatedSlides || baseState.duplicatedSlides);
+  vm.state.text = {...baseState.text, ...(saved.text || {}), ...(restored.text || {})};
+  vm.state.props = mergePropsStates(baseState.props, saved.props, restored.props);
   vm.state.__deckSignature = deckSignature;
 
   writeJson(textEl, vm.state.text);
   writeVm();
+  updateUrlStateStatus({loaded:Boolean(urlState)});
 
   window.__deckViewModel = {
     model: vm,
@@ -382,6 +399,10 @@
   };
   window.__getDeckViewModelState = getState;
   window.__syncDeckViewModelFromDom = syncFromDom;
+  window.__deckUrlStateInitial = urlState || null;
+  window.__deckUrlStateStatus = {...urlStateStatus};
+  window.__scheduleDeckUrlStateWrite = scheduleUrlStateWrite;
+  window.__writeDeckUrlStateNow = writeUrlStateNow;
 
   function getState(){
     return JSON.parse(JSON.stringify(vm.state || {}));
@@ -470,10 +491,294 @@
     } catch (error) {
       console.warn('[deck view model] state could not be persisted', error);
     }
+    scheduleUrlStateWrite();
   }
 
   function writeVm(){
     writeJson(vmEl, vm);
+  }
+
+  let urlStateWriteTimer = null;
+
+  function scheduleUrlStateWrite(){
+    if(urlStateWriteTimer !== null) clearTimeout(urlStateWriteTimer);
+    urlStateWriteTimer = setTimeout(() => {
+      urlStateWriteTimer = null;
+      writeUrlStateNow();
+    }, URL_STATE_DEBOUNCE_MS);
+  }
+
+  function writeUrlStateNow(){
+    if(urlStateWriteTimer !== null){
+      clearTimeout(urlStateWriteTimer);
+      urlStateWriteTimer = null;
+    }
+    const payload = buildUrlEditState();
+    const next = new URL(location.href);
+    if(!payload){
+      next.searchParams.delete(URL_STATE_PARAM);
+      replaceUrlIfChanged(next);
+      updateUrlStateStatus({encodedLength:0, tooLarge:false, lastError:''});
+      return;
+    }
+    const encoded = encodeUrlState(payload);
+    if(encoded.length > URL_STATE_MAX_LENGTH){
+      next.searchParams.delete(URL_STATE_PARAM);
+      replaceUrlIfChanged(next);
+      updateUrlStateStatus({
+        encodedLength:encoded.length,
+        tooLarge:true,
+        lastError:'too-large',
+      });
+      return;
+    }
+    next.searchParams.set(URL_STATE_PARAM, encoded);
+    replaceUrlIfChanged(next);
+    updateUrlStateStatus({encodedLength:encoded.length, tooLarge:false, lastError:''});
+  }
+
+  function replaceUrlIfChanged(next){
+    const href = next.href;
+    if(href === location.href) return;
+    history.replaceState(history.state, document.title, href);
+  }
+
+  function buildUrlEditState(){
+    const state = getState();
+    const compact = {};
+    const slideOrder = uniqueIds(state.slideOrder || []);
+    if(!arraysEqual(slideOrder, baseState.slideOrder)) compact.slideOrder = slideOrder;
+    const skippedSlides = uniqueIds(state.skippedSlides || []);
+    if(skippedSlides.length) compact.skippedSlides = skippedSlides;
+    const deletedSlides = uniqueIds(state.deletedSlides || []);
+    if(deletedSlides.length) compact.deletedSlides = deletedSlides;
+    const duplicatedSlides = sanitizeDuplicatedSlides(state.duplicatedSlides || []);
+    if(duplicatedSlides.length) compact.duplicatedSlides = duplicatedSlides;
+    const text = diffFlatState(state.text || {}, getDefaultTextState());
+    if(Object.keys(text).length) compact.text = text;
+    const props = compactPropsState(state.props || {});
+    if(Object.keys(props).length) compact.props = props;
+    const hasEditState = Object.keys(compact).length > 0;
+    const view = readUrlViewState();
+    if(!hasEditState && !viewHasChanges(view)) return null;
+    return {
+      v:1,
+      sig:deckSignature,
+      state:compact,
+      view:hasEditState ? view : compactViewState(view),
+    };
+  }
+
+  function viewHasChanges(view){
+    return Boolean(view.themePack && view.themePack !== baseThemePack)
+      || Number(view.currentSlide || 0) > 0;
+  }
+
+  function compactViewState(view){
+    const next = {};
+    if(view.themePack) next.themePack = view.themePack;
+    if(Number(view.currentSlide || 0) > 0) next.currentSlide = view.currentSlide;
+    return next;
+  }
+
+  function readUrlViewState(){
+    const preview = window.__getPreviewState?.() || {};
+    const currentSlide = Number(window.__currentSlideIndex || 0);
+    return {
+      themePack:String(preview.themePack || document.documentElement.dataset.themePack || ''),
+      currentSlide:Number.isFinite(currentSlide) ? currentSlide : 0,
+    };
+  }
+
+  function readUrlEditState(signature){
+    const encoded = new URLSearchParams(location.search).get(URL_STATE_PARAM);
+    if(!encoded) return null;
+    if(encoded.length > URL_STATE_MAX_LENGTH){
+      updateUrlStateStatus({encodedLength:encoded.length, tooLarge:true, lastError:'too-large'});
+      return null;
+    }
+    try {
+      const payload = JSON.parse(decodeUrlState(encoded));
+      if(payload?.v !== 1) throw new Error('version');
+      if(payload.sig && payload.sig !== signature){
+        updateUrlStateStatus({encodedLength:encoded.length, lastError:'signature-mismatch'});
+        return null;
+      }
+      const normalized = normalizeUrlEditState(payload);
+      updateUrlStateStatus({encodedLength:encoded.length, loaded:true, lastError:''});
+      return normalized;
+    } catch (error) {
+      updateUrlStateStatus({encodedLength:encoded.length, lastError:'invalid'});
+      console.warn('[deck url state] could not be restored', error);
+      return null;
+    }
+  }
+
+  function normalizeUrlEditState(payload){
+    const state = payload.state || {};
+    const view = payload.view || {};
+    return {
+      v:1,
+      sig:payload.sig || '',
+      state:{
+        ...(hasOwn(state, 'slideOrder') ? {slideOrder:uniqueIds(state.slideOrder)} : {}),
+        ...(hasOwn(state, 'skippedSlides') ? {skippedSlides:uniqueIds(state.skippedSlides)} : {}),
+        ...(hasOwn(state, 'deletedSlides') ? {deletedSlides:uniqueIds(state.deletedSlides)} : {}),
+        ...(hasOwn(state, 'duplicatedSlides') ? {duplicatedSlides:sanitizeDuplicatedSlides(state.duplicatedSlides)} : {}),
+        ...(state.text && typeof state.text === 'object' ? {text:sanitizeTextState(state.text)} : {}),
+        ...(state.props && typeof state.props === 'object' ? {props:sanitizePropsState(state.props)} : {}),
+      },
+      view:{
+        themePack: typeof view.themePack === 'string' ? view.themePack : '',
+        currentSlide: Number.isFinite(Number(view.currentSlide)) ? Number(view.currentSlide) : null,
+      },
+    };
+  }
+
+  function sanitizeTextState(text){
+    return Object.fromEntries(
+      Object.entries(text || {})
+        .filter(([key, value]) => key && typeof value === 'string'),
+    );
+  }
+
+  function compactPropsState(props){
+    const out = {};
+    Object.entries(props || {}).forEach(([slideId, values]) => {
+      const current = sanitizeForUrl(values);
+      if(!current || typeof current !== 'object' || Array.isArray(current)) return;
+      const base = sanitizeForUrl(getDefaultSlideProps(slideId)) || {};
+      const diff = diffObject(current, base);
+      if(diff && Object.keys(diff).length) out[slideId] = diff;
+    });
+    return out;
+  }
+
+  function sanitizePropsState(props){
+    const out = {};
+    Object.entries(props || {}).forEach(([slideId, values]) => {
+      const sanitized = sanitizeForUrl(values);
+      if(sanitized && typeof sanitized === 'object' && !Array.isArray(sanitized) && Object.keys(sanitized).length){
+        out[slideId] = sanitized;
+      }
+    });
+    return out;
+  }
+
+  function sanitizeDuplicatedSlides(records){
+    return (Array.isArray(records) ? records : [])
+      .map(record => {
+        if(!record?.sourceId || !record?.copyId) return null;
+        const sanitized = sanitizeForUrl({
+          type:record.type || 'copy',
+          sourceId:String(record.sourceId),
+          copyId:String(record.copyId),
+          copyKey:String(record.copyKey || record.copyId),
+          themePack:record.themePack ? String(record.themePack) : '',
+          props:record.props || {},
+        });
+        return sanitized?.sourceId && sanitized?.copyId ? sanitized : null;
+      })
+      .filter(Boolean);
+  }
+
+  function sanitizeForUrl(value){
+    if(value == null) return value;
+    if(typeof value === 'string'){
+      return /^data:(image|video)\//i.test(value) ? undefined : value;
+    }
+    if(['number','boolean'].includes(typeof value)) return value;
+    if(Array.isArray(value)){
+      const items = value.map(sanitizeForUrl).filter(item => item !== undefined);
+      return items.length ? items : undefined;
+    }
+    if(typeof value !== 'object') return undefined;
+    if(typeof value.src === 'string' && /^data:(image|video)\//i.test(value.src)) return undefined;
+    const out = {};
+    Object.entries(value).forEach(([key, item]) => {
+      const sanitized = sanitizeForUrl(item);
+      if(sanitized !== undefined) out[key] = sanitized;
+    });
+    return Object.keys(out).length ? out : undefined;
+  }
+
+  function diffFlatState(current, base){
+    const out = {};
+    Object.entries(current || {}).forEach(([key, value]) => {
+      if(value !== base[key]) out[key] = value;
+    });
+    return out;
+  }
+
+  function getDefaultTextState(){
+    return {...(baseState.text || {}), ...(window.__getDeckDefaultTextState?.() || {})};
+  }
+
+  function diffObject(current, base){
+    const out = {};
+    Object.entries(current || {}).forEach(([key, value]) => {
+      const baseValue = base?.[key];
+      if(JSON.stringify(value) !== JSON.stringify(baseValue)) out[key] = value;
+    });
+    return out;
+  }
+
+  function getDefaultSlideProps(slideId){
+    const source = (vm.slides || []).find(slide => slide.id === slideId)?.props || {};
+    const slideEl = [...document.querySelectorAll('#deck > .slide')].find(slide => slide.dataset.vmSlideId === slideId);
+    const defaults = readDatasetJson(slideEl?.querySelector('[data-prop-controls]')?.dataset.propDefaults, {});
+    return {...defaults, ...source, ...(baseState.props?.[slideId] || {})};
+  }
+
+  function mergePropsStates(...states){
+    const out = {};
+    states.forEach(state => {
+      Object.entries(state || {}).forEach(([slideId, values]) => {
+        out[slideId] = {...(out[slideId] || {}), ...(values || {})};
+      });
+    });
+    return out;
+  }
+
+  function encodeUrlState(payload){
+    const bytes = new TextEncoder().encode(JSON.stringify(payload));
+    let binary = '';
+    const chunkSize = 0x8000;
+    for(let i = 0; i < bytes.length; i += chunkSize){
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  }
+
+  function decodeUrlState(encoded){
+    const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for(let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  function updateUrlStateStatus(update){
+    Object.assign(urlStateStatus, update || {});
+    window.__deckUrlStateStatus = {...urlStateStatus};
+  }
+
+  function hasOwn(object, key){
+    return Object.prototype.hasOwnProperty.call(object || {}, key);
+  }
+
+  function arraysEqual(a, b){
+    if(a.length !== b.length) return false;
+    return a.every((item, index) => item === b[index]);
+  }
+
+  function readDatasetJson(value, fallback){
+    try {
+      return JSON.parse(value || '') || fallback;
+    } catch {
+      return fallback;
+    }
   }
 
   function uniqueIds(ids){
@@ -652,6 +957,7 @@ function writeStoredSlideIndex(index){
       updatedAt: new Date().toISOString(),
     }));
   } catch {}
+  window.__scheduleDeckUrlStateWrite?.();
 }
 
 function previewStoreKey(){
@@ -806,6 +1112,7 @@ function setActiveThemePack(themePack, opts={}){
   if(isEditMode() && overviewGrid){
     refreshRailCatalog();
   }
+  window.__scheduleDeckUrlStateWrite?.();
 }
 window.__setActiveThemePack=setActiveThemePack;
 
@@ -2731,8 +3038,11 @@ addEventListener('touchend',e=>{
 },{passive:true});
 
 const initialSlideParam = new URLSearchParams(location.search).get('slide');
+const initialUrlSlide = window.__deckUrlStateInitial?.view?.currentSlide;
 const storedSlide = readStoredSlideIndex();
-const initialSlide = initialSlideParam ? Number(initialSlideParam) - 1 : (storedSlide ?? 0);
+const initialSlide = Number.isFinite(Number(initialUrlSlide))
+  ? Number(initialUrlSlide)
+  : (initialSlideParam ? Number(initialSlideParam) - 1 : (storedSlide ?? 0));
 layoutDeck();
 go(Number.isFinite(initialSlide) ? initialSlide : 0, {animate:false, skipThumbPause:true});
 refreshRailCatalog();
@@ -2795,10 +3105,12 @@ refreshRailCatalog();
   const themePackSelect = document.getElementById('preview-theme-pack');
   const transitionSelect = document.getElementById('preview-transition');
 
+  const urlViewState = window.__deckUrlStateInitial?.view || {};
   const saved = readSaved();
   const transitionModes = ['none', 'liquidMorph'];
   const themePacks = options.themePacks || {};
-  const initialThemePack = normalizeThemePack(saved.themePack)
+  const initialThemePack = normalizeThemePack(urlViewState.themePack)
+    || normalizeThemePack(saved.themePack)
     || normalizeThemePack(options.current?.themePack)
     || normalizeThemePack(document.documentElement.dataset.themePack)
     || '';
@@ -2829,6 +3141,7 @@ refreshRailCatalog();
 
   function writeSaved(){
     localStorage.setItem(window.__previewStoreKey?.() || STORE, JSON.stringify(state));
+    window.__scheduleDeckUrlStateWrite?.();
   }
 
   function refreshDeckSlides(){
@@ -4078,8 +4391,11 @@ refreshRailCatalog();
   if(!deck) return;
   const stateEl = document.getElementById('embedded-text-state');
   const textState = readTextState();
+  const defaultTextState = window.__deckDefaultTextState || {};
   const textCounters = new Map();
 
+  window.__deckDefaultTextState = defaultTextState;
+  window.__getDeckDefaultTextState = () => ({...defaultTextState});
   window.__initEditableText = scope => applyTextState(scope);
   window.__setEditableTextMode = (on, scope = deck) => syncEditableMode(scope, on);
   window.__flushEditableTextState = flushTextState;
@@ -4106,6 +4422,10 @@ refreshRailCatalog();
       if(el !== root && el.parentElement?.closest('[data-editable-id]')) return;
       if(!el.dataset.editableId && !isTextCandidate(el)) return;
       if(!el.dataset.editableId) el.dataset.editableId = nextTextId(el);
+      if(defaultTextState[el.dataset.editableId] === undefined) defaultTextState[el.dataset.editableId] = el.innerHTML;
+      if(el.dataset.syncText && defaultTextState[`sync:${el.dataset.syncText}`] === undefined){
+        defaultTextState[`sync:${el.dataset.syncText}`] = el.innerHTML;
+      }
       const synced = el.dataset.syncText ? textState[`sync:${el.dataset.syncText}`] : undefined;
       if(synced !== undefined) el.innerHTML = synced;
       else if(textState[el.dataset.editableId] !== undefined) el.innerHTML = textState[el.dataset.editableId];
