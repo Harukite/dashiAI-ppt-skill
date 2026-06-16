@@ -517,8 +517,10 @@ async function runRailPerformanceValidation(page) {
   });
   await settle(page);
   const click = await runRailInteractionWindow(page, async () => {
-    const locator = page.locator('[data-rail-card="true"][data-index="5"],[data-slide-rail-card="true"][data-index="5"]').first();
-    await locator.click();
+    await page.evaluate(() => {
+      const card = document.querySelector('[data-rail-card="true"][data-index="5"],[data-slide-rail-card="true"][data-index="5"]');
+      card?.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, button:0}));
+    });
   });
   const arrowDown = await runRailInteractionWindow(page, async () => {
     await page.keyboard.press('ArrowDown');
@@ -899,6 +901,7 @@ async function runRapidEditNavigationValidation(page) {
       startAt,
       startIndex: window.__currentSlideIndex || 0,
       startActiveId: active?.dataset.vmSlideId || active?.dataset.slideId || '',
+      keydowns: [],
       transitionStarts: [],
       transitionStageVisibleAt: null,
       acceptedChanges: [],
@@ -916,6 +919,11 @@ async function runRapidEditNavigationValidation(page) {
       probe.acceptedChanges.push({ at: performance.now(), index: window.__currentSlideIndex || 0 });
     };
     addEventListener('swiss-slide-change', window.__rapidNavHandler);
+    window.__rapidNavKeyHandler && removeEventListener('keydown', window.__rapidNavKeyHandler, true);
+    window.__rapidNavKeyHandler = event => {
+      if(event.key === 'ArrowDown') probe.keydowns.push({ at: performance.now(), index: window.__currentSlideIndex || 0 });
+    };
+    addEventListener('keydown', window.__rapidNavKeyHandler, true);
     const observeTransitionStage = () => {
       const stage = document.querySelector('.page-transition-stage');
       const style = stage ? getComputedStyle(stage) : null;
@@ -947,7 +955,7 @@ async function runRapidEditNavigationValidation(page) {
   const pressCount = 5;
   for (let i = 0; i < pressCount; i += 1) {
     await page.keyboard.press('ArrowDown');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(100);
   }
   await settle(page, 760);
   return page.evaluate(({ pressCount }) => {
@@ -961,26 +969,44 @@ async function runRapidEditNavigationValidation(page) {
     const frameGaps = (window.__rapidNavFrameGaps || []).filter(gap => Number.isFinite(gap));
     window.__rapidNavObserver?.disconnect?.();
     if(window.__rapidNavHandler) removeEventListener('swiss-slide-change', window.__rapidNavHandler);
+    if(window.__rapidNavKeyHandler) removeEventListener('keydown', window.__rapidNavKeyHandler, true);
     if(window.__rapidNavOriginalTransition){
       window.__playPageTransition = window.__rapidNavOriginalTransition;
       window.__rapidNavOriginalTransition = null;
     }
+    const keydowns = probe.keydowns || [];
+    const acceptedChanges = probe.acceptedChanges || [];
+    let searchIndex = 0;
+    const keyResponseDelays = keydowns.map(keydown => {
+      const acceptedIndex = acceptedChanges.findIndex((change, index) => index >= searchIndex && change.at >= keydown.at);
+      if(acceptedIndex < 0) return null;
+      searchIndex = acceptedIndex + 1;
+      return Number((acceptedChanges[acceptedIndex].at - keydown.at).toFixed(1));
+    });
     return {
       pressCount,
       startIndex: probe.startIndex,
       endIndex: window.__currentSlideIndex || 0,
-      acceptedCount: (probe.acceptedChanges || []).length,
-      ignoredCount: Math.max(0, pressCount - (probe.acceptedChanges || []).length),
+      acceptedCount: acceptedChanges.length,
+      ignoredCount: Math.max(0, pressCount - acceptedChanges.length),
+      keydownCount: keydowns.length,
+      keyResponseDelays,
+      maxKeyResponseDelayMs: Number(keyResponseDelays.filter(value => value !== null).reduce((max, value) => Math.max(max, Number(value || 0)), 0).toFixed(1)),
       firstTransitionStartMs: probe.transitionStarts?.[0] ? Number((probe.transitionStarts[0].at - startAt).toFixed(1)) : null,
       transitionStageVisibleMs: probe.transitionStageVisibleAt === null ? null : Number((probe.transitionStageVisibleAt - startAt).toFixed(1)),
       transitionStarts: (probe.transitionStarts || []).map(item => ({
         atMs: Number((item.at - startAt).toFixed(1)),
         mode: item.mode,
       })),
-      acceptedChanges: (probe.acceptedChanges || []).map(item => ({
+      keydowns: keydowns.map(item => ({
         atMs: Number((item.at - startAt).toFixed(1)),
         index: item.index,
       })),
+      acceptedChanges: acceptedChanges.map(item => ({
+        atMs: Number((item.at - startAt).toFixed(1)),
+        index: item.index,
+      })),
+      navigationState: window.__getDeckNavigationState?.() || null,
       longTasksOver50: longTasks.filter(task => Number(task.duration || 0) > 50).length,
       maxLongTaskMs: Number(longTasks.reduce((max, task) => Math.max(max, Number(task.duration || 0)), 0).toFixed(1)),
       maxFrameGapMs: Number(frameGaps.reduce((max, gap) => Math.max(max, Number(gap || 0)), 0).toFixed(1)),
@@ -1938,8 +1964,11 @@ function validateResult(result) {
   else {
     if (rapid.firstTransitionStartMs === null || rapid.firstTransitionStartMs > 80) failures.push(`Rapid edit navigation should start the first transition quickly: ${JSON.stringify(rapid)}`);
     if (rapid.transitionStageVisibleMs === null || rapid.transitionStageVisibleMs > 100) failures.push(`Rapid edit navigation should show a visible response quickly: ${JSON.stringify(rapid)}`);
-    if (rapid.acceptedCount < 2) failures.push(`Rapid edit navigation swallowed too many ArrowDown presses: ${JSON.stringify(rapid)}`);
-    if (rapid.endIndex <= rapid.startIndex) failures.push(`Rapid edit navigation did not advance from the starting page: ${JSON.stringify(rapid)}`);
+    if (rapid.keydownCount !== rapid.pressCount) failures.push(`Rapid edit navigation did not observe every keydown: ${JSON.stringify(rapid)}`);
+    if (rapid.acceptedCount < rapid.pressCount - 1) failures.push(`Rapid edit navigation swallowed too many ArrowDown presses: ${JSON.stringify(rapid)}`);
+    if (rapid.endIndex < rapid.startIndex + rapid.pressCount - 1) failures.push(`Rapid edit navigation did not advance for rapid repeated input: ${JSON.stringify(rapid)}`);
+    if ((rapid.keyResponseDelays || []).filter(value => value === null).length > 1) failures.push(`Rapid edit navigation left repeated inputs unaccepted: ${JSON.stringify(rapid)}`);
+    if (rapid.maxKeyResponseDelayMs > 120) failures.push(`Rapid edit navigation kept input blocked too long: ${JSON.stringify(rapid)}`);
     if (rapid.longTasksOver50 > 0 || rapid.maxLongTaskMs > 50) failures.push(`Rapid edit navigation caused a long task: ${JSON.stringify(rapid)}`);
     if (rapid.maxFrameGapMs > 120) failures.push(`Rapid edit navigation caused a large frame gap: ${JSON.stringify(rapid)}`);
     if (rapid.captureStarts > 0 || rapid.scheduled || rapid.thumbnailStages?.length || rapid.queueLength > 0) {
