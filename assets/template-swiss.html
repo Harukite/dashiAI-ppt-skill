@@ -1799,6 +1799,7 @@ let overviewThumbRunId=0;
 let overviewThumbPauseUntil=0;
 let overviewScrollQueued=false;
 let overviewProgrammaticScrollUntil=0;
+let overviewProgrammaticThumbRefreshNeeded=false;
 let overviewThumbRefreshQueued=false;
 let overviewThumbRefreshTimer=null;
 let overviewDeferredThumbTimers=new Set();
@@ -2571,7 +2572,7 @@ function scrollOverviewToCurrent(){
     const activeSlide = slides[idx];
     const catalogIndex = getCatalogSlides().indexOf(activeSlide);
     const card = catalogIndex >= 0 ? ov.querySelector(`[data-overview-card="true"][data-index="${catalogIndex}"]`) : null;
-    scrollRailCardIntoView(card);
+    scrollRailCardIntoView(card, {queueThumbs:false});
     const range = getOverviewThumbRange(overviewGrid, {includeNear:true});
     fitOverviewThumbnails(range.cards);
     observeOverviewThumbs(overviewGrid);
@@ -2591,7 +2592,11 @@ function syncRailActiveState(scroll=false, opts={}){
     const railRect = ov.getBoundingClientRect();
     const cardRect = card.getBoundingClientRect();
     if(!(cardRect.top >= railRect.top + 8 && cardRect.bottom <= railRect.bottom - 8)){
-      scrollRailCardIntoView(card);
+      scrollRailCardIntoView(card, {queueThumbs: opts.refreshThumbs === false});
+    }else if(opts.refreshThumbs === false && overviewProgrammaticThumbRefreshNeeded){
+      const wrap = card.querySelector('[data-overview-thumb="true"]');
+      if(wrap?.dataset.overviewRendered !== 'true') requestProgrammaticRailThumbRefresh();
+      else overviewProgrammaticThumbRefreshNeeded=false;
     }
     if(opts.refreshThumbs !== false){
       const range = getOverviewThumbRange(overviewGrid, {includeNear:true});
@@ -2603,10 +2608,18 @@ function syncRailActiveState(scroll=false, opts={}){
 }
 window.__syncRailActiveState = syncRailActiveState;
 
-function scrollRailCardIntoView(card){
+function scrollRailCardIntoView(card, opts={}){
   if(!card) return;
   overviewProgrammaticScrollUntil = performance.now() + 500;
   card.scrollIntoView({block:'center', inline:'nearest'});
+  if(opts.queueThumbs !== false){
+    overviewProgrammaticThumbRefreshNeeded=true;
+    requestProgrammaticRailThumbRefresh();
+  }
+}
+
+function requestProgrammaticRailThumbRefresh(){
+  requestOverviewThumbRefresh(true, {priority:true});
 }
 
 function cloneOverviewThumb(wrap){

@@ -43,6 +43,7 @@ try {
     themedPropControls: null,
     theme03GlobalDark: null,
     railGutterBalance: null,
+    railProgrammaticThumbs: null,
     railFocusScroll: null,
     railManualScroll: null,
     shadows: await readPanelShadows(page),
@@ -75,6 +76,7 @@ try {
   result.themedPropControls = await runThemedPropControlValidation(page);
   result.theme03GlobalDark = await runTheme03GlobalDarkValidation(page);
   result.railGutterBalance = await readRailGutterBalance(page);
+  result.railProgrammaticThumbs = await runRailProgrammaticThumbValidation(page);
   result.railFocusScroll = await runRailFocusScrollValidation(page);
   result.railManualScroll = await runRailManualScrollValidation(page);
   result.exportMenu = await runExportMenuValidation(page);
@@ -554,6 +556,142 @@ async function runRailFocusScrollValidation(page) {
   await settle(page, 420);
   const after = await readActiveRailVisibility(page);
   return { before, after };
+}
+
+async function runRailProgrammaticThumbValidation(page) {
+  return {
+    keyboard: await runRailProgrammaticThumbScenario(page, { kind: 'keyboard', preferredIndex: 32 }),
+    presentReturn: await runRailProgrammaticThumbScenario(page, { kind: 'presentReturn', preferredIndex: 40 }),
+  };
+}
+
+async function runRailProgrammaticThumbScenario(page, { kind, preferredIndex }) {
+  await prepareRailProgrammaticThumbScenario(page);
+  const targetIndex = await chooseUnrenderedRailTarget(page, preferredIndex);
+  const before = await readRailThumbState(page, targetIndex);
+  await page.evaluate(() => window.__resetOverviewPerfMarks?.());
+  if (kind === 'keyboard') {
+    for (let index = 0; index < targetIndex; index += 1) {
+      await page.keyboard.press('ArrowDown');
+      await settle(page, 55);
+    }
+  } else {
+    await page.locator('#preview-present-btn').click();
+    await settle(page, 360);
+    await page.evaluate(targetIndex => window.go?.(targetIndex, { animate: false, force: true }), targetIndex);
+    await settle(page, 220);
+    await ensureEditMode(page);
+  }
+  const visible = await readActiveRailThumbState(page);
+  const after = await waitForActiveRailThumbRendered(page);
+  return { kind, targetIndex, before, visible, after };
+}
+
+async function prepareRailProgrammaticThumbScenario(page) {
+  await ensureEditMode(page);
+  await page.evaluate(() => {
+    window.__setActiveThemePack?.('theme02', { navigate: false });
+    window.go?.(0, { animate: false, force: true });
+    window.__refreshRailCatalog?.();
+    const scroller = document.querySelector('[data-rail-scroll="true"],#slide-rail-list');
+    if (scroller) scroller.scrollTop = 0;
+  });
+  await settle(page, 420);
+}
+
+async function chooseUnrenderedRailTarget(page, preferredIndex) {
+  return page.evaluate(preferredIndex => {
+    const cards = [...document.querySelectorAll('[data-rail-card="true"],[data-slide-rail-card="true"]')];
+    if (!cards.length) return 0;
+    const preferred = Math.max(1, Math.min(cards.length - 1, preferredIndex));
+    const candidates = [];
+    for (let index = preferred; index < cards.length; index += 1) candidates.push(cards[index]);
+    for (let index = preferred - 1; index >= 1; index -= 1) candidates.push(cards[index]);
+    const unrendered = candidates.find(card => card.querySelector('[data-overview-thumb="true"],[data-rail-thumb="true"]')?.dataset.overviewRendered !== 'true');
+    return Number((unrendered || cards[preferred]).dataset.index || preferred);
+  }, preferredIndex);
+}
+
+async function waitForActiveRailThumbRendered(page, timeoutMs = 4500) {
+  const startedAt = Date.now();
+  let state = await readActiveRailThumbState(page);
+  while (Date.now() - startedAt < timeoutMs) {
+    if (state.found && state.visible && state.rendered && state.queueTriggered) break;
+    await settle(page, 180);
+    state = await readActiveRailThumbState(page);
+  }
+  return { ...state, waitedMs: Date.now() - startedAt };
+}
+
+async function readRailThumbState(page, index) {
+  return page.evaluate(index => {
+    const card = document.querySelector(`[data-rail-card="true"][data-index="${index}"],[data-slide-rail-card="true"][data-index="${index}"]`);
+    return readThumbState(card);
+
+    function readThumbState(card) {
+      const scroller = document.querySelector('[data-rail-scroll="true"],#slide-rail-list');
+      const railRect = scroller?.getBoundingClientRect();
+      const cardRect = card?.getBoundingClientRect();
+      const wrap = card?.querySelector('[data-overview-thumb="true"],[data-rail-thumb="true"]');
+      const perf = window.__getRailPerfState?.() || window.__getOverviewPerfState?.() || {};
+      const stages = perf.marks?.stages || [];
+      const queueStages = stages.filter(stage => stage.type === 'queue-nearby-overview-thumbs');
+      const thumbStages = stages.filter(stage => /dom-preview-thumbnail|dom-cache-restore|overview-thumb-task/.test(stage.type || ''));
+      return {
+        found: Boolean(card && wrap),
+        index: Number(card?.dataset.index || -1),
+        currentIndex: window.__currentSlideIndex || 0,
+        slideId: card?.dataset.slideId || card?.dataset.slideKey || '',
+        visible: Boolean(railRect && cardRect && cardRect.top >= railRect.top + 4 && cardRect.bottom <= railRect.bottom - 4),
+        rendered: wrap?.dataset.overviewRendered === 'true',
+        queued: wrap?.dataset.overviewQueued === 'true',
+        placeholder: Boolean(wrap?.querySelector('[data-overview-placeholder="true"]')),
+        scrollTop: scroller?.scrollTop || 0,
+        queueTriggered: queueStages.length > 0,
+        queueStageCount: queueStages.length,
+        thumbStageCount: thumbStages.length,
+        visibleRenderedCount: perf.visibleRenderedCount ?? null,
+        visibleMissingCount: perf.visibleMissingCount ?? null,
+        queuedKeys: perf.queuedKeys || [],
+      };
+    }
+  }, index);
+}
+
+async function readActiveRailThumbState(page) {
+  return page.evaluate(() => {
+    const cards = [...document.querySelectorAll('[data-rail-card="true"],[data-slide-rail-card="true"]')];
+    const active = cards.find(card => card.dataset.railActive === 'true' || card.getAttribute('aria-current') === 'true');
+    return readThumbState(active);
+
+    function readThumbState(card) {
+      const scroller = document.querySelector('[data-rail-scroll="true"],#slide-rail-list');
+      const railRect = scroller?.getBoundingClientRect();
+      const cardRect = card?.getBoundingClientRect();
+      const wrap = card?.querySelector('[data-overview-thumb="true"],[data-rail-thumb="true"]');
+      const perf = window.__getRailPerfState?.() || window.__getOverviewPerfState?.() || {};
+      const stages = perf.marks?.stages || [];
+      const queueStages = stages.filter(stage => stage.type === 'queue-nearby-overview-thumbs');
+      const thumbStages = stages.filter(stage => /dom-preview-thumbnail|dom-cache-restore|overview-thumb-task/.test(stage.type || ''));
+      return {
+        found: Boolean(card && wrap),
+        index: Number(card?.dataset.index || -1),
+        currentIndex: window.__currentSlideIndex || 0,
+        slideId: card?.dataset.slideId || card?.dataset.slideKey || '',
+        visible: Boolean(railRect && cardRect && cardRect.top >= railRect.top + 4 && cardRect.bottom <= railRect.bottom - 4),
+        rendered: wrap?.dataset.overviewRendered === 'true',
+        queued: wrap?.dataset.overviewQueued === 'true',
+        placeholder: Boolean(wrap?.querySelector('[data-overview-placeholder="true"]')),
+        scrollTop: scroller?.scrollTop || 0,
+        queueTriggered: queueStages.length > 0,
+        queueStageCount: queueStages.length,
+        thumbStageCount: thumbStages.length,
+        visibleRenderedCount: perf.visibleRenderedCount ?? null,
+        visibleMissingCount: perf.visibleMissingCount ?? null,
+        queuedKeys: perf.queuedKeys || [],
+      };
+    }
+  });
 }
 
 async function runRailManualScrollValidation(page) {
@@ -1089,6 +1227,19 @@ function validateResult(result) {
   const focus = result.railFocusScroll || {};
   if (!focus.before?.found || !focus.after?.found) failures.push(`Rail focus scroll validation did not find active rail cards: ${JSON.stringify(focus)}`);
   else if (!focus.after.visible) failures.push(`Keyboard page navigation should scroll the active rail card into view: ${JSON.stringify(focus)}`);
+
+  for (const [name, state] of Object.entries(result.railProgrammaticThumbs || {})) {
+    if (!state?.before?.found || !state?.visible?.found || !state?.after?.found) {
+      failures.push(`Rail programmatic thumbnail ${name} did not find the target active thumbnail: ${JSON.stringify(state)}`);
+      continue;
+    }
+    if (state.before.rendered) failures.push(`Rail programmatic thumbnail ${name} should start from an unrendered far thumbnail: ${JSON.stringify(state)}`);
+    if (!state.visible.visible) failures.push(`Rail programmatic thumbnail ${name} should first scroll the active card into view: ${JSON.stringify(state)}`);
+    if (!state.after.queueTriggered) failures.push(`Rail programmatic thumbnail ${name} should trigger the visible thumbnail queue after automatic scroll: ${JSON.stringify(state)}`);
+    if (!state.after.rendered || state.after.placeholder) {
+      failures.push(`Rail programmatic thumbnail ${name} should render the active thumbnail without manual scrolling: ${JSON.stringify(state)}`);
+    }
+  }
 
   const manual = result.railManualScroll || {};
   if (!manual.before?.found || !manual.after?.found) failures.push(`Rail manual-scroll validation did not find the rail scroller: ${JSON.stringify(manual)}`);
