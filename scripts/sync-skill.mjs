@@ -230,13 +230,15 @@ function renderInstalledSkill(content) {
       '7. 运行 `npm run render:goal -- output/<deck-name>/goal.json output/<deck-name>/ppt/index.html`。',
       '8. 运行 `npm run validate:swiss -- output/<deck-name>/ppt/index.html`。',
       '9. 运行 `npm run validate:goal-copy -- output/<deck-name>/goal.json output/<deck-name>/ppt/index.html`。',
-      '10. 两项校验通过后返回本地预览路径或当前服务地址。',
+      '10. 从项目目录启动或复用本地 HTTPS 预览服务: `npm run preview:https -- output/<deck-name>/ppt <port>`。',
+      '11. 最终回复必须给 `https://jadon.local:<port>/`;本地 HTML 路径只作为备用定位信息,不要只返回 `file://`。',
     ].join('\n'),
     [
       '7. 运行渲染脚本输出 `output/<deck-name>/ppt/index.html`;脚本会使用 Skill 内置生成器,不要切回外部项目目录。',
       '8. 确认脚本完成 `validate:swiss` 和 `validate:goal-copy`。',
       '9. 运行 `node <skill-root>/scripts/check_latest_version.mjs` 做静默版本检查。',
-      '10. 两项校验通过后把本地 HTML 路径或预览地址返回给用户;只有版本检查脚本有输出时才附加更新提醒。',
+      '10. 从 `<skill-root>/project` 启动或复用本地 HTTPS 预览服务: `npm run preview:https -- <本次输出 ppt 目录> <port>`。',
+      '11. 最终回复必须给 `https://jadon.local:<port>/`;本地 HTML 路径只作为备用定位信息,不要只返回 `file://`。只有版本检查脚本有输出时才附加更新提醒。',
     ].join('\n')
   );
 
@@ -400,6 +402,11 @@ npm run validate:goal-spec -- "$SPEC_PATH"
 npm run render:goal -- "$SPEC_PATH" "$OUT_PATH"
 npm run validate:swiss -- "$OUT_PATH"
 npm run validate:goal-copy -- "$SPEC_PATH" "$OUT_PATH"
+OUT_DIR="$(dirname "$OUT_PATH")"
+PREVIEW_PORT="\${DASHI_PPT_PREVIEW_PORT:-4178}"
+echo "Start HTTPS preview:"
+echo "  cd \"$PROJECT_ROOT\" && npm run preview:https -- \"$OUT_DIR\" \"$PREVIEW_PORT\""
+echo "Open after starting: https://jadon.local:$PREVIEW_PORT/"
 `);
   fs.chmodSync(scriptPath, 0o755);
 }

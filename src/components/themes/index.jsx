@@ -60,7 +60,7 @@ function applyThemePageDefaults(page) {
     };
   }
   if (page.themeKey !== 'theme03') return page;
-  const theme03InjectedKeys = new Set(['accent', 'showDecor', 'decorSrc', 'decorScale']);
+  const theme03InjectedKeys = new Set(['accent', 'theme', 'showDecor', 'decorSrc', 'decorScale']);
   return {
     ...page,
     controls: [

@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GENERATED_THEME_PACKS } from '../src/components/themes/generated-metadata.js';
+import { GENERATED_THEME_PACKS, GENERATED_THEME_PAGES } from '../src/components/themes/generated-metadata.js';
+import { inspectLayout } from './skill-workflow-utils.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -15,6 +16,8 @@ const tests = [
   ['media workflow supports planned/provided/image-gen slots', testMediaWorkflow],
   ['deck composer constrains media-aware roles', testDeckComposerMediaRoles],
   ['skill prompt keeps user-visible style and image-slot guidance', testSkillPromptGuidance],
+  ['theme03 global dark controls avoid ineffective page theme', testTheme03GlobalDarkControls],
+  ['skill delivery uses HTTPS preview for export support', testHttpPreviewDelivery],
   ['validate-goal-spec rejects unsafe goal shapes', testValidateGoalSpec],
   ['preview panel handles type: images as an image list control', testImagesControl],
 ];
@@ -255,6 +258,84 @@ function testSkillPromptGuidance() {
   assert(!missing.length, `Skill prompt guidance missing: ${missing.join(', ')}`);
 }
 
+function testTheme03GlobalDarkControls() {
+  const theme03Layouts = GENERATED_THEME_PAGES.filter(page => page.themeKey === 'theme03').map(page => page.key);
+  const missingForceDark = [];
+  const pageThemeControls = [];
+  for (const layout of theme03Layouts) {
+    const details = inspectLayout(layout);
+    if (!details?.controlKeys?.includes('forceDark')) missingForceDark.push(layout);
+    if (details?.controlKeys?.includes('theme')) pageThemeControls.push(layout);
+  }
+  assert(!missingForceDark.length, `theme03 layouts missing global forceDark control: ${missingForceDark.slice(0, 8).join(', ')}`);
+  assert(!pageThemeControls.length, `theme03 exposes ineffective per-page theme controls: ${pageThemeControls.slice(0, 8).join(', ')}`);
+
+  const tmp = mkdtempSync(path.join(tmpdir(), 'dashi-theme03-controls-'));
+  try {
+    const goalPath = path.join(tmp, 'goal.json');
+    const outPath = path.join(tmp, 'ppt/index.html');
+    writeFileSync(goalPath, JSON.stringify({
+      title: 'Theme03 Control Smoke',
+      goal: 'verify global dark control',
+      themePack: 'theme03',
+      slides: [
+        { layout: 'theme03_page002', props: { forceDark: true, theme: 'light', titleA: '年终', titleAccent: '汇报', titleB: '', titleC: '' } },
+        { layout: 'theme03_page006', props: { forceDark: true } },
+      ],
+    }, null, 2));
+    renderGoal(goalPath, outPath);
+    const html = readFileSync(outPath, 'utf8');
+    const runtime = readFileSync(path.join(tmp, 'ppt/assets/imported-theme-runtime.js'), 'utf8');
+    assert(/data-theme-pack="theme03"/.test(html), 'rendered deck should mark theme03 slides');
+    assert(/&quot;key&quot;:&quot;forceDark&quot;/.test(html), 'rendered prop controls should expose forceDark');
+    assert(!/&quot;key&quot;:&quot;theme&quot;/.test(html), 'rendered prop controls should not expose ineffective per-page theme');
+    assert(/theme03-theme-toggle/.test(runtime), 'theme03 runtime should include visible global dark icon toggle');
+    assert(/__getTheme03GlobalDark/.test(runtime) && /__setTheme03GlobalDark/.test(runtime), 'theme03 runtime should expose global dark sync bridge');
+    assert(/rd-themechange/.test(runtime), 'theme03 runtime should dispatch global dark sync events');
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+function testHttpPreviewDelivery() {
+  const skill = readFileSync(path.join(ROOT, 'SKILL.md'), 'utf8');
+  const sync = readFileSync(path.join(ROOT, 'scripts/sync-skill.mjs'), 'utf8');
+  const template = readFileSync(path.join(ROOT, 'assets/template-swiss.html'), 'utf8');
+  const missing = [];
+  if (!/preview:https/.test(skill)) missing.push('skill preview:https workflow');
+  if (!/https:\/\/jadon\.local:<port>\//.test(skill)) missing.push('jadon.local preview URL guidance');
+  if (!/不要只返回.*file:\/\//.test(skill)) missing.push('do-not-return-file-only delivery rule');
+  if (!/preview:https/.test(sync)) missing.push('synced render shell preview command');
+  if (!/location\.protocol\s*===\s*['"]file:/.test(template)) missing.push('file:// PPTX export guard');
+  if (!/HTTP.*预览|HTTPS.*预览/.test(template)) missing.push('file:// export message should mention HTTP preview');
+  assert(!missing.length, `HTTP preview delivery guidance missing: ${missing.join(', ')}`);
+
+  const tmp = mkdtempSync(path.join(tmpdir(), 'dashi-http-preview-'));
+  const port = 47000 + (process.pid % 1000);
+  let server = null;
+  try {
+    const goalPath = path.join(tmp, 'goal.json');
+    const outPath = path.join(tmp, 'ppt/index.html');
+    writeFileSync(goalPath, JSON.stringify({
+      title: 'HTTP Preview Smoke',
+      goal: 'verify preview server',
+      themePack: 'theme03',
+      slides: [{ layout: 'theme03_page001', props: { forceDark: true, titlePrefix: '年终', titleAccent: '汇报', titleSuffix: '' } }],
+    }, null, 2));
+    renderGoal(goalPath, outPath);
+    server = spawn(process.execPath, ['scripts/serve-preview-https.mjs', path.dirname(outPath), String(port)], {
+      cwd: ROOT,
+      env: { ...process.env, HOST: '127.0.0.1' },
+      stdio: ['ignore', 'ignore', 'pipe'],
+    });
+    const html = fetchHttpsWithRetry(`https://localhost:${port}/`);
+    assert(html.includes('HTTP Preview Smoke'), 'HTTPS preview should serve the rendered deck');
+  } finally {
+    if (server && !server.killed) server.kill('SIGTERM');
+    rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
 function testValidateGoalSpec() {
   const tmp = mkdtempSync(path.join(tmpdir(), 'dashi-goal-spec-'));
   try {
@@ -351,6 +432,10 @@ function runJson(script, args) {
   return JSON.parse(stdout);
 }
 
+function renderGoal(goalPath, outPath) {
+  execFileSync('npm', ['run', 'render:goal', '--', goalPath, outPath], { cwd: ROOT, stdio: 'pipe' });
+}
+
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -366,4 +451,38 @@ function shortThemeText(value) {
     .filter(Boolean)
     .slice(0, 2)
     .join(' / ');
+}
+
+function fetchHttpsWithRetry(url) {
+  let lastError = null;
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    try {
+      return execFileSync(process.execPath, ['-e', `
+        const https = require('node:https');
+        https.get(${JSON.stringify(url)}, { rejectUnauthorized: false }, response => {
+          let body = '';
+          response.setEncoding('utf8');
+          response.on('data', chunk => { body += chunk; });
+          response.on('end', () => {
+            if (response.statusCode !== 200) {
+              console.error('status=' + response.statusCode);
+              process.exit(2);
+            }
+            process.stdout.write(body);
+          });
+        }).on('error', error => {
+          console.error(error.message);
+          process.exit(1);
+        });
+      `], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 5000 });
+    } catch (error) {
+      lastError = error;
+      sleep(250);
+    }
+  }
+  throw new Error(`HTTPS preview did not respond: ${lastError?.stderr || lastError?.message || 'unknown error'}`);
+}
+
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }

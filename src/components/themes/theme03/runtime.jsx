@@ -39,7 +39,7 @@ const rawPages = sourcePages.map(entry => ({
 export const runtimePages = normalizeRuntimePages(rawPages, { themeKey: 'theme03', layoutPrefix: 'THEME03' });
 
 function withTheme03Controls(controls) {
-  const filtered = controls.filter(control => control.key !== 'forceDark' && control.key !== 'accent');
+  const filtered = controls.filter(control => control.key !== 'forceDark' && control.key !== 'accent' && control.key !== 'theme');
   const backgroundControls = filtered.filter(control => control.key === 'backgroundMode' || control.key === 'unicornScene');
   const rest = filtered.filter(control => control.key !== 'backgroundMode' && control.key !== 'unicornScene');
   if (backgroundControls.length) return [

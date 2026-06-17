@@ -17657,22 +17657,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "背景主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "dark",
-              "label": "深色"
-            },
-            {
-              "value": "light",
-              "label": "浅色"
-            }
-          ]
-        },
-        {
           "key": "statCount",
           "label": "数据条目",
           "type": "range",
@@ -17871,22 +17855,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "背景主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "dark",
-              "label": "深色"
-            },
-            {
-              "value": "light",
-              "label": "浅色"
-            }
-          ]
-        },
-        {
           "key": "showFrame",
           "label": "描边边框",
           "type": "toggle",
@@ -18024,22 +17992,6 @@
           "label": "装饰标签",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "背景主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "dark",
-              "label": "深色"
-            },
-            {
-              "value": "light",
-              "label": "浅色"
-            }
-          ]
         },
         {
           "key": "showFigure",
@@ -18221,22 +18173,6 @@
           "label": "装饰标签",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "背景主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "dark",
-              "label": "深色"
-            },
-            {
-              "value": "light",
-              "label": "浅色"
-            }
-          ]
         },
         {
           "key": "imageCount",
@@ -19049,22 +18985,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -19762,22 +19682,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -20244,22 +20148,6 @@
           "label": "装饰解读",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -21266,22 +21154,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "背景主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "dark",
-              "label": "深色"
-            },
-            {
-              "value": "light",
-              "label": "浅色"
-            }
-          ]
-        },
-        {
           "key": "showIndex",
           "label": "章节序号",
           "type": "toggle",
@@ -21636,22 +21508,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -21927,22 +21783,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "背景主题",
-          "type": "select",
-          "default": "dark",
-          "options": [
-            {
-              "value": "dark",
-              "label": "深色"
-            },
-            {
-              "value": "light",
-              "label": "浅色"
-            }
-          ]
-        },
-        {
           "key": "showUnit",
           "label": "数字单位",
           "type": "toggle",
@@ -22137,22 +21977,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -22272,22 +22096,6 @@
           "label": "装饰标签",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "背景主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "dark",
-              "label": "深色"
-            },
-            {
-              "value": "light",
-              "label": "浅色"
-            }
-          ]
         },
         {
           "key": "showUnit",
@@ -22649,22 +22457,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "明暗主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -22958,22 +22750,6 @@
           "label": "装饰标签",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "背景主题",
-          "type": "select",
-          "default": "dark",
-          "options": [
-            {
-              "value": "dark",
-              "label": "深色"
-            },
-            {
-              "value": "light",
-              "label": "浅色"
-            }
-          ]
         },
         {
           "key": "showInputs",
@@ -23859,22 +23635,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -24164,22 +23924,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "背景主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "dark",
-              "label": "深色"
-            },
-            {
-              "value": "light",
-              "label": "浅色"
-            }
-          ]
-        },
-        {
           "key": "showMark",
           "label": "引号装饰",
           "type": "toggle",
@@ -24371,22 +24115,6 @@
           "step": 1
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -24556,22 +24284,6 @@
           "step": 1
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -24739,22 +24451,6 @@
           "min": 0,
           "max": 5,
           "step": 1
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -24941,22 +24637,6 @@
           "step": 1
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -25126,22 +24806,6 @@
           "step": 1
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -25303,22 +24967,6 @@
           "min": 0,
           "max": 3,
           "step": 1
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -25486,22 +25134,6 @@
           "step": 1
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -25660,22 +25292,6 @@
           "min": 0,
           "max": 8,
           "step": 1
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -25839,22 +25455,6 @@
           "min": 0,
           "max": 4,
           "step": 1
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -26027,22 +25627,6 @@
           "min": 0,
           "max": 5,
           "step": 1
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -26223,22 +25807,6 @@
           "step": 1
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -26417,22 +25985,6 @@
           "step": 1
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -26606,22 +26158,6 @@
           "min": 0,
           "max": 5,
           "step": 1
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -26819,22 +26355,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -26993,22 +26513,6 @@
           "min": 0,
           "max": 3,
           "step": 1
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -27172,22 +26676,6 @@
           "label": "结论解读",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -27360,22 +26848,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -27534,22 +27006,6 @@
           "label": "底部小结",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -27712,22 +27168,6 @@
           "step": 1
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -27874,22 +27314,6 @@
           "label": "口径注记",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "dark",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -28067,22 +27491,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -28235,22 +27643,6 @@
           "min": 0,
           "max": 4,
           "step": 1
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -28417,22 +27809,6 @@
           "label": "结构解读",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -28774,22 +28150,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -28953,22 +28313,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -29123,22 +28467,6 @@
           "label": "风险解读",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "dark",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -29477,22 +28805,6 @@
           "default": true
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -29645,22 +28957,6 @@
           "label": "结构解读",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -29818,22 +29114,6 @@
           "label": "结论解读",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "dark",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -30036,22 +29316,6 @@
           ]
         },
         {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "dark",
-          "options": [
-            {
-              "value": "dark",
-              "label": "深色"
-            },
-            {
-              "value": "light",
-              "label": "浅色"
-            }
-          ]
-        },
-        {
           "key": "showDecor",
           "label": "装饰图片",
           "type": "toggle",
@@ -30204,22 +29468,6 @@
           "label": "结构解读",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -30383,22 +29631,6 @@
           "label": "结构解读",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -30573,22 +29805,6 @@
           "label": "结构解读",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "主题",
-          "type": "select",
-          "default": "light",
-          "options": [
-            {
-              "value": "light",
-              "label": "浅色"
-            },
-            {
-              "value": "dark",
-              "label": "深色"
-            }
-          ]
         },
         {
           "key": "showDecor",
@@ -31071,22 +30287,6 @@
           "label": "装饰标签",
           "type": "toggle",
           "default": true
-        },
-        {
-          "key": "theme",
-          "label": "背景主题",
-          "type": "select",
-          "default": "dark",
-          "options": [
-            {
-              "value": "dark",
-              "label": "深色"
-            },
-            {
-              "value": "light",
-              "label": "浅色"
-            }
-          ]
         },
         {
           "key": "showSources",

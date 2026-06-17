@@ -60,7 +60,7 @@ node scripts/check_latest_version.mjs
 - 不要改页面元数据、组件源码、className、CSS、样式字段或默认视觉结构来完成内容填充。只在 `props` 内填写内容和用户明确要求的页面属性。
 - 允许用顶层 `text` 覆盖可见文字槽位,但只用于替换文字内容。不要在普通生成中启动浏览器批量抽取全页面文本槽位;只有用户明确要求“彻底清除所有模板默认文案/逐页校对可见文案”时才做运行时槽位抽取。
 - 禁止复用 `output/` 里已有的旧 `goal.json` 或旧 HTML。每次请求都新建本次输出目录和本次 JSON 计划。
-- 最终返回给用户的必须是本次请求的 `output/<deck-name>/ppt/index.html`,不要返回 `theme-preview` 或其它调试页。
+- 最终交付必须给本次请求的本地 HTTPS 预览地址,例如 `https://jadon.local:<port>/`;本地 HTML 路径只能作为备用定位信息,不要只返回 `file://` 或只返回 `output/<deck-name>/ppt/index.html`。不要返回 `theme-preview` 或其它调试页。
 - 如果输出正文里出现与用户主题无关的默认文案,例如 AI Capital / 投融资 / SoundWave / 声浪 / Key Metrics / Roadmap / End of Report 等,必须重写 JSON 后重新渲染,不能交付。
 
 ## 工作流
@@ -74,7 +74,8 @@ node scripts/check_latest_version.mjs
 7. 运行 `npm run render:goal -- output/<deck-name>/goal.json output/<deck-name>/ppt/index.html`。
 8. 运行 `npm run validate:swiss -- output/<deck-name>/ppt/index.html`。
 9. 运行 `npm run validate:goal-copy -- output/<deck-name>/goal.json output/<deck-name>/ppt/index.html`。
-10. 两项校验通过后返回本地预览路径或当前服务地址。
+10. 从项目目录启动或复用本地 HTTPS 预览服务: `npm run preview:https -- output/<deck-name>/ppt <port>`。
+11. 最终回复必须给 `https://jadon.local:<port>/`;本地 HTML 路径只作为备用定位信息,不要只返回 `file://`。
 
 ## 返工与浏览器检查
 

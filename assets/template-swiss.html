@@ -4030,6 +4030,12 @@ refreshRailCatalog();
       alert(message);
       return;
     }
+    if(location.protocol === 'file:'){
+      const message = '可编辑 PPTX 导出需要通过本地 HTTPS 预览服务打开。请运行 npm run preview:https -- <输出 ppt 目录> <port>，再打开 https://jadon.local:<port>/ 后导出。';
+      window.__httpPreviewRequiredMessage = message;
+      alert(message);
+      return;
+    }
     const button = document.getElementById('preview-export-pptx');
     const buttonLabel = button?.textContent;
     let exportUi = null;
@@ -4080,7 +4086,7 @@ refreshRailCatalog();
     } catch (error) {
       if(isDeckExportCancelledError(error)) return;
       console.error('[export pptx]', error);
-      alert('可编辑 PPTX 导出失败，请确认当前预览服务支持服务端导出。');
+      alert('可编辑 PPTX 导出失败，请确认当前页面是通过本地 HTTP/HTTPS 预览服务打开，而不是 file:// 直接打开。');
     } finally {
       progressPoll?.stop?.();
       document.body.classList.remove('pptx-export-capturing');
