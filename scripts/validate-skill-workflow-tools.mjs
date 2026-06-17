@@ -11,6 +11,8 @@ const tests = [
   ['layout-query returns compact media candidates', testLayoutQuery],
   ['inspect-layout exposes copy/media/count/control contract', testInspectLayout],
   ['write-safe-props preserves default array tail and count', testWriteSafeProps],
+  ['media workflow supports planned/provided/image-gen slots', testMediaWorkflow],
+  ['deck composer constrains media-aware roles', testDeckComposerMediaRoles],
   ['validate-goal-spec rejects unsafe goal shapes', testValidateGoalSpec],
   ['preview panel handles type: images as an image list control', testImagesControl],
 ];
@@ -78,6 +80,129 @@ function testWriteSafeProps() {
   assert(result.props?.items?.length >= 5, 'expected items default tail to be preserved');
   const unknown = runJson('scripts/write-safe-props.mjs', ['theme01_page020', JSON.stringify({ madeUpProp: true })]);
   assert(unknown.warnings?.some(item => item.includes('madeUpProp')), 'expected unknown prop warning');
+}
+
+function testMediaWorkflow() {
+  const planned = runJson('scripts/layout-query.mjs', [
+    '--theme', 'theme01',
+    '--role', 'case',
+    '--planned-images',
+    '--limit', '4',
+  ]);
+  assert(planned.mediaIntent === 'planned-images', 'expected planned-images media intent');
+  assert(planned.layouts.length > 0, 'expected planned image candidates');
+  assert(planned.layouts.every(item => item.mediaSlots?.length), 'planned image candidates must all expose media slots');
+  assert(planned.layouts.some(item => item.mediaSlots.some(slot => Number(slot.max || 0) >= 3)), 'expected a candidate that can keep 3 image slots');
+
+  const imageGen = runJson('scripts/layout-query.mjs', [
+    '--theme', 'theme01',
+    '--role', 'image',
+    '--image-gen',
+    '--limit', '3',
+  ]);
+  assert(imageGen.mediaIntent === 'image-gen', 'expected image-gen media intent');
+  assert(imageGen.layouts.length > 0, 'expected image-gen candidates');
+  assert(imageGen.layouts.every(item => item.mediaSlots?.length), 'image-gen candidates must all expose media slots');
+
+  const provided = runJson('scripts/write-safe-props.mjs', [
+    'theme01_page020',
+    JSON.stringify({ title: '提供图片案例' }),
+    '--images',
+    'a.png',
+    'b.png',
+    'c.png',
+  ]);
+  assert(provided.mediaIntent === 'provided-images', 'expected provided-images media intent');
+  assert(provided.props?.imageSlotCount === 3, 'provided images should set imageSlotCount=3');
+  assert(provided.props?.images?.slice(0, 3).join('|') === 'a.png|b.png|c.png', 'provided images should map to props.images');
+  assert(provided.props?.images?.length >= 5, 'provided images should preserve default media tail');
+
+  const tmp = mkdtempSync(path.join(tmpdir(), 'dashi-media-goal-'));
+  try {
+    expectGoalFailure(tmp, 'needs-visual-no-slot.json', {
+      title: 'Needs Visual',
+      goal: 'should fail',
+      themePack: 'theme01',
+      slides: [{ layout: 'theme01_page006', needsVisual: true, props: { title: '需要图片' } }],
+    }, ['slide 1', 'theme01_page006', 'needsVisual', 'media slot']);
+
+    expectGoalFailure(tmp, 'provided-images-not-written.json', {
+      title: 'Provided Images',
+      goal: 'should fail',
+      themePack: 'theme01',
+      slides: [{ layout: 'theme01_page020', providedImages: ['a.png', 'b.png', 'c.png'], props: { title: '未写入图片' } }],
+    }, ['slide 1', 'theme01_page020', 'providedImages', 'props.images']);
+
+    const plannedOk = path.join(tmp, 'planned-ok.json');
+    writeFileSync(plannedOk, JSON.stringify({
+      title: 'Planned Images',
+      goal: 'should pass',
+      themePack: 'theme01',
+      slides: [{ layout: 'theme01_page020', needsVisual: true, plannedImages: 3, props: { title: '保留图片位' } }],
+    }, null, 2));
+    execFileSync('node', ['scripts/validate-goal-spec.mjs', plannedOk], { cwd: ROOT, stdio: 'pipe' });
+
+    const imageGenOk = path.join(tmp, 'image-gen-ok.json');
+    writeFileSync(imageGenOk, JSON.stringify({
+      title: 'Image Gen',
+      goal: 'should pass',
+      themePack: 'theme01',
+      slides: [{ layout: 'theme01_page020', imageGen: true, props: { title: '后续生成图片' } }],
+    }, null, 2));
+    execFileSync('node', ['scripts/validate-goal-spec.mjs', imageGenOk], { cwd: ROOT, stdio: 'pipe' });
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+function testDeckComposerMediaRoles() {
+  const tsx = path.join(ROOT, 'node_modules', '.bin', 'tsx');
+  const script = `
+    import { composeDeck } from './src/deckComposer.jsx';
+    import { inspectLayout } from './scripts/skill-workflow-utils.mjs';
+    const coverDeck = composeDeck({
+      title: 'Cover Role',
+      goal: 'should use first five pages',
+      themePack: 'theme01',
+      randomSeed: 'cover-regression-3',
+      slides: [{ role: 'cover', props: { title: '封面' } }]
+    });
+    const coverLayout = coverDeck.slides[0].layout;
+    if (!/^theme\\d+_page00[1-5]$/.test(coverLayout)) {
+      console.error(JSON.stringify({ role: 'cover', layout: coverLayout }));
+      process.exit(4);
+    }
+
+    const deck = composeDeck({
+      title: 'Media Role',
+      goal: 'should use slots',
+      themePack: 'theme08',
+      randomSeed: 'media-role-regression',
+      slides: [{ role: 'image', needsVisual: true, props: { headline: '视觉页' } }]
+    });
+    const slide = deck.slides[0];
+    if (!slide.layout || !slide.layout.startsWith('theme08_')) process.exit(2);
+    const details = inspectLayout(slide.layout);
+    if (!details?.mediaSlots?.length) {
+      console.error(JSON.stringify({ layout: slide.layout, mediaSlots: details?.mediaSlots || [] }));
+      process.exit(3);
+    }
+
+    const visualCaseDeck = composeDeck({
+      title: 'Visual Case',
+      goal: 'case role should keep slots when needed',
+      themePack: 'theme01',
+      randomSeed: 'visual-case-regression',
+      slides: [{ role: 'case', needsVisual: true, props: { title: '需要视觉案例' } }]
+    });
+    const visualCaseSlide = visualCaseDeck.slides[0];
+    const visualCaseDetails = inspectLayout(visualCaseSlide.layout);
+    if (!visualCaseDetails?.mediaSlots?.length) {
+      console.error(JSON.stringify({ role: 'case', layout: visualCaseSlide.layout, mediaSlots: visualCaseDetails?.mediaSlots || [] }));
+      process.exit(5);
+    }
+  `;
+  execFileSync(tsx, ['-e', script], { cwd: ROOT, stdio: 'pipe' });
 }
 
 function testValidateGoalSpec() {

@@ -2,10 +2,12 @@
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import {
+  getMediaSlotsForLayout,
   getLayoutRecord,
   isCoverCandidate,
   isCoverLikeLayout,
   layoutExists,
+  mediaSlotCapacity,
   normalizeProps,
   unknownPropKeys,
 } from './skill-workflow-utils.mjs';
@@ -50,6 +52,8 @@ export function validateGoalSpec(spec) {
 
     const record = getLayoutRecord(layout);
     const props = slide?.props || {};
+    validateMediaIntent(slide, slideNumber, layoutLabel, props, errors);
+
     for (const key of unknownPropKeys(record, props)) {
       errors.push(`slide ${slideNumber} layout ${layoutLabel} field ${key}: unknown prop for this layout`);
     }
@@ -75,6 +79,81 @@ export function validateGoalSpec(spec) {
   }
 
   return errors;
+}
+
+function validateMediaIntent(slide, slideNumber, layout, props, errors) {
+  const slots = getMediaSlotsForLayout(layout);
+  const intent = getSlideMediaIntent(slide);
+  if (!intent.requiresMedia) return;
+
+  if (!slots.length) {
+    errors.push(`slide ${slideNumber} layout ${layout} field ${intent.field}: ${intent.label} requires a usable media slot; choose a layout with mediaSlots or remove the media intent`);
+    return;
+  }
+
+  if (intent.count > 0 && !slots.some(slot => mediaSlotCapacity(slot) >= intent.count)) {
+    const capacities = slots.map(slot => `${slot.field}:${mediaSlotCapacity(slot)}`).join(', ');
+    errors.push(`slide ${slideNumber} layout ${layout} field ${intent.field}: ${intent.label} needs ${intent.count} media item(s), but available media slot capacity is ${capacities}`);
+  }
+
+  if (!intent.requiresWrittenProps) return;
+
+  const writtenSlot = slots.find(slot => Array.isArray(props?.[slot.field]) && props[slot.field].length >= Math.max(1, intent.count));
+  if (!writtenSlot) {
+    const fields = slots.map(slot => `props.${slot.field}`).join(' or ');
+    errors.push(`slide ${slideNumber} layout ${layout} field ${intent.field}: providedImages must be written to ${fields}; do not use slides[].media`);
+  }
+}
+
+function getSlideMediaIntent(slide) {
+  const providedCount = mediaCount(slide?.providedImages);
+  if (providedCount || slide?.hasImages === true) {
+    return {
+      requiresMedia: true,
+      requiresWrittenProps: true,
+      count: providedCount || 1,
+      field: providedCount ? 'providedImages' : 'hasImages',
+      label: providedCount ? 'providedImages' : 'hasImages',
+    };
+  }
+
+  const plannedCount = mediaCount(slide?.plannedImages);
+  if (plannedCount) {
+    return {
+      requiresMedia: true,
+      requiresWrittenProps: false,
+      count: plannedCount,
+      field: 'plannedImages',
+      label: 'plannedImages',
+    };
+  }
+
+  if (slide?.needsVisual === true || slide?.needsImageGen === true || slide?.imageGen === true) {
+    const field = slide?.needsVisual === true ? 'needsVisual' : slide?.needsImageGen === true ? 'needsImageGen' : 'imageGen';
+    return {
+      requiresMedia: true,
+      requiresWrittenProps: false,
+      count: 1,
+      field,
+      label: field,
+    };
+  }
+
+  return {
+    requiresMedia: false,
+    requiresWrittenProps: false,
+    count: 0,
+    field: '',
+    label: '',
+  };
+}
+
+function mediaCount(value) {
+  if (Array.isArray(value)) return value.length;
+  if (value === true) return 1;
+  const number = Number(value);
+  if (Number.isFinite(number) && number > 0) return Math.round(number);
+  return 0;
 }
 
 function validateObjectStrings(value, scope, layout, fieldPrefix, errors) {

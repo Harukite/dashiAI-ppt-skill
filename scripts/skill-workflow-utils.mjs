@@ -49,6 +49,9 @@ const ROLE_ALIASES = {
   roadmap: 'actions',
   visual: 'image',
   gallery: 'image',
+  media: 'image',
+  picture: 'image',
+  photo: 'image',
 };
 
 const contracts = createLayoutContracts(THEME_PAGES);
@@ -79,23 +82,38 @@ export function compactJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-export function listLayouts({ theme, role, keyword, needsMedia = false, limit = 12 } = {}) {
+export function listLayouts({
+  theme,
+  role,
+  keyword,
+  needsMedia = false,
+  plannedImages = false,
+  providedImages = false,
+  imageGen = false,
+  needsVisual = false,
+  mediaCount = null,
+  limit = 12,
+} = {}) {
   const normalizedRole = role ? ROLE_ALIASES[role] || role : '';
   const keywords = normalizedRole ? ROLE_KEYWORDS[normalizedRole] || [normalizedRole] : [];
   const keywordText = String(keyword || '').trim().toLowerCase();
+  const requestedMediaCount = getRequestedMediaCount({ plannedImages, providedImages, imageGen, needsVisual, mediaCount });
+  const requiresMedia = needsMedia || requestedMediaCount > 0 || normalizedRole === 'image';
   let rows = THEME_PAGES
     .filter(page => !theme || page.themeKey === theme)
     .filter(page => {
       if (!normalizedRole) return true;
       if (normalizedRole === 'cover') return isCoverCandidate(page.key);
+      if (normalizedRole === 'image') return inspectLayout(page.key, { compact: true })?.mediaSlots.length;
       return pageMatches(page, keywords);
     })
     .filter(page => !keywordText || pageSearchText(page).includes(keywordText))
     .map(page => inspectLayout(page.key, { compact: true }))
     .filter(Boolean)
-    .filter(row => !needsMedia || row.mediaSlots.length);
+    .filter(row => !requiresMedia || row.mediaSlots.length)
+    .filter(row => !requestedMediaCount || mediaSlotsCanFit(row.mediaSlots, requestedMediaCount));
 
-  rows = rows.sort((a, b) => scoreLayout(b, { normalizedRole, keywordText, needsMedia }) - scoreLayout(a, { normalizedRole, keywordText, needsMedia }));
+  rows = rows.sort((a, b) => scoreLayout(b, { normalizedRole, keywordText, requiresMedia, requestedMediaCount }) - scoreLayout(a, { normalizedRole, keywordText, requiresMedia, requestedMediaCount }));
   return rows.slice(0, Math.max(1, Math.min(50, Number(limit) || 12)));
 }
 
@@ -117,7 +135,7 @@ export function inspectLayout(layout, { compact = false } = {}) {
     pageNumber: page.pageNumber,
     label: page.label,
     slot: page.slot,
-    roles: inferRoles(page),
+    roles: inferRoles(page, mediaSlots),
     copyKeys,
     arrayKeys,
     mediaSlots,
@@ -170,6 +188,34 @@ export function normalizeProps(layout, props = {}) {
       errors: [error.message],
     };
   }
+}
+
+export function getMediaSlotsForLayout(layout) {
+  const record = getLayoutRecord(layout);
+  return record ? getMediaSlots(record) : [];
+}
+
+export function mediaSlotsCanFit(slots = [], count = 1) {
+  const requested = Math.max(1, Number(count) || 1);
+  return slots.some(slot => mediaSlotCapacity(slot) >= requested);
+}
+
+export function mediaSlotCapacity(slot) {
+  const max = Number(slot?.max);
+  if (Number.isFinite(max) && max > 0) return max;
+  const defaultCount = Number(slot?.defaultCount);
+  if (Number.isFinite(defaultCount) && defaultCount > 0) return defaultCount;
+  return 1;
+}
+
+export function getPreferredMediaSlot(layout, { kind = 'images', count = 1 } = {}) {
+  const slots = getMediaSlotsForLayout(layout);
+  if (!slots.length) return null;
+  const requested = Math.max(1, Number(count) || 1);
+  const fieldPattern = kind === 'media' ? /^(media|images)$/i : /^(images|photos|pictures|thumbs|logos|media)$/i;
+  return slots.find(slot => fieldPattern.test(slot.field) && mediaSlotCapacity(slot) >= requested)
+    || slots.find(slot => mediaSlotCapacity(slot) >= requested)
+    || null;
 }
 
 function mergeDefaultArrayTails(props, defaults) {
@@ -330,9 +376,13 @@ function isMediaArrayKey(key) {
   return /^(images|media|photos|pictures|logos|thumbs|imageSlots|imgs)$/i.test(String(key || ''));
 }
 
-function inferRoles(page) {
+function inferRoles(page, mediaSlots = []) {
   return Object.entries(ROLE_KEYWORDS)
-    .filter(([role, keywords]) => role === 'cover' ? isCoverCandidate(page.key) : pageMatches(page, keywords))
+    .filter(([role, keywords]) => {
+      if (role === 'cover') return isCoverCandidate(page.key);
+      if (role === 'image') return mediaSlots.length > 0;
+      return pageMatches(page, keywords);
+    })
     .map(([role]) => role)
     .slice(0, 6);
 }
@@ -346,13 +396,33 @@ function pageSearchText(page) {
   return `${page.key} ${page.slot || ''} ${page.label || ''}`.toLowerCase();
 }
 
-function scoreLayout(layout, { normalizedRole, keywordText, needsMedia }) {
+function scoreLayout(layout, { normalizedRole, keywordText, requiresMedia, requestedMediaCount }) {
   let score = 0;
   if (normalizedRole && layout.roles.includes(normalizedRole)) score += 20;
   if (keywordText && `${layout.label} ${layout.slot}`.toLowerCase().includes(keywordText)) score += 10;
-  if (needsMedia && layout.mediaSlots.length) score += 8;
+  if (requiresMedia && layout.mediaSlots.length) score += 8;
+  if (requestedMediaCount && layout.mediaSlots.some(slot => Number(slot.defaultCount) === requestedMediaCount)) score += 3;
   score -= layout.pageNumber / 1000;
   return score;
+}
+
+function getRequestedMediaCount({ plannedImages, providedImages, imageGen, needsVisual, mediaCount }) {
+  const explicit = Number(mediaCount);
+  if (Number.isFinite(explicit) && explicit > 0) return Math.round(explicit);
+  const provided = mediaIntentCount(providedImages);
+  if (provided) return provided;
+  const planned = mediaIntentCount(plannedImages);
+  if (planned) return planned;
+  if (imageGen || needsVisual) return 1;
+  return 0;
+}
+
+function mediaIntentCount(value) {
+  if (Array.isArray(value)) return value.length;
+  if (value === true) return 1;
+  const number = Number(value);
+  if (Number.isFinite(number) && number > 0) return Math.round(number);
+  return 0;
 }
 
 function readManifest() {

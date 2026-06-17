@@ -165,8 +165,18 @@ function syncReferences() {
             logicalIndex: { type: 'number' },
             layout: { type: 'string' },
             props: { type: 'object' },
-            media: { type: 'object' },
+            media: false,
             copy: { type: 'object' },
+            needsVisual: { type: 'boolean' },
+            imageGen: { type: 'boolean' },
+            needsImageGen: { type: 'boolean' },
+            plannedImages: { type: ['boolean', 'number'] },
+            providedImages: {
+              oneOf: [
+                { type: 'boolean' },
+                { type: 'array', items: { type: 'string' } },
+              ],
+            },
           },
           additionalProperties: true,
         },
@@ -404,9 +414,11 @@ ${themes}
 
 每套主题的前 5 页都是封面候选。一个 deck 只能使用其中 1 页作为封面,正文页从第 6 页以后选择。
 
-如果当前是在 Codex 环境中执行,且页面有插图/图片槽位或用户主题明显需要插图,必须先询问用户是否同意通过 image-gen 生图并插入 PPT。用户同意后,在对应插图位置/图片槽位写入生成图片;需要多张图时,把每张图拆成独立 subagent 子任务并行生成,完成后再统一写入对应槽位。单个 subagent 失败时只标记对应 slot,不要丢弃其它已生成图片。用户不同意或未回复时,不要生成图片,也不要替换图片槽位。
+选页先使用 \`npm run layout:query -- --theme <themePack> --role <role> --limit 8\`。需要图片槽时加 \`--needs-media\`、\`--planned-images <n>\`、\`--provided-images <n>\` 或 \`--image-gen\`,候选会基于真实 \`mediaSlots\`。
 
-页面属性契约读取项目根目录的 \`layout-manifest.json\`。
+单页契约使用 \`npm run inspect:layout -- <layout>\`。写数组、数量或图片时使用 \`npm run props:safe -- <layout> '<props-json>' [--images <path...>]\`。
+
+图片/视频只写入页面 \`props.images\` / \`props.media\`。不要写 \`slides[].media\`;用户提供图片时先用 \`props:safe --images\` 写入真实 slot。需要 image-gen 时先询问用户,用户只计划后续插图时选择并保留带 media slot 的页面。
 
 需要调整卡片/条目数量时,用 \`cardCount\`、\`itemCount\`、\`stepCount\` 等 count 参数控制显示数量。数组字段是模板内容池,不要为了隐藏元素而截短 \`cards\`、\`items\`、\`steps\`、\`stats\` 等数组;只覆盖当前显示的前 N 项,保留后续默认项供控制面板加回。
 
