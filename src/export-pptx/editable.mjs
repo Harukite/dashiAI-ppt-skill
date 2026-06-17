@@ -182,6 +182,8 @@ async function collectEditableDeck(page, options = {}) {
         window.__restoreEffectIframes?.(slides[index]);
         window.__layoutDeck?.();
         await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        window.__finishEditablePptxAnimations?.(slides[index] || document);
+        await new Promise(resolve => requestAnimationFrame(resolve));
         await new Promise(resolve => setTimeout(resolve, 120));
       }, i);
       const slideData = await page.evaluate(index => window.__collectEditablePptxSlide(index), i + 1);
@@ -256,9 +258,19 @@ async function installBrowserCollector(page) {
           'display',
           'visibility',
           'opacity',
+          'content',
           'position',
+          'left',
+          'top',
+          'right',
+          'bottom',
+          'width',
+          'height',
+          'zIndex',
           'backgroundColor',
           'backgroundImage',
+          'backgroundClip',
+          'webkitBackgroundClip',
           'backgroundSize',
           'backgroundPosition',
           'borderTopWidth',
@@ -279,6 +291,8 @@ async function installBrowserCollector(page) {
           'borderBottomLeftRadius',
           'boxShadow',
           'color',
+          'fill',
+          'webkitTextFillColor',
           'fontFamily',
           'fontSize',
           'fontWeight',
@@ -288,6 +302,8 @@ async function installBrowserCollector(page) {
           'textAlign',
           'textDecorationLine',
           'textTransform',
+          'webkitTextStrokeColor',
+          'webkitTextStrokeWidth',
           'whiteSpace',
           'verticalAlign',
           'objectFit',
@@ -296,18 +312,57 @@ async function installBrowserCollector(page) {
           'filter',
           'clipPath',
           'overflow',
+          'mixBlendMode',
         ])};
         ${collectActiveSlide.toString()}
         ${captureElement.toString()}
+        ${capturePseudoElement.toString()}
+        ${pseudoRect.toString()}
+        ${captureWholeTextElement.toString()}
+        ${isInlineTextChild.toString()}
+        ${hasInlineVisualTreatment.toString()}
         ${captureTextNode.toString()}
+        ${effectiveTextStyle.toString()}
+        ${elementRenderRect.toString()}
+        ${transparentCssPaint.toString()}
+        ${hasTextPaintSource.toString()}
         ${readStyle.toString()}
         ${summarizeCapturedTree.toString()}
         ${summarizeNode.toString()}
         ${elementImageData.toString()}
         ${svgElementData.toString()}
+        ${collectSvgTextNodes.toString()}
         ${cloneSvgWithComputedStyle.toString()}
+        ${isTextClippedBackground.toString()}
+        ${patternBackgroundImageData.toString()}
+        ${parseRepeatingGradient.toString()}
+        ${gradientBackgroundImageData.toString()}
+        ${drawLinearGradient.toString()}
+        ${drawRadialGradient.toString()}
+        ${splitCssLayers.toString()}
+        ${splitCssArgs.toString()}
+        ${parseGradientColorStops.toString()}
+        ${parseGradientColorStop.toString()}
+        ${parseCanvasColor.toString()}
+        ${cssColorComponent.toString()}
+        ${cssAlpha.toString()}
+        ${parseGradientPosition.toString()}
+        ${normalizeGradientStops.toString()}
+        ${rgbaString.toString()}
+        ${roundedRectPath.toString()}
         ${backgroundUrl.toString()}
+        ${isTurbulenceDataImage.toString()}
+        ${maxCssRadius.toString()}
+        ${cssRadiusPx.toString()}
+        ${rotateFromTransform.toString()}
+        ${scaleFromTransform.toString()}
+        ${finishEditablePptxAnimations.toString()}
+        ${fallbackTextRisk.toString()}
+        ${visibleTextInSubtree.toString()}
+        ${svgTextRisk.toString()}
         ${fetchImageDataUrl.toString()}
+        ${normalizeDataImageUrl.toString()}
+        ${rasterizeSvgDataUrl.toString()}
         ${blobToDataUrl.toString()}
         ${isVisibleElement.toString()}
         ${isMediaChrome.toString()}
@@ -316,6 +371,8 @@ async function installBrowserCollector(page) {
         ${normalizeText.toString()}
         ${hasPaint.toString()}
         ${hasAnyBorder.toString()}
+        ${cssPx.toString()}
+        window.__finishEditablePptxAnimations = finishEditablePptxAnimations;
         return collectActiveSlide;
       })();
     `,
@@ -334,8 +391,9 @@ function renderCapturedNode(slide, node, slideRect, warnings, totals) {
 
   renderBox(slide, node, slideRect, warnings, totals);
   renderNodeImage(slide, node, slideRect, warnings, totals);
+  if (node.tag === 'pseudo' && node.text) renderText(slide, { ...node, tag: '#text', singleLine: true }, slideRect, warnings, totals);
 
-  if (node.tag === 'img' || node.tag === 'svg' || node.tag === 'canvas') return;
+  if (node.tag === 'img' || node.tag === 'canvas') return;
   for (const child of node.children || []) renderCapturedNode(slide, child, slideRect, warnings, totals);
 }
 
@@ -343,18 +401,30 @@ function renderBox(slide, node, slideRect, warnings, totals) {
   const c = coords(node, slideRect);
   if (c.w < 0.003 || c.h < 0.003) return;
   const style = node.style || {};
-  const fill = parseCssColor(style.backgroundColor) || colorFromBackgroundImage(style.backgroundImage);
+  const hasLocalBackgroundImage = node.backgroundImageData || node.patternImageData;
+  const fill = isTextClippedBackground(style)
+    ? parseCssColor(style.backgroundColor)
+    : parseCssColor(style.backgroundColor) || (hasLocalBackgroundImage ? null : colorFromBackgroundImage(style.backgroundImage));
   const radius = Math.min(maxRadiusPx(style), 48) / slideRect.w * PPT_W;
   const borders = readBorders(style);
   const hasBorder = borders.some(border => border.width > 0 && border.color);
   const shadow = parseBoxShadow(style.boxShadow);
+  const rotate = rotateFromTransform(style.transform) || 0;
   const hasFill = fill && fill.alpha > 0.01;
+  if (isTinyRotatedBorderOnlyPseudo(node, c, hasFill, hasBorder, rotate)) {
+    warnings.push({ slide: node.slideIndex, type: 'decorative-pseudo-border-skipped', count: 1 });
+    return;
+  }
   const isLargeGradient = fill?.gradient && c.w > PPT_W * 0.72 && c.h > PPT_H * 0.72;
   const isDecorativeGradient = fill?.gradient && !isLargeGradient && !(node.children || []).length;
   const fillAlpha = isDecorativeGradient ? Math.min(fill.alpha, 0.08) : fill?.alpha;
   const shapeName = isDecorativeGradient && radius > Math.min(c.w, c.h) * 0.2
     ? 'ellipse'
     : radius > 0.02 ? 'roundRect' : 'rect';
+  const firstBorder = borders.find(border => border.color);
+  const line = hasBorder && rotate
+    ? { color: firstBorder?.color || fill?.color || 'FFFFFF', transparency: combinedTransparency(firstBorder?.alpha || 1, style.opacity), width: Math.max(...borders.map(border => border.width || 0)) * PX_TO_PT }
+    : { color: hasBorder ? firstBorder?.color || fill?.color || 'FFFFFF' : 'FFFFFF', transparency: 100 };
 
   if (hasFill || hasBorder) {
     try {
@@ -363,9 +433,10 @@ function renderBox(slide, node, slideRect, warnings, totals) {
         fill: hasFill
           ? { color: fill.color, transparency: combinedTransparency(fillAlpha, style.opacity) }
           : { color: 'FFFFFF', transparency: 100 },
-        line: { color: hasBorder ? borders.find(border => border.color)?.color || fill?.color || 'FFFFFF' : 'FFFFFF', transparency: 100 },
+        line,
         rectRadius: shapeName === 'roundRect' ? radius || undefined : undefined,
         shadow: hasFill && shadow ? shadow : undefined,
+        rotate: rotate || undefined,
       });
       totals.shapeObjects += 1;
     } catch {
@@ -373,7 +444,17 @@ function renderBox(slide, node, slideRect, warnings, totals) {
     }
   }
 
-  if (hasBorder) renderBorders(slide, c, borders, slideRect, style.opacity, totals);
+  if (hasBorder && !rotate) renderBorders(slide, c, borders, slideRect, style.opacity, totals);
+}
+
+function isTinyRotatedBorderOnlyPseudo(node, c, hasFill, hasBorder, rotate) {
+  return node.tag === 'pseudo'
+    && !node.text
+    && !hasFill
+    && hasBorder
+    && rotate
+    && Math.max(c.w, c.h) < 0.35
+    && Math.min(c.w, c.h) < 0.18;
 }
 
 function renderBorders(slide, c, borders, slideRect, opacity, totals) {
@@ -404,11 +485,18 @@ function renderText(slide, node, slideRect, warnings, totals) {
   const c = coords(node, slideRect);
   if (c.w < 0.01 || c.h < 0.01) return;
   const style = node.style || {};
-  const color = parseCssColor(style.color) || { color: '111111', alpha: 1 };
-  const fontSizePx = Math.max(4, Math.min(140, parseFloat(style.fontSize || '16') || 16));
+  const color = textColorForStyle(style, node);
+  const fontSizePx = Math.max(4, Math.min(260, parseFloat(style.fontSize || '16') || 16));
+  if (isDecorativeStrokeOnlyText(style, fontSizePx)) return;
+  if (isDecorativeLowAlphaText(color, style, fontSizePx)) return;
+  if (isDecorativeRotatedSmallText(value, style, fontSizePx, node)) return;
+  if (isDecorativeSparkleText(value)) {
+    return;
+  }
   const fontFace = firstFont(style.fontFamily);
   const weight = String(style.fontWeight || '');
   const singleLine = node.singleLine && !/[\r\n]/.test(value);
+  const autoWidth = singleLine && shouldUseAutoWidthText(value, fontSizePx, c, node);
   const align = normalizeAlign(style.textAlign);
   const options = {
     x: c.x,
@@ -416,8 +504,8 @@ function renderText(slide, node, slideRect, warnings, totals) {
     h: Math.max(0.04, c.h + 0.03),
     margin: 0,
     breakLine: false,
-    fit: singleLine ? 'resize' : 'shrink',
-    wrap: singleLine ? false : !isNoWrap(style.whiteSpace),
+    fit: autoWidth ? 'resize' : 'shrink',
+    wrap: autoWidth ? false : !isNoWrap(style.whiteSpace),
     fontFace,
     fontSize: pptFontSize(fontSizePx, fontFace),
     color: color.color,
@@ -431,13 +519,17 @@ function renderText(slide, node, slideRect, warnings, totals) {
     transparency: combinedTransparency(color.alpha, style.opacity),
     charSpacing: letterSpacing(style.letterSpacing),
   };
-  if (!singleLine) {
+  if (/Songti SC/i.test(fontFace) && fontSizePx >= 80 && node.parentTag === 'span') {
+    options.y = Math.max(0, options.y - c.h * 0.28);
+  }
+  if (!autoWidth) {
     options.w = Math.max(0.08, c.w + 0.04);
-  } else if (align !== 'left') {
-    const extra = 0.12;
-    options.w = Math.max(0.08, c.w + extra);
-    if (align === 'right') options.x = Math.max(0, c.x - extra);
-    if (align === 'center') options.x = Math.max(0, c.x - extra / 2);
+  } else {
+    options.w = singleLineWidth(value, fontSizePx, c);
+  }
+  if (autoWidth && align !== 'left') {
+    if (align === 'right') options.x = Math.max(0, c.x + c.w - options.w);
+    if (align === 'center') options.x = Math.max(0, c.x + c.w / 2 - options.w / 2);
   }
   try {
     slide.addText(value, options);
@@ -447,13 +539,71 @@ function renderText(slide, node, slideRect, warnings, totals) {
   }
 }
 
+function isDecorativeStrokeOnlyText(style, fontSizePx) {
+  const strokeWidth = parseFloat(style?.webkitTextStrokeWidth || '0') || 0;
+  if (strokeWidth <= 0 || fontSizePx < 120) return false;
+  const fill = parseCssColor(style?.webkitTextFillColor);
+  const color = parseCssColor(style?.color);
+  const stroke = parseCssColor(style?.webkitTextStrokeColor);
+  return !fill && !color && (!stroke || stroke.alpha <= 0.25);
+}
+
+function isDecorativeLowAlphaText(color, style, fontSizePx) {
+  const opacity = Number(style?.opacity || 1);
+  const alpha = Math.max(0, Math.min(1, Number(color?.alpha ?? 1) * (Number.isFinite(opacity) ? opacity : 1)));
+  return fontSizePx >= 100 && alpha <= 0.08;
+}
+
+function isDecorativeRotatedSmallText(value, style, fontSizePx, node = {}) {
+  return node.source !== 'svg-text'
+    && rotateFromTransform(style?.transform)
+    && fontSizePx <= 32
+    && String(value || '').trim().length >= 4;
+}
+
+function isDecorativeSparkleText(value) {
+  return /^[✦✧✶✷✸✹✺✻✼✽✾✿★☆＊*]+$/.test(String(value || '').trim());
+}
+
+function shouldUseAutoWidthText(value, fontSizePx, box, node) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  const units = textUnits(text);
+  const parentTag = String(node.parentTag || '');
+  if (['p', 'li', 'td', 'th', 'blockquote'].includes(parentTag) && units > 24) return false;
+  if (units <= 20) return true;
+  if (fontSizePx >= 36 && units <= 32) return true;
+  return box.w < 1.3 && units <= 28;
+}
+
+function singleLineWidth(value, fontSizePx, box) {
+  const fontPt = pptFontSize(fontSizePx);
+  const units = textUnits(value);
+  const estimated = units * fontPt / 72;
+  const width = Math.max(0.08, box.w + 0.1, estimated + 0.12);
+  return Math.min(PPT_W - Math.max(0, box.x), width);
+}
+
+function textUnits(value) {
+  let units = 0;
+  for (const char of String(value || '')) {
+    if (/\s/.test(char)) units += 0.32;
+    else if (/[\u2e80-\u9fff]/.test(char)) units += 0.96;
+    else if (/[A-Z0-9]/.test(char)) units += 0.64;
+    else units += 0.55;
+  }
+  return units;
+}
+
 function renderNodeImage(slide, node, slideRect, warnings, totals) {
   const items = [];
-  if (node.backgroundImageData) items.push({ data: node.backgroundImageData, kind: 'background-image' });
+  if (node.patternImageData) items.push({ data: node.patternImageData, kind: 'pattern-background' });
+  if (node.backgroundImageData) items.push({ data: node.backgroundImageData, kind: 'background-image', transparency: node.backgroundImageTransparency });
   if (node.imageData) items.push({ data: node.imageData, kind: node.imageKind || node.tag });
   if (!items.length) return;
 
   const c = coords(node, slideRect);
+  const rotate = rotateFromTransform(node.style?.transform) || 0;
   for (const item of items) {
     try {
       slide.addImage({
@@ -462,8 +612,10 @@ function renderNodeImage(slide, node, slideRect, warnings, totals) {
         y: c.y,
         w: c.w,
         h: c.h,
-        transparency: elementTransparency(node.style?.opacity),
+        transparency: item.transparency ?? elementTransparency(node.style?.opacity),
         sizing: imageSizing(node, c, item.kind),
+        rotate: rotate || undefined,
+        shadow: localBackgroundShadow(node.style, item.kind) || undefined,
       });
       totals.imageObjects += 1;
     } catch {
@@ -472,12 +624,18 @@ function renderNodeImage(slide, node, slideRect, warnings, totals) {
   }
 }
 
+function localBackgroundShadow(style, kind) {
+  if (kind !== 'background-image' && kind !== 'pattern-background') return null;
+  return parseBoxShadow(style?.boxShadow) || parseDropShadow(style?.filter);
+}
+
 function coords(node, slideRect) {
+  const rect = node.renderRect || node.rect;
   return {
-    x: round((node.rect.x - slideRect.x) / slideRect.w * PPT_W),
-    y: round((node.rect.y - slideRect.y) / slideRect.h * PPT_H),
-    w: round(node.rect.w / slideRect.w * PPT_W),
-    h: round(node.rect.h / slideRect.h * PPT_H),
+    x: round((rect.x - slideRect.x) / slideRect.w * PPT_W),
+    y: round((rect.y - slideRect.y) / slideRect.h * PPT_H),
+    w: round(rect.w / slideRect.w * PPT_W),
+    h: round(rect.h / slideRect.h * PPT_H),
   };
 }
 
@@ -518,6 +676,8 @@ async function captureElement(el, slideRect, warnings, depth, slideIndex) {
     style,
     children: [],
   };
+  const renderRect = elementRenderRect(el, clipped, style, slideRect);
+  if (renderRect) node.renderRect = renderRect;
   if (tag === 'a' && el.href && !String(el.getAttribute('href') || '').startsWith('#')) node.href = el.href;
 
   if (el.classList?.contains('bt-unicorn-frame')) {
@@ -526,6 +686,8 @@ async function captureElement(el, slideRect, warnings, depth, slideIndex) {
     node.exportId = exportId;
     node.elementScreenshot = true;
     node.imageKind = 'unicorn-background';
+    const risk = fallbackTextRisk(el, slideRect);
+    if (risk.count) warnings.push({ slide: slideIndex, type: 'node-image-fallback-text-risk', node: 'unicorn-background', textCount: risk.count, sample: risk.sample });
     warnings.push({ slide: slideIndex, type: 'node-image-fallback', node: 'unicorn-background', count: 1 });
     return node;
   }
@@ -547,29 +709,136 @@ async function captureElement(el, slideRect, warnings, depth, slideIndex) {
     return node;
   }
   if (tag === 'svg') {
-    node.imageData = await svgElementData(el, clipped.width, clipped.height);
+    const svgTexts = collectSvgTextNodes(el, slideRect, slideIndex);
+    node.imageData = await svgElementData(el, clipped.width, clipped.height, { stripText: svgTexts.length > 0 });
     node.imageKind = 'svg';
+    const risk = svgTextRisk(el);
+    if (risk.count && svgTexts.length) {
+      warnings.push({ slide: slideIndex, type: 'node-image-fallback-text-extracted', node: 'svg', textCount: svgTexts.length, sample: risk.sample });
+    } else if (risk.count) {
+      warnings.push({ slide: slideIndex, type: 'node-image-fallback-text-risk', node: 'svg', textCount: risk.count, sample: risk.sample });
+    }
     if (node.imageData) warnings.push({ slide: slideIndex, type: 'node-image-fallback', node: 'svg', count: 1 });
     else warnings.push({ slide: slideIndex, type: 'svg-skipped', reason: 'rasterize-failed' });
+    node.children.push(...svgTexts);
     return node;
   }
 
   const bg = backgroundUrl(style.backgroundImage);
   if (bg) {
-    node.backgroundImageData = await fetchImageDataUrl(bg);
+    const isTurbulence = isTurbulenceDataImage(bg);
+    node.backgroundImageData = await fetchImageDataUrl(bg, clipped.width, clipped.height, isTurbulence ? 0.02 : 1);
+    if (isTurbulence) node.backgroundImageTransparency = 0;
     if (!node.backgroundImageData) warnings.push({ slide: slideIndex, type: 'background-image-skipped', url: bg.slice(0, 160) });
+  } else if (String(style.backgroundImage || '').includes('repeating-linear-gradient')) {
+    node.patternImageData = patternBackgroundImageData(style.backgroundImage, clipped.width, clipped.height, maxCssRadius(style, clipped.width, clipped.height));
+    if (node.patternImageData) warnings.push({ slide: slideIndex, type: 'node-image-fallback', node: 'css-pattern-background', count: 1 });
+  } else if (!isTextClippedBackground(style) && String(style.backgroundImage || '').includes('gradient')) {
+    node.backgroundImageData = gradientBackgroundImageData(style.backgroundImage, clipped.width, clipped.height, maxCssRadius(style, clipped.width, clipped.height));
+    if (node.backgroundImageData) warnings.push({ slide: slideIndex, type: 'node-image-fallback', node: 'css-gradient-background', count: 1 });
   }
 
-  for (const child of el.childNodes) {
-    if (child.nodeType === Node.TEXT_NODE) {
-      const textNode = captureTextNode(child, el, slideRect, style, slideIndex);
-      if (textNode) node.children.push(textNode);
-    } else if (child.nodeType === Node.ELEMENT_NODE) {
-      const childNode = await captureElement(child, slideRect, warnings, depth + 1, slideIndex);
-      if (childNode) node.children.push(childNode);
+  const before = capturePseudoElement(el, '::before', slideRect, slideIndex);
+  if (before) node.children.push(before);
+  const wholeText = captureWholeTextElement(el, slideRect, style, slideIndex);
+  if (wholeText) {
+    node.children.push(wholeText);
+    const after = capturePseudoElement(el, '::after', slideRect, slideIndex);
+    if (after) node.children.push(after);
+    return node;
+  }
+  const childNodeLists = [el.childNodes];
+  if (el.shadowRoot) childNodeLists.push(el.shadowRoot.childNodes);
+  for (const childNodes of childNodeLists) {
+    for (const child of childNodes) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        const textNode = captureTextNode(child, el, slideRect, style, slideIndex);
+        if (textNode) node.children.push(textNode);
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        const childNode = await captureElement(child, slideRect, warnings, depth + 1, slideIndex);
+        if (childNode) node.children.push(childNode);
+      }
     }
   }
+  const after = capturePseudoElement(el, '::after', slideRect, slideIndex);
+  if (after) node.children.push(after);
   return node;
+}
+
+function capturePseudoElement(el, pseudo, slideRect, slideIndex) {
+  const style = readStyle(el, pseudo);
+  const content = String(style.content || '').trim();
+  const hasText = content && content !== 'none' && content !== 'normal' && content !== '\"\"' && content !== "''";
+  const hasVisual = hasPaint(style.backgroundColor) || backgroundUrl(style.backgroundImage) || String(style.backgroundImage || '').includes('gradient') || hasAnyBorder(style);
+  if (style.display === 'none' || style.visibility === 'hidden' || (!hasText && !hasVisual)) return null;
+  const rect = pseudoRect(el, style, slideRect);
+  if (!rect || rect.w < 1 || rect.h < 1) return null;
+  return {
+    tag: 'pseudo',
+    slideIndex,
+    rect,
+    style,
+    text: hasText ? content.replace(/^['"]|['"]$/g, '') : '',
+    children: [],
+  };
+}
+
+function pseudoRect(el, style, slideRect) {
+  const parent = el.getBoundingClientRect();
+  const stageScaleX = (slideRect?.w || 1920) / 1920;
+  const stageScaleY = (slideRect?.h || 1080) / 1080;
+  const width = cssPx(style.width);
+  const height = cssPx(style.height);
+  if (width == null || height == null) return null;
+  const left = cssPx(style.left);
+  const top = cssPx(style.top);
+  const right = cssPx(style.right);
+  const bottom = cssPx(style.bottom);
+  const x = left != null ? parent.left + left * stageScaleX : right != null ? parent.right - (right + width) * stageScaleX : parent.left;
+  const y = top != null ? parent.top + top * stageScaleY : bottom != null ? parent.bottom - (bottom + height) * stageScaleY : parent.top;
+  return { x, y, w: width * stageScaleX, h: height * stageScaleY };
+}
+
+function captureWholeTextElement(el, slideRect, style, slideIndex) {
+  const tag = el.tagName.toLowerCase();
+  if (!['p', 'li', 'blockquote'].includes(tag)) return null;
+  const inlineChildren = [...el.children];
+  if (!inlineChildren.length || !inlineChildren.every(isInlineTextChild) || inlineChildren.some(hasInlineVisualTreatment)) return null;
+  const value = normalizeText(el.innerText || el.textContent || '');
+  if (value.length < 18) return null;
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const lineRects = [...range.getClientRects()].filter(rect => rect.width > 1 && rect.height > 1);
+  range.detach?.();
+  const clipped = clippedRect(el.getBoundingClientRect(), slideRect);
+  if (!clipped || clipped.width < 1 || clipped.height < 1) return null;
+  return {
+    tag: '#text',
+    slideIndex,
+    rect: rectObject(clipped),
+    style: effectiveTextStyle(el, slideRect),
+    text: value,
+    singleLine: lineRects.length <= 1 && !/[\r\n]/.test(value),
+    parentTag: tag,
+    children: [],
+  };
+}
+
+function isInlineTextChild(child) {
+  const display = getComputedStyle(child).display;
+  return display === 'inline' || display === 'inline-block' || display === 'contents';
+}
+
+function hasInlineVisualTreatment(child) {
+  const style = getComputedStyle(child);
+  return hasPaint(style.backgroundColor)
+    || String(style.backgroundImage || '').includes('gradient')
+    || hasAnyBorder(style)
+    || parseFloat(style.borderTopLeftRadius || '0') > 0
+    || parseFloat(style.borderTopRightRadius || '0') > 0
+    || parseFloat(style.borderBottomRightRadius || '0') > 0
+    || parseFloat(style.borderBottomLeftRadius || '0') > 0
+    || (style.boxShadow && style.boxShadow !== 'none');
 }
 
 function captureTextNode(textNode, parent, slideRect, style, slideIndex) {
@@ -593,7 +862,7 @@ function captureTextNode(textNode, parent, slideRect, style, slideIndex) {
     clipped = clippedRect(parent.getBoundingClientRect(), slideRect) || clipped;
   }
   if (!clipped || clipped.width < 1 || clipped.height < 1) return null;
-  const parentStyle = readStyle(parent);
+  const parentStyle = effectiveTextStyle(parent, slideRect);
   return {
     tag: '#text',
     slideIndex,
@@ -601,15 +870,75 @@ function captureTextNode(textNode, parent, slideRect, style, slideIndex) {
     style: parentStyle,
     text: value,
     singleLine,
+    parentTag: tag,
     href: parent.closest('a')?.href || undefined,
     children: [],
   };
 }
 
-function readStyle(el) {
-  const cs = getComputedStyle(el);
+function effectiveTextStyle(parent, slideRect) {
+  const style = readStyle(parent);
+  if (!transparentCssPaint(style.webkitTextFillColor) || !transparentCssPaint(style.color) || isTextClippedBackground(style) || hasTextPaintSource(style)) {
+    return style;
+  }
+
+  const slide = document.querySelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
+  for (let el = parent.parentElement; el && el !== slide?.parentElement; el = el.parentElement) {
+    if (!isVisibleElement(el, slideRect)) continue;
+    const ancestor = readStyle(el);
+    if (!isTextClippedBackground(ancestor) && !hasTextPaintSource(ancestor)) continue;
+    return {
+      ...style,
+      color: transparentCssPaint(style.color) ? ancestor.color : style.color,
+      fill: transparentCssPaint(style.fill) ? ancestor.fill : style.fill,
+      webkitTextFillColor: transparentCssPaint(style.webkitTextFillColor) ? ancestor.webkitTextFillColor : style.webkitTextFillColor,
+      backgroundImage: isTextClippedBackground(ancestor) ? ancestor.backgroundImage : style.backgroundImage,
+      backgroundClip: isTextClippedBackground(ancestor) ? ancestor.backgroundClip : style.backgroundClip,
+      webkitBackgroundClip: isTextClippedBackground(ancestor) ? ancestor.webkitBackgroundClip : style.webkitBackgroundClip,
+      webkitTextStrokeColor: transparentCssPaint(style.webkitTextStrokeColor) ? ancestor.webkitTextStrokeColor : style.webkitTextStrokeColor,
+      webkitTextStrokeWidth: parseFloat(style.webkitTextStrokeWidth || '0') > 0 ? style.webkitTextStrokeWidth : ancestor.webkitTextStrokeWidth,
+      textShadow: style.textShadow === 'none' ? ancestor.textShadow : style.textShadow,
+      filter: style.filter === 'none' ? ancestor.filter : style.filter,
+    };
+  }
+  return style;
+}
+
+function elementRenderRect(el, clipped, style, slideRect) {
+  const rotation = rotateFromTransform(style.transform);
+  if (!rotation) return null;
+  const scale = scaleFromTransform(style.transform);
+  const stageScaleX = (slideRect?.w || 1920) / 1920;
+  const stageScaleY = (slideRect?.h || 1080) / 1080;
+  const width = (el.offsetWidth || clipped.width) * scale.x * stageScaleX;
+  const height = (el.offsetHeight || clipped.height) * scale.y * stageScaleY;
+  if (!width || !height) return null;
+  const cx = clipped.left + clipped.width / 2;
+  const cy = clipped.top + clipped.height / 2;
+  return { x: cx - width / 2, y: cy - height / 2, w: width, h: height };
+}
+
+function transparentCssPaint(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  return !raw || raw === 'transparent' || /^rgba?\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)$/.test(raw);
+}
+
+function hasTextPaintSource(style) {
+  return isTextClippedBackground(style)
+    || parseFloat(style?.webkitTextStrokeWidth || '0') > 0
+    || !transparentCssPaint(style?.webkitTextFillColor)
+    || !transparentCssPaint(style?.color);
+}
+
+function readStyle(el, pseudo = null) {
+  const cs = getComputedStyle(el, pseudo);
   const style = {};
-  for (const key of STYLE_KEYS) style[key] = cs[key] || '';
+  for (const key of STYLE_KEYS) {
+    const cssKey = key.startsWith('webkit')
+      ? `-${key.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`)}`
+      : key.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`);
+    style[key] = cs[key] || cs.getPropertyValue(cssKey) || '';
+  }
   return style;
 }
 
@@ -634,6 +963,7 @@ function summarizeNode(node, summary, depth) {
   summary.maxDepth = Math.max(summary.maxDepth, depth);
   if (node.tag === '#text') summary.textNodes += 1;
   if (node.backgroundImageData) summary.backgroundImages += 1;
+  if (node.patternImageData) summary.backgroundImages += 1;
   if (node.imageKind === 'svg') summary.svgImages += 1;
   if (node.imageKind === 'canvas') summary.canvasImages += 1;
   if (node.imageData) summary.imageNodes += 1;
@@ -645,7 +975,7 @@ function summarizeNode(node, summary, depth) {
 
 async function elementImageData(img, src) {
   if (!src) return null;
-  if (src.startsWith('data:image/')) return src;
+  if (src.startsWith('data:image/')) return normalizeDataImageUrl(src);
   try {
     const canvas = document.createElement('canvas');
     const width = img.naturalWidth || Math.max(1, Math.round(img.getBoundingClientRect().width));
@@ -659,9 +989,10 @@ async function elementImageData(img, src) {
   return fetchImageDataUrl(src);
 }
 
-async function svgElementData(svg, width, height) {
+async function svgElementData(svg, width, height, options = {}) {
   try {
     const clone = cloneSvgWithComputedStyle(svg);
+    if (options.stripText) clone.querySelectorAll('text').forEach(el => el.remove());
     clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     if (!clone.getAttribute('width')) clone.setAttribute('width', String(Math.max(1, Math.round(width))));
     if (!clone.getAttribute('height')) clone.setAttribute('height', String(Math.max(1, Math.round(height))));
@@ -689,6 +1020,28 @@ async function svgElementData(svg, width, height) {
   }
 }
 
+function collectSvgTextNodes(svg, slideRect, slideIndex) {
+  return [...svg.querySelectorAll('text')]
+    .map(el => {
+      const text = normalizeText(el.textContent || '');
+      if (!text) return null;
+      const clipped = clippedRect(el.getBoundingClientRect(), slideRect);
+      if (!clipped || clipped.width < 1 || clipped.height < 1) return null;
+      const style = readStyle(el);
+      return {
+        tag: '#text',
+        source: 'svg-text',
+        slideIndex,
+        rect: rectObject(clipped),
+        style,
+        text,
+        singleLine: !/[\r\n]/.test(text),
+        children: [],
+      };
+    })
+    .filter(Boolean);
+}
+
 function cloneSvgWithComputedStyle(svg) {
   const clone = svg.cloneNode(true);
   const source = [svg, ...svg.querySelectorAll('*')];
@@ -714,27 +1067,441 @@ function cloneSvgWithComputedStyle(svg) {
   return clone;
 }
 
-function backgroundUrl(backgroundImage) {
-  const match = String(backgroundImage || '').match(/url\\(["']?([^"')]+)["']?\\)/);
+function patternBackgroundImageData(backgroundImage, width, height, radius = 0) {
+  const spec = parseRepeatingGradient(backgroundImage);
+  if (!spec) return null;
+  const scale = 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(width * scale));
+  canvas.height = Math.max(1, Math.round(height * scale));
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.save();
+  roundedRectPath(ctx, 0, 0, w, h, Math.max(0, Number(radius || 0)) * scale);
+  ctx.clip();
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate((Number(spec.angle || 135) - 90) * Math.PI / 180);
+  const span = Math.hypot(w, h) * 2;
+  const period = Math.max(2, spec.period * scale);
+  const split = Math.max(1, Math.min(period - 1, spec.split * scale));
+  for (let x = -span; x < span; x += period) {
+    ctx.fillStyle = rgbaString(spec.colors[0]);
+    ctx.fillRect(x, -span, split, span * 2);
+    ctx.fillStyle = rgbaString(spec.colors[1]);
+    ctx.fillRect(x + split, -span, period - split, span * 2);
+  }
+  ctx.restore();
+  return canvas.toDataURL('image/png');
+}
+
+function parseRepeatingGradient(backgroundImage) {
+  const raw = String(backgroundImage || '');
+  if (!raw.includes('repeating-linear-gradient')) return null;
+  const angle = Number(raw.match(/repeating-linear-gradient\(\s*([-\d.]+)deg/i)?.[1] || 135);
+  const matches = [...raw.matchAll(/rgba?\(([^)]+)\)\s+([\d.]+)px/ig)]
+    .map(match => {
+      const parts = match[1].split(',').map(part => Number(part.trim()));
+      return {
+        color: {
+          r: Math.max(0, Math.min(255, parts[0] || 255)),
+          g: Math.max(0, Math.min(255, parts[1] || 255)),
+          b: Math.max(0, Math.min(255, parts[2] || 255)),
+          a: parts[3] == null ? 1 : Math.max(0, Math.min(1, parts[3])),
+        },
+        stop: Number(match[2] || 0),
+      };
+    });
+  if (!matches.length) {
+    return {
+      angle,
+      colors: [{ r: 255, g: 255, b: 255, a: 0.04 }, { r: 255, g: 255, b: 255, a: 0.016 }],
+      split: 12,
+      period: 24,
+    };
+  }
+  const stops = [...new Set(matches.map(item => item.stop).filter(Number.isFinite))].sort((a, b) => a - b);
+  const split = stops.find(stop => stop > 0) || 12;
+  const period = stops.find(stop => stop > split) || split * 2;
+  return {
+    angle,
+    colors: [
+      matches[0]?.color,
+      matches.at(-1)?.color,
+    ].filter(Boolean),
+    split,
+    period,
+  };
+}
+
+function gradientBackgroundImageData(backgroundImage, width, height, radius = 0) {
+  const layers = splitCssLayers(backgroundImage).filter(layer => /(?:linear|radial)-gradient/i.test(layer));
+  if (!layers.length) return null;
+  const scale = Math.max(1, Math.min(2, Math.ceil(900 / Math.max(width, height))));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(width * scale));
+  canvas.height = Math.max(1, Math.round(height * scale));
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.save();
+  roundedRectPath(ctx, 0, 0, w, h, Math.max(0, Number(radius || 0)) * scale);
+  ctx.clip();
+  for (const layer of layers.reverse()) {
+    if (/radial-gradient/i.test(layer)) drawRadialGradient(ctx, layer, w, h);
+    else drawLinearGradient(ctx, layer, w, h);
+  }
+  ctx.restore();
+  return canvas.toDataURL('image/png');
+}
+
+function drawLinearGradient(ctx, layer, width, height) {
+  const body = layer.replace(/^.*?linear-gradient\(/i, '').replace(/\)\s*$/, '');
+  const args = splitCssArgs(body);
+  let angle = 180;
+  let startIndex = 0;
+  const angleMatch = String(args[0] || '').match(/([-\d.]+)deg/i);
+  if (angleMatch) {
+    angle = Number(angleMatch[1]);
+    startIndex = 1;
+  } else if (/to\s+/i.test(String(args[0] || ''))) {
+    const dir = String(args[0]).toLowerCase();
+    if (dir.includes('right')) angle = 90;
+    else if (dir.includes('left')) angle = 270;
+    else if (dir.includes('top')) angle = 0;
+    else angle = 180;
+    startIndex = 1;
+  }
+  const stops = normalizeGradientStops(parseGradientColorStops(args.slice(startIndex)), Math.hypot(width, height));
+  if (stops.length < 2) return;
+  const theta = (angle - 90) * Math.PI / 180;
+  const dx = Math.cos(theta);
+  const dy = Math.sin(theta);
+  const len = Math.abs(width * dx) + Math.abs(height * dy);
+  const cx = width / 2;
+  const cy = height / 2;
+  const gradient = ctx.createLinearGradient(cx - dx * len / 2, cy - dy * len / 2, cx + dx * len / 2, cy + dy * len / 2);
+  for (const stop of stops) gradient.addColorStop(stop.offset, rgbaString(stop.color));
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+}
+
+function drawRadialGradient(ctx, layer, width, height) {
+  const body = layer.replace(/^.*?radial-gradient\(/i, '').replace(/\)\s*$/, '');
+  const args = splitCssArgs(body);
+  let startIndex = 0;
+  let cx = width / 2;
+  let cy = height / 2;
+  const first = String(args[0] || '');
+  if (!/^(?:rgba?|#)/i.test(first.trim())) {
+    const at = first.match(/\bat\s+([-\d.]+)%?\s+([-\d.]+)%?/i);
+    if (at) {
+      cx = width * Number(at[1]) / 100;
+      cy = height * Number(at[2]) / 100;
+    }
+    startIndex = 1;
+  }
+  const radius = Math.max(width, height) * 0.72;
+  const stops = normalizeGradientStops(parseGradientColorStops(args.slice(startIndex)), radius);
+  if (stops.length < 2) return;
+  const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+  for (const stop of stops) gradient.addColorStop(stop.offset, rgbaString(stop.color));
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+}
+
+function splitCssLayers(value) {
+  return splitCssArgs(String(value || '')).filter(Boolean);
+}
+
+function splitCssArgs(value) {
+  const out = [];
+  let depth = 0;
+  let quote = '';
+  let current = '';
+  for (const char of String(value || '')) {
+    if (quote) {
+      current += char;
+      if (char === quote) quote = '';
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      current += char;
+      continue;
+    }
+    if (char === '(') depth += 1;
+    if (char === ')') depth = Math.max(0, depth - 1);
+    if (char === ',' && depth === 0) {
+      out.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) out.push(current.trim());
+  return out;
+}
+
+function parseGradientColorStops(args) {
+  return args.map(parseGradientColorStop).filter(Boolean);
+}
+
+function parseGradientColorStop(value) {
+  const raw = String(value || '').trim();
+  const colorMatch = raw.match(/(rgba?\([^)]+\)|color\([^)]+\)|#[0-9a-f]{3,8})/i);
+  if (!colorMatch) return null;
+  return {
+    color: parseCanvasColor(colorMatch[1]),
+    position: parseGradientPosition(raw.slice(colorMatch.index + colorMatch[1].length).trim()),
+  };
+}
+
+function parseCanvasColor(value) {
+  const raw = String(value || '').trim();
+  const hex = raw.match(/^#([0-9a-f]{3,8})$/i);
+  if (hex) {
+    let value = hex[1];
+    if (value.length === 3 || value.length === 4) value = value.replace(/./g, char => char + char);
+    return {
+      r: Number.parseInt(value.slice(0, 2), 16),
+      g: Number.parseInt(value.slice(2, 4), 16),
+      b: Number.parseInt(value.slice(4, 6), 16),
+      a: value.length >= 8 ? Number.parseInt(value.slice(6, 8), 16) / 255 : 1,
+    };
+  }
+  const rgba = raw.match(/rgba?\(([^)]+)\)/i);
+  if (rgba) {
+    const parts = rgba[1].split(',').map(part => part.trim());
+    return {
+      r: cssColorComponent(parts[0]),
+      g: cssColorComponent(parts[1]),
+      b: cssColorComponent(parts[2]),
+      a: parts[3] == null ? 1 : cssAlpha(parts[3]),
+    };
+  }
+  const srgb = raw.match(/^color\(\s*(?:srgb|display-p3)\s+([^)]+)\)$/i);
+  if (srgb) {
+    const parts = srgb[1].split('/').map(part => part.trim());
+    const channels = parts[0].split(/\s+/).filter(Boolean);
+    return {
+      r: cssColorComponent(channels[0], true),
+      g: cssColorComponent(channels[1], true),
+      b: cssColorComponent(channels[2], true),
+      a: parts[1] == null ? 1 : cssAlpha(parts[1]),
+    };
+  }
+  return { r: 255, g: 255, b: 255, a: 1 };
+}
+
+function cssColorComponent(value, unitInterval = false) {
+  const raw = String(value || '').trim();
+  if (raw.endsWith('%')) return Math.max(0, Math.min(255, Number(raw.slice(0, -1)) * 2.55 || 0));
+  const number = Number(raw);
+  if (unitInterval) return Math.max(0, Math.min(255, number * 255 || 0));
+  return Math.max(0, Math.min(255, number || 0));
+}
+
+function cssAlpha(value) {
+  const raw = String(value || '').trim();
+  if (raw.endsWith('%')) return Math.max(0, Math.min(1, Number(raw.slice(0, -1)) / 100 || 0));
+  return Math.max(0, Math.min(1, Number(raw) || 0));
+}
+
+function parseGradientPosition(raw) {
+  const match = String(raw || '').match(/([-\d.]+)(%|px)?/);
   if (!match) return null;
+  return {
+    value: Number(match[1]),
+    unit: match[2] || '%',
+  };
+}
+
+function normalizeGradientStops(stops, pixelSpan) {
+  const list = stops.filter(stop => stop?.color);
+  if (!list.length) return [];
+  for (let i = 0; i < list.length; i += 1) {
+    const position = list[i].position;
+    if (!position) {
+      list[i].offset = list.length === 1 ? 0 : i / (list.length - 1);
+    } else if (position.unit === 'px') {
+      list[i].offset = pixelSpan ? position.value / pixelSpan : 0;
+    } else {
+      list[i].offset = position.value / 100;
+    }
+  }
+  list[0].offset = Number.isFinite(list[0].offset) ? list[0].offset : 0;
+  list[list.length - 1].offset = Number.isFinite(list.at(-1).offset) ? list.at(-1).offset : 1;
+  let last = 0;
+  for (const stop of list) {
+    stop.offset = Math.max(last, Math.min(1, Number.isFinite(stop.offset) ? stop.offset : last));
+    last = stop.offset;
+  }
+  return list;
+}
+
+function rgbaString(color) {
+  return `rgba(${Math.round(color.r)},${Math.round(color.g)},${Math.round(color.b)},${color.a})`;
+}
+
+function roundedRectPath(ctx, x, y, w, h, radius) {
+  const r = Math.min(radius, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function backgroundUrl(backgroundImage) {
+  const raw = String(backgroundImage || '');
+  const quoted = raw.match(/url\(\s*(['"])(.*?)\1\s*\)/);
+  const unquoted = raw.match(/url\(\s*([^)]*?)\s*\)/);
+  const value = quoted?.[2] || unquoted?.[1];
+  if (!value) return null;
   try {
-    return new URL(match[1], location.href).href;
+    return new URL(value, location.href).href;
   } catch {
     return null;
   }
 }
 
-async function fetchImageDataUrl(url) {
+function isTurbulenceDataImage(url) {
   try {
-    if (url.startsWith('data:image/')) return url;
+    return String(url || '').startsWith('data:image/svg+xml') && decodeURIComponent(url).includes('feTurbulence');
+  } catch {
+    return String(url || '').includes('feTurbulence');
+  }
+}
+
+function maxCssRadius(style, width = 0, height = 0) {
+  return Math.max(
+    cssRadiusPx(style.borderTopLeftRadius, width, height),
+    cssRadiusPx(style.borderTopRightRadius, width, height),
+    cssRadiusPx(style.borderBottomRightRadius, width, height),
+    cssRadiusPx(style.borderBottomLeftRadius, width, height),
+  );
+}
+
+function cssRadiusPx(value, width = 0, height = 0) {
+  const raw = String(value || '').trim();
+  if (!raw || raw === '0px') return 0;
+  if (raw.includes('%')) {
+    const pct = parseFloat(raw) || 0;
+    return Math.min(Number(width) || 0, Number(height) || 0) * pct / 100;
+  }
+  return parseFloat(raw) || 0;
+}
+
+function finishEditablePptxAnimations(scope) {
+  const root = scope || document;
+  try {
+    for (const animation of document.getAnimations({ subtree: true })) {
+      const target = animation.effect?.target;
+      if (root !== document && target instanceof Node && !root.contains(target)) continue;
+      try {
+        animation.updatePlaybackRate?.(1);
+        animation.finish();
+      } catch {
+        try {
+          animation.currentTime = animation.effect?.getTiming?.().duration || 999999;
+          animation.pause();
+        } catch {}
+      }
+    }
+  } catch {}
+}
+
+function fallbackTextRisk(root, slideRect) {
+  const texts = visibleTextInSubtree(root, slideRect);
+  return { count: texts.length, sample: texts.join(' ').slice(0, 160) };
+}
+
+function visibleTextInSubtree(root, slideRect) {
+  const texts = [];
+  const walk = (node) => {
+    for (const child of node.childNodes || []) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        const text = normalizeText(child.textContent || '');
+        if (!text) continue;
+        const range = document.createRange();
+        range.selectNodeContents(child);
+        const rect = range.getBoundingClientRect();
+        range.detach?.();
+        if (rect.width > 1 && rect.height > 1) texts.push(text);
+      } else if (child.nodeType === Node.ELEMENT_NODE && isVisibleElement(child, slideRect)) {
+        walk(child);
+      }
+    }
+  };
+  walk(root);
+  return texts;
+}
+
+function svgTextRisk(svg) {
+  const texts = [...svg.querySelectorAll('text')]
+    .map(el => normalizeText(el.textContent || ''))
+    .filter(Boolean);
+  return { count: texts.length, sample: texts.join(' ').slice(0, 160) };
+}
+
+async function fetchImageDataUrl(url, width = 0, height = 0, alpha = 1) {
+  try {
+    if (url.startsWith('data:image/svg+xml')) return await rasterizeSvgDataUrl(url, width, height, alpha);
+    if (url.startsWith('data:image/')) return normalizeDataImageUrl(url);
     const response = await fetch(url, { credentials: new URL(url, location.href).origin === location.origin ? 'same-origin' : 'omit' });
     if (!response.ok) return null;
     const blob = await response.blob();
     if (!blob.type.startsWith('image/')) return null;
-    return await blobToDataUrl(blob);
+    const dataUrl = await blobToDataUrl(blob);
+    if (blob.type === 'image/svg+xml') return await rasterizeSvgDataUrl(dataUrl, width, height, alpha);
+    return dataUrl;
   } catch {
     return null;
   }
+}
+
+function normalizeDataImageUrl(url) {
+  const raw = String(url || '');
+  if (!raw.startsWith('data:image/')) return raw;
+  if (/^data:image\/[^;,]+;base64,/i.test(raw)) return raw;
+  const match = raw.match(/^data:(image\/[^;,]+)(?:;charset=[^,]+)?,(.*)$/i);
+  if (!match) return raw;
+  try {
+    const decoded = decodeURIComponent(match[2]);
+    return `data:${match[1]};base64,${btoa(unescape(encodeURIComponent(decoded)))}`;
+  } catch {
+    return raw;
+  }
+}
+
+function rasterizeSvgDataUrl(url, width = 0, height = 0, alpha = 1) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(width || img.naturalWidth || 160));
+        canvas.height = Math.max(1, Math.round(height || img.naturalHeight || 160));
+        const ctx = canvas.getContext('2d');
+        ctx.globalAlpha = Math.max(0, Math.min(1, Number(alpha) || 0));
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/png'));
+      } catch {
+        resolve(normalizeDataImageUrl(url));
+      }
+    };
+    img.onerror = () => resolve(normalizeDataImageUrl(url));
+    img.src = normalizeDataImageUrl(url);
+  });
 }
 
 function blobToDataUrl(blob) {
@@ -756,7 +1523,7 @@ function isVisibleElement(el, slideRect, style = getComputedStyle(el)) {
 }
 
 function isMediaChrome(el) {
-  return !!el.closest('script,style,noscript,template,#nav,#preview-panel,#slide-rail,.theme03-theme-toggle');
+  return !!el.closest('script,style,noscript,template,#nav,#preview-panel,#slide-rail,.theme03-theme-toggle,.ctl,.spill,input');
 }
 
 function clippedRect(rect, slideRect) {
@@ -790,6 +1557,36 @@ function hasAnyBorder(style) {
   return ['Top', 'Right', 'Bottom', 'Left'].some(side => parseFloat(style?.[`border${side}Width`] || '0') > 0 && hasPaint(style?.[`border${side}Color`]));
 }
 
+function cssPx(value) {
+  const raw = String(value || '').trim();
+  if (!raw || raw === 'auto') return null;
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+function isTextClippedBackground(style) {
+  const clip = `${style?.backgroundClip || ''} ${style?.webkitBackgroundClip || ''}`.toLowerCase();
+  return clip.includes('text');
+}
+
+function textColorForStyle(style, node = {}) {
+  const fill = parseCssColor(style?.webkitTextFillColor);
+  if (fill) return fill;
+  if (isTextClippedBackground(style)) {
+    const gradientColor = colorFromBackgroundImage(style?.backgroundImage);
+    if (gradientColor) return gradientColor;
+  }
+  const strokeWidth = parseFloat(style?.webkitTextStrokeWidth || '0') || 0;
+  const stroke = strokeWidth > 0 ? parseCssColor(style?.webkitTextStrokeColor) : null;
+  if (stroke) return { ...stroke, alpha: Math.min(stroke.alpha, 0.22) };
+  const svgFill = parseCssColor(style?.fill);
+  if (node.source === 'svg-text' && svgFill) return svgFill;
+  const color = parseCssColor(style?.color);
+  if (color) return color;
+  if (svgFill) return svgFill;
+  return { color: '111111', alpha: 1 };
+}
+
 function parseCssColor(value) {
   const raw = String(value || '').trim();
   if (!raw || raw === 'transparent') return null;
@@ -797,24 +1594,16 @@ function parseCssColor(value) {
     const hex = raw.slice(1);
     return { color: (hex.length === 3 ? hex.replace(/./g, c => c + c) : hex).toUpperCase(), alpha: 1 };
   }
-  const rgba = raw.match(/rgba?\(([^)]+)\)/i);
-  if (!rgba) return null;
-  const parts = rgba[1].split(',').map(part => part.trim());
-  const r = clampColor(parts[0]);
-  const g = clampColor(parts[1]);
-  const b = clampColor(parts[2]);
-  const alpha = parts[3] == null ? 1 : Math.max(0, Math.min(1, Number(parts[3])));
-  if (alpha <= 0.01) return null;
-  return {
-    color: [r, g, b].map(n => n.toString(16).padStart(2, '0')).join('').toUpperCase(),
-    alpha,
-  };
+  if (!/^(?:rgba?|color)\(/i.test(raw)) return null;
+  const parsed = parseCanvasColor(raw);
+  if (parsed.a <= 0.01) return null;
+  return canvasColorToCss(parsed);
 }
 
 function colorFromBackgroundImage(value) {
   const raw = String(value || '');
   if (!raw.includes('gradient')) return null;
-  const colors = [...raw.matchAll(/rgba?\([^)]+\)|#[0-9a-f]{3,8}/ig)]
+  const colors = [...raw.matchAll(/rgba?\([^)]+\)|color\([^)]+\)|#[0-9a-f]{3,8}/ig)]
     .map(match => parseCssColor(match[0]))
     .filter(Boolean);
   if (!colors.length) return null;
@@ -832,6 +1621,16 @@ function colorFromBackgroundImage(value) {
     color: [rgb.r / count, rgb.g / count, rgb.b / count].map(n => clampColor(n).toString(16).padStart(2, '0')).join('').toUpperCase(),
     alpha: Math.max(0, Math.min(1, rgb.a / count)),
     gradient: true,
+  };
+}
+
+function canvasColorToCss(color) {
+  return {
+    color: [color.r, color.g, color.b]
+      .map(n => Math.round(Math.max(0, Math.min(255, n))).toString(16).padStart(2, '0'))
+      .join('')
+      .toUpperCase(),
+    alpha: Math.max(0, Math.min(1, Number(color.a ?? 1))),
   };
 }
 
@@ -860,12 +1659,29 @@ function maxRadiusPx(style) {
 function parseBoxShadow(value) {
   const raw = String(value || '');
   if (!raw || raw === 'none') return null;
-  const color = parseCssColor(raw.match(/rgba?\([^)]+\)|#[0-9a-f]{3,8}/i)?.[0]);
+  const color = parseCssColor(raw.match(/rgba?\([^)]+\)|color\([^)]+\)|#[0-9a-f]{3,8}/i)?.[0]);
   if (!color) return null;
-  const numbers = raw.replace(/rgba?\([^)]+\)|#[0-9a-f]{3,8}/ig, '').match(/-?\d+(\.\d+)?px/g) || [];
+  const numbers = raw.replace(/rgba?\([^)]+\)|color\([^)]+\)|#[0-9a-f]{3,8}/ig, '').match(/-?\d+(\.\d+)?px/g) || [];
   const offsetX = parseFloat(numbers[0] || '0') || 0;
   const offsetY = parseFloat(numbers[1] || '0') || 0;
   const blur = parseFloat(numbers[2] || '8') || 8;
+  return pptShadow(color, offsetX, offsetY, blur);
+}
+
+function parseDropShadow(value) {
+  const raw = String(value || '');
+  const match = raw.match(/drop-shadow\(([^)]+(?:\)[^)]+)?)\)/i);
+  if (!match) return null;
+  const body = match[1];
+  const color = parseCssColor(body.match(/rgba?\([^)]+\)|color\([^)]+\)|#[0-9a-f]{3,8}/i)?.[0]) || { color: '000000', alpha: 0.35 };
+  const numbers = body.replace(/rgba?\([^)]+\)|color\([^)]+\)|#[0-9a-f]{3,8}/ig, '').match(/-?\d+(\.\d+)?px/g) || [];
+  const offsetX = parseFloat(numbers[0] || '0') || 0;
+  const offsetY = parseFloat(numbers[1] || '0') || 0;
+  const blur = parseFloat(numbers[2] || '8') || 8;
+  return pptShadow(color, offsetX, offsetY, blur);
+}
+
+function pptShadow(color, offsetX, offsetY, blur) {
   const angle = ((Math.atan2(offsetY, offsetX) * 180 / Math.PI) + 360) % 360;
   const offset = Math.sqrt(offsetX ** 2 + offsetY ** 2) * PX_TO_PT;
   return {
@@ -897,6 +1713,17 @@ function rotateFromTransform(value) {
   return Math.round(Math.atan2(b, a) * 180 / Math.PI);
 }
 
+function scaleFromTransform(value) {
+  const raw = String(value || '');
+  const matrix = raw.match(/matrix\(([^)]+)\)/);
+  if (!matrix) return { x: 1, y: 1 };
+  const [a, b, c, d] = matrix[1].split(',').map(Number);
+  return {
+    x: Number.isFinite(a) && Number.isFinite(b) ? Math.hypot(a, b) || 1 : 1,
+    y: Number.isFinite(c) && Number.isFinite(d) ? Math.hypot(c, d) || 1 : 1,
+  };
+}
+
 function letterSpacing(value) {
   const n = parseFloat(value || '0');
   return Number.isFinite(n) ? Math.max(-2, Math.min(12, n * PX_TO_PT)) : 0;
@@ -916,7 +1743,7 @@ function firstFont(value) {
 }
 
 function pptFontSize(px, fontFace) {
-  const scale = /PingFang SC/i.test(fontFace) ? 0.60
+  const scale = /PingFang SC|Songti SC/i.test(fontFace) ? 0.60
     : /Menlo/i.test(fontFace) ? 0.66
       : PX_TO_PT;
   return px * scale;

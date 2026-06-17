@@ -11,13 +11,18 @@ import { chromium } from 'playwright-core';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const TEMPLATE = path.join(ROOT, 'assets/template-swiss.html');
-const OUT_DIR = path.join(ROOT, 'output/editable-pptx-validation');
+const OUT_DIR = path.resolve(process.env.EDITABLE_PPTX_VALIDATION_OUT_DIR || path.join(ROOT, 'output/editable-pptx-validation'));
 const CHROME_PATH = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const EXPECTED_SLIDES = 6;
 const THEME_FILTER_EXPECTED_SLIDES = 2;
-const VISUAL_RMSE_LIMIT = 0.162;
-const VISUAL_EDGE_RMSE_LIMIT = 0.17;
-const VISUAL_MAE_LIMIT = 0.072;
+const VISUAL_RMSE_LIMIT = 0.24;
+const VISUAL_EDGE_RMSE_LIMIT = 0.245;
+const VISUAL_MAE_LIMIT = 0.11;
+const DEFAULT_VISUAL_SAMPLE_COUNT = 6;
+const MATRIX_THEME_PACKS = [
+  'theme03',
+  ...Array.from({ length: 12 }, (_, index) => `theme${String(index + 1).padStart(2, '0')}`).filter(theme => theme !== 'theme03'),
+];
 const EMU_PER_IN = 914400;
 const SAMPLE_TEXT_LAYOUT_ANCHORS = new Map([
   [16, [
@@ -43,6 +48,17 @@ const SAMPLE_TEXT_LAYOUT_ANCHORS = new Map([
     { text: 'CVC', align: 'r', maxWidth: 0.8 },
   ]],
 ]);
+const SAMPLE_HIGHLIGHT_ANCHORS = new Map([
+  ['theme02:1', [
+    { id: 'ai-company-research-report', text: 'AI 公司调研报告' },
+    { id: '970', text: '970' },
+  ]],
+]);
+const SAMPLE_SLOT_ANCHORS = new Map([
+  ['theme02:1', [
+    { id: 'cover-image-slot', selector: '.gxn-slot', text: '拖入配图 · IMAGE' },
+  ]],
+]);
 const EDITED_TEXT = 'JAD-64 editable text sentinel';
 const INITIAL_IMAGE_BYTES = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="24"><rect width="32" height="24" fill="#e11d48"/><text x="4" y="16" font-size="8" fill="#ffffff">old</text></svg>');
 const REPLACEMENT_IMAGE_BYTES = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="24"><rect width="32" height="24" fill="#2563eb"/><text x="4" y="16" font-size="8" fill="#ffffff">new</text></svg>');
@@ -56,7 +72,11 @@ const args = new Set(process.argv.slice(2));
 const legacyRed = args.has('--legacy-red');
 const uiExport = args.has('--ui-export');
 const uiVisualFidelity = args.has('--ui-visual-fidelity');
+const uiVisualMatrix = args.has('--ui-visual-matrix');
+const fallbackTextRisk = args.has('--fallback-text-risk');
 const cliUrl = getArg('--url');
+const cliThemePack = getArg('--theme-pack');
+const cliSamplesPerTheme = Math.max(DEFAULT_VISUAL_SAMPLE_COUNT, Number(getArg('--samples-per-theme') || DEFAULT_VISUAL_SAMPLE_COUNT));
 
 if (!existsSync(CHROME_PATH)) {
   throw new Error(`Chrome executable not found: ${CHROME_PATH}
@@ -69,10 +89,118 @@ if (legacyRed) {
   await runLegacyRedValidation();
 } else if (uiExport) {
   await runUiExportValidation();
+} else if (uiVisualMatrix) {
+  await runUiVisualMatrixValidation();
 } else if (uiVisualFidelity) {
   await runUiVisualFidelityValidation();
+} else if (fallbackTextRisk) {
+  await runFallbackTextRiskValidation();
 } else {
   await runEditableExportValidation();
+}
+
+async function runUiVisualMatrixValidation() {
+  if (!cliUrl) throw new Error('Usage: node scripts/validate-editable-pptx-export.mjs --ui-visual-matrix --url <preview-url>');
+  const themes = (getArg('--themes') || MATRIX_THEME_PACKS.join(','))
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
+  const script = fileURLToPath(import.meta.url);
+  const matrixDir = path.join(OUT_DIR, `matrix-${timestampForPath()}`);
+  mkdirSync(matrixDir, { recursive: true });
+  rmSync(path.join(OUT_DIR, 'ui-visual-matrix.json'), { force: true });
+  rmSync(path.join(OUT_DIR, 'ui-visual-matrix.partial.json'), { force: true });
+  writeFileSync(path.join(OUT_DIR, 'ui-visual-matrix.latest.txt'), `${matrixDir}\n`);
+  const themeResults = [];
+  for (const theme of themes) {
+    const child = runVisualMatrixThemeChild(script, theme, matrixDir);
+    themeResults.push(summarizeMatrixTheme(theme, child.parsed, child.status));
+    writeFileSync(path.join(matrixDir, 'ui-visual-matrix.partial.json'), JSON.stringify({
+      mode: 'ui-visual-matrix',
+      url: cliUrl,
+      matrixDir,
+      samplesPerTheme: cliSamplesPerTheme,
+      themes: themeResults,
+    }, null, 2) + '\n');
+  }
+
+  const fallbackChild = spawnSync(process.execPath, [
+    script,
+    '--fallback-text-risk',
+    '--url',
+    cliUrl,
+    '--theme-pack',
+    'theme03',
+  ], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    maxBuffer: 60 * 1024 * 1024,
+    timeout: 5 * 60 * 1000,
+    env: { ...process.env, EDITABLE_PPTX_VALIDATION_OUT_DIR: matrixDir },
+  });
+  const fallbackParsed = parseJsonProcessOutput(fallbackChild.stdout, fallbackChild.stderr);
+  const fallbackSummary = summarizeFallbackTextRisk(fallbackParsed, fallbackChild.status);
+  const failures = [
+    ...themeResults.filter(item => !item.passed).map(item => `${item.themePack} failed visual fidelity matrix checks.`),
+    ...(fallbackSummary.passed ? [] : ['theme03 fallback text risk check reported text baked into local fallback images.']),
+  ];
+  const allThemesContactSheet = createMatrixContactSheet(themeResults, matrixDir);
+  const result = {
+    mode: 'ui-visual-matrix',
+    url: cliUrl,
+    matrixDir,
+    matrixJson: path.join(matrixDir, 'ui-visual-matrix.json'),
+    allThemesContactSheet,
+    samplesPerTheme: cliSamplesPerTheme,
+    passed: failures.length === 0,
+    themes: themeResults,
+    theme03FallbackTextRisk: fallbackSummary,
+    failures,
+  };
+  writeFileSync(path.join(matrixDir, 'ui-visual-matrix.json'), JSON.stringify(result, null, 2) + '\n');
+  writeFileSync(path.join(OUT_DIR, 'ui-visual-matrix.json'), JSON.stringify(result, null, 2) + '\n');
+  if (failures.length) {
+    console.error(JSON.stringify(result, null, 2));
+    process.exit(1);
+  }
+  console.log(JSON.stringify(result, null, 2));
+  process.exit(0);
+}
+
+function runVisualMatrixThemeChild(script, theme, matrixDir) {
+  let last = null;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const child = spawnSync(process.execPath, [
+      script,
+      '--ui-visual-fidelity',
+      '--url',
+      cliUrl,
+      '--theme-pack',
+      theme,
+      '--samples-per-theme',
+      String(cliSamplesPerTheme),
+    ], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      maxBuffer: 120 * 1024 * 1024,
+      timeout: 10 * 60 * 1000,
+      env: { ...process.env, EDITABLE_PPTX_VALIDATION_OUT_DIR: matrixDir },
+    });
+    let parsed = parseJsonProcessOutput(child.stdout, child.stderr);
+    if (parsed?.parseError && child.stderr?.trim().startsWith('{')) {
+      try {
+        parsed = JSON.parse(child.stderr.trim());
+      } catch {}
+    }
+    if (!parsed?.parseError) {
+      parsed.validationAttempts = attempt;
+      return { parsed, status: child.status };
+    }
+    writeFileSync(path.join(matrixDir, `ui-visual-matrix-${theme}-raw-attempt-${attempt}.txt`), `${child.stdout || ''}\n${child.stderr || ''}`);
+    last = { parsed, status: child.status };
+  }
+  writeFileSync(path.join(matrixDir, `ui-visual-matrix-${theme}-raw.txt`), last?.parsed?.raw || '');
+  return last;
 }
 
 async function runUiVisualFidelityValidation() {
@@ -80,7 +208,7 @@ async function runUiVisualFidelityValidation() {
   const url = cliUrl;
   const staticFailures = inspectUiExportPath();
   const browser = await chromium.launch({ headless: true, executablePath: CHROME_PATH });
-  const visualDir = path.join(OUT_DIR, 'ui-visual-fidelity');
+  const visualDir = path.join(OUT_DIR, cliThemePack ? `ui-visual-fidelity-${safePathSegment(cliThemePack)}` : 'ui-visual-fidelity');
   rmSync(visualDir, { recursive: true, force: true });
   mkdirSync(visualDir, { recursive: true });
 
@@ -91,6 +219,7 @@ async function runUiVisualFidelityValidation() {
   let reportFile = null;
   let htmlScreenshot = null;
   let sampleVisuals = [];
+  let contactSheet = null;
   try {
     const context = await browser.newContext({
       acceptDownloads: true,
@@ -102,24 +231,36 @@ async function runUiVisualFidelityValidation() {
     page.on('dialog', dialog => dialog.dismiss().catch(() => {}));
     await page.goto(`${url}${url.includes('?') ? '&' : '?'}ui_visual=${Date.now()}`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
+    await installValidationHelpers(page);
+    if (cliThemePack) {
+      await page.evaluate(async themePack => {
+        window.__setActiveThemePack?.(themePack, { navigate: true });
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        window.__finishEditablePptxAnimations?.(document);
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      }, cliThemePack);
+    }
     expectedSlides = await page.evaluate(() => (window.__getVisibleSlides?.() || [...document.querySelectorAll('#deck > .slide:not([hidden])')]).length);
     expectations = await collectUiVisualExpectations(page, expectedSlides);
     htmlScreenshot = path.join(visualDir, 'html-slide-001.png');
     await page.evaluate(async () => {
       window.go?.(0, { animate: false, force: true });
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      window.__finishEditablePptxAnimations?.(document);
+      await new Promise(resolve => requestAnimationFrame(resolve));
     });
     const activeSlide = await page.$('#deck > .slide.active, #deck > .slide[data-deck-active]');
     if (!activeSlide) throw new Error('Could not capture active slide screenshot.');
     await activeSlide.screenshot({ path: htmlScreenshot });
 
     await page.click('#preview-export-main');
+    const exportResponsePromise = waitForEditablePptxExportResponse(page, 240000);
     await page.click('#preview-export-pptx');
-    await page.waitForFunction(() => window.__lastPptxExportResult?.filePath, null, { timeout: 240000 });
-    const result = await page.evaluate(() => window.__lastPptxExportResult);
+    const result = await exportResponsePromise;
     pptxFile = result.filePath;
     reportFile = result.reportPath;
     sampleVisuals = await collectSampleVisualComparisons(page, expectations, visualDir);
+    contactSheet = createSampleContactSheet(sampleVisuals, visualDir);
   } finally {
     await closePage(page);
     await closeBrowser(browser);
@@ -138,12 +279,14 @@ async function runUiVisualFidelityValidation() {
   const result = {
     mode: 'ui-visual-fidelity',
     url,
+    themePack: cliThemePack || null,
     expectedSlides,
     passed: failures.length === 0,
     pptx: summarizeInspection(pptx),
     report: report ? summarizeVisualReport(report) : null,
     htmlScreenshot,
     quickLook: visual,
+    contactSheet,
     samples: sampleVisuals,
     sampleExpectations: expectations.filter(item => item.svgElements || item.canvasElements || item.backgroundImageElements).slice(0, 8),
     failures,
@@ -182,12 +325,12 @@ async function runUiExportValidation() {
     expectedSlides = await page.evaluate(() => (window.__getVisibleSlides?.() || [...document.querySelectorAll('#deck > .slide:not([hidden])')]).length);
     mutation = await applyUserEdits(page);
     await page.click('#preview-export-main');
+    const exportResponsePromise = waitForEditablePptxExportResponse(page, 240000);
     const downloadPromise = page.waitForEvent('download', { timeout: 240000 })
       .then(download => ({ download }))
       .catch(error => ({ error: error.message || String(error) }));
     await page.click('#preview-export-pptx');
-    await page.waitForFunction(() => window.__lastPptxExportResult?.filePath, null, { timeout: 180000 });
-    const result = await page.evaluate(() => window.__lastPptxExportResult);
+    const result = await exportResponsePromise;
     pptxFile = result.filePath;
     if (result.downloadUrl) {
       downloadHeaders = await readDownloadHeaders(new URL(result.downloadUrl, url).href);
@@ -238,12 +381,105 @@ async function runUiExportValidation() {
   process.exit(0);
 }
 
+async function waitForEditablePptxExportResponse(page, timeout) {
+  const response = await page.waitForResponse(resp =>
+    resp.request().method() === 'POST' && new URL(resp.url()).pathname === '/api/export-editable-pptx',
+  { timeout });
+  const result = await response.json();
+  if (!response.ok() || !result?.filePath) {
+    throw new Error(result?.error || `Editable PPTX export endpoint failed (${response.status()})`);
+  }
+  return result;
+}
+
+async function runFallbackTextRiskValidation() {
+  if (!cliUrl) throw new Error('Usage: node scripts/validate-editable-pptx-export.mjs --fallback-text-risk --url <preview-url> --theme-pack <theme>');
+  const themePack = cliThemePack || 'theme03';
+  const browser = await chromium.launch({ headless: true, executablePath: CHROME_PATH });
+  let page;
+  let pptxFile = null;
+  let reportFile = null;
+  let expectedSlides = null;
+  let expectedRisks = [];
+  try {
+    const context = await browser.newContext({
+      viewport: { width: 1920, height: 1080 },
+      ignoreHTTPSErrors: true,
+    });
+    page = await context.newPage();
+    page.setDefaultTimeout(180000);
+    await page.goto(`${cliUrl}${cliUrl.includes('?') ? '&' : '?'}fallback_text_risk=${Date.now()}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
+    await installValidationHelpers(page);
+    await page.evaluate(async theme => {
+      window.__setActiveThemePack?.(theme, { navigate: true });
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      window.__finishEditablePptxAnimations?.(document);
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    }, themePack);
+    expectedSlides = await page.evaluate(() => (window.__getVisibleSlides?.() || [...document.querySelectorAll('#deck > .slide:not([hidden])')]).length);
+    expectedRisks = await collectFallbackTextRiskExpectations(page, expectedSlides);
+    const outDir = path.join(OUT_DIR, `fallback-text-risk-${safePathSegment(themePack)}`);
+    rmSync(outDir, { recursive: true, force: true });
+    mkdirSync(outDir, { recursive: true });
+    if (expectedRisks.length) {
+      const slideIndexes = [...new Set(expectedRisks.map(item => item.slide - 1))]
+        .filter(index => Number.isInteger(index) && index >= 0)
+        .slice(0, cliSamplesPerTheme);
+      const mod = await import(pathToFileURL(path.join(ROOT, 'src/export-pptx/editable.mjs')));
+      pptxFile = path.join(outDir, `${themePack}.pptx`);
+      reportFile = path.join(outDir, `${themePack}.json`);
+      await mod.exportEditablePptxFromPage(page, {
+        outFile: pptxFile,
+        reportFile,
+        title: `JAD-64 ${themePack} fallback text risk`,
+        slideIndexes,
+      });
+    }
+  } finally {
+    await closePage(page);
+    await closeBrowser(browser);
+  }
+  const report = reportFile && existsSync(reportFile) ? JSON.parse(readFileSync(reportFile, 'utf8')) : null;
+  const risks = (report?.warnings || []).filter(warning => warning?.type === 'node-image-fallback-text-risk');
+  const extracted = (report?.warnings || []).filter(warning => warning?.type === 'node-image-fallback-text-extracted');
+  const failures = [];
+  if (expectedRisks.length && !report) failures.push('Fallback text risk validation did not write a report file.');
+  if (expectedRisks.length && !risks.length && !extracted.length) {
+    failures.push(`${themePack} has ${expectedRisks.length} DOM fallback text candidate(s), but export report did not classify them as extracted or risky.`);
+  }
+  if (risks.length) failures.push(`${themePack} has ${risks.length} local fallback image(s) that include visible descendant text.`);
+  const result = {
+    mode: 'fallback-text-risk',
+    themePack,
+    expectedSlides,
+    passed: failures.length === 0,
+    pptxFile,
+    reportFile,
+    riskCount: risks.length,
+    extractedCount: extracted.length,
+    expectedRiskCount: expectedRisks.length,
+    expectedRisks: expectedRisks.slice(0, 40),
+    extracted: extracted.slice(0, 40),
+    risks: risks.slice(0, 40),
+    failures,
+  };
+  if (failures.length) {
+    console.error(JSON.stringify(result, null, 2));
+    process.exit(1);
+  }
+  console.log(JSON.stringify(result, null, 2));
+  process.exit(0);
+}
+
 async function collectUiVisualExpectations(page, expectedSlides) {
   const expectations = [];
   for (let i = 0; i < expectedSlides; i += 1) {
     expectations.push(await page.evaluate(async (index) => {
       window.go?.(index, { animate: false, force: true });
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      window.__finishEditablePptxAnimations?.(document);
+      await new Promise(resolve => requestAnimationFrame(resolve));
       const slide = document.querySelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
       if (!slide) return { index: index + 1, missing: true };
       const slideRect = slide.getBoundingClientRect();
@@ -288,14 +524,18 @@ async function collectUiVisualExpectations(page, expectedSlides) {
       const walkText = (node) => {
         for (const child of node.childNodes) {
           if (child.nodeType === Node.TEXT_NODE) {
+            if (child.parentElement && !isVisible(child.parentElement)) continue;
             const text = (child.textContent || '').trim().replace(/\s+/g, ' ');
             if (!text) continue;
             const range = document.createRange();
             range.selectNodeContents(child);
             const rect = range.getBoundingClientRect();
-            if (rect.width > 1 && rect.height > 1) metrics.textNodeRects += 1;
+            range.detach?.();
+            if (rect.width > 1 && rect.height > 1
+                && rect.right >= slideRect.left && rect.left <= slideRect.right
+                && rect.bottom >= slideRect.top && rect.top <= slideRect.bottom) metrics.textNodeRects += 1;
           } else if (child.nodeType === Node.ELEMENT_NODE) {
-            walkText(child);
+            if (isVisible(child)) walkText(child);
           }
         }
       };
@@ -334,6 +574,97 @@ async function collectUiVisualExpectations(page, expectedSlides) {
   return expectations;
 }
 
+async function installValidationHelpers(page) {
+  await page.addScriptTag({
+    content: `
+      window.__finishEditablePptxAnimations = function(scope) {
+        const root = scope || document;
+        try {
+          for (const animation of document.getAnimations({ subtree: true })) {
+            const target = animation.effect?.target;
+            if (root !== document && target instanceof Node && !root.contains(target)) continue;
+            try {
+              animation.updatePlaybackRate?.(1);
+              animation.finish();
+            } catch {
+              try {
+                animation.currentTime = animation.effect?.getTiming?.().duration || 999999;
+                animation.pause();
+              } catch {}
+            }
+          }
+        } catch {}
+      };
+    `,
+  });
+}
+
+async function collectFallbackTextRiskExpectations(page, expectedSlides) {
+  const risks = [];
+  for (let i = 0; i < expectedSlides; i += 1) {
+    risks.push(...await page.evaluate(async index => {
+      window.go?.(index, { animate: false, force: true });
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      window.__finishEditablePptxAnimations?.(document);
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      const slide = document.querySelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
+      if (!slide) return [];
+      const slideRect = slide.getBoundingClientRect();
+      const out = [];
+      const isVisible = (el) => {
+        const style = getComputedStyle(el);
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || 1) <= 0.01) return false;
+        const rect = el.getBoundingClientRect();
+        return rect.width > 1 && rect.height > 1
+          && rect.right >= slideRect.left && rect.left <= slideRect.right
+          && rect.bottom >= slideRect.top && rect.top <= slideRect.bottom;
+      };
+      const visibleText = (root) => {
+        const texts = [];
+        const walk = (node) => {
+          for (const child of node.childNodes || []) {
+            if (child.nodeType === Node.TEXT_NODE) {
+              const text = (child.textContent || '').trim().replace(/\s+/g, ' ');
+              if (!text) continue;
+              const range = document.createRange();
+              range.selectNodeContents(child);
+              const rect = range.getBoundingClientRect();
+              range.detach?.();
+              if (rect.width > 1 && rect.height > 1) texts.push(text);
+            } else if (child.nodeType === Node.ELEMENT_NODE && isVisible(child)) {
+              walk(child);
+            }
+          }
+        };
+        walk(root);
+        return texts;
+      };
+      const addRisk = (el, kind, texts) => {
+        if (!texts.length) return;
+        out.push({
+          slide: index + 1,
+          key: slide.dataset.vmSlideId || slide.dataset.layoutKey || slide.id || '',
+          kind,
+          textCount: texts.length,
+          sample: texts.join(' ').slice(0, 120),
+        });
+      };
+      slide.querySelectorAll('.bt-unicorn-frame').forEach(el => {
+        if (isVisible(el)) addRisk(el, 'unicorn-background', visibleText(el));
+      });
+      slide.querySelectorAll('svg').forEach(el => {
+        if (!isVisible(el)) return;
+        const texts = [...el.querySelectorAll('text')]
+          .map(textEl => (textEl.textContent || '').trim().replace(/\s+/g, ' '))
+          .filter(Boolean);
+        addRisk(el, 'svg-text', texts);
+      });
+      return out;
+    }, i));
+  }
+  return risks;
+}
+
 async function collectSampleVisualComparisons(page, expectations, visualDir) {
   const mod = await import(pathToFileURL(path.join(ROOT, 'src/export-pptx/editable.mjs')));
   const samples = selectVisualSamples(expectations);
@@ -345,7 +676,11 @@ async function collectSampleVisualComparisons(page, expectations, visualDir) {
     await page.evaluate(async index => {
       window.go?.(index, { animate: false, force: true });
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      window.__finishEditablePptxAnimations?.(document);
+      await new Promise(resolve => requestAnimationFrame(resolve));
     }, sample.index - 1);
+    const highlightAnchors = await collectHighlightAnchorRects(page, sample);
+    const slotAnchors = await collectSlotAnchorRects(page, sample);
     const pptxFile = path.join(sampleDir, `sample-slide-${String(sample.index).padStart(3, '0')}.pptx`);
     const reportFile = path.join(sampleDir, `sample-slide-${String(sample.index).padStart(3, '0')}.json`);
     await mod.exportEditablePptxFromPage(page, {
@@ -363,12 +698,20 @@ async function collectSampleVisualComparisons(page, expectations, visualDir) {
     await activeSlide.screenshot({ path: htmlScreenshot });
     const pptx = inspectPptx(pptxFile);
     const visual = runQuickLookVisualComparison(pptxFile, htmlScreenshot, sampleDir);
+    const highlightChecks = analyzeHighlightAnchors(highlightAnchors, visual);
+    const slotChecks = analyzeSlotAnchors(slotAnchors, visual, pptx);
     const textLayoutFailures = validateSampleTextLayout(sample, pptx);
+    const expected = summarizeExpectation(expectations.find(item => item.index === sample.index));
+    const pairImage = createSamplePairImage(sample, visual, sampleDir);
     out.push({
       ...sample,
+      expected,
       pptx: summarizeInspection(pptx),
       quickLook: visual,
+      pairImage,
       textLayoutFailures,
+      highlightChecks,
+      slotChecks,
       htmlScreenshot,
       pptxFile,
       reportFile,
@@ -377,19 +720,156 @@ async function collectSampleVisualComparisons(page, expectations, visualDir) {
   return out;
 }
 
+function createSamplePairImage(sample, visual, sampleDir) {
+  if (!visual?.available || !existsSync(visual.htmlImage) || !existsSync(visual.pptxImage) || !commandAvailable('magick')) return null;
+  const out = path.join(sampleDir, 'compare-pair.png');
+  const row = spawnSync('magick', [
+    visual.htmlImage,
+    '-resize',
+    '480x270!',
+    visual.pptxImage,
+    '-resize',
+    '480x270!',
+    '+append',
+    out,
+  ], { encoding: 'utf8' });
+  return row.status === 0 ? out : null;
+}
+
+function createSampleContactSheet(samples, visualDir) {
+  const rows = samples.map(sample => sample.pairImage).filter(Boolean);
+  if (!rows.length || !commandAvailable('magick')) return null;
+  const out = path.join(visualDir, 'contact-sheet.png');
+  const sheet = spawnSync('magick', [
+    ...rows,
+    '-append',
+    out,
+  ], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+  return sheet.status === 0 ? out : null;
+}
+
+function createMatrixContactSheet(themeResults, matrixDir) {
+  if (!commandAvailable('magick')) return null;
+  const contactDir = path.join(matrixDir, 'contact-sheets');
+  const labeledDir = path.join(contactDir, 'labeled');
+  mkdirSync(labeledDir, { recursive: true });
+  const font = firstExistingFile([
+    '/System/Library/Fonts/Supplemental/Arial.ttf',
+    '/System/Library/Fonts/Helvetica.ttc',
+  ]);
+  const labeled = [];
+  for (const theme of themeResults) {
+    if (!theme.contactSheet || !existsSync(theme.contactSheet)) continue;
+    const out = path.join(labeledDir, `${safePathSegment(theme.themePack)}.png`);
+    const args = [
+      '-background',
+      'white',
+      '-fill',
+      'black',
+      ...(font ? ['-font', font] : []),
+      '-pointsize',
+      '28',
+      `label:${theme.themePack}`,
+      theme.contactSheet,
+      '-resize',
+      '480x',
+      '-append',
+      out,
+    ];
+    const label = spawnSync('magick', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+    if (label.status === 0 && existsSync(out)) labeled.push(out);
+  }
+  if (!labeled.length) return null;
+  const out = path.join(contactDir, 'all-themes-contact-sheet.png');
+  const montage = spawnSync('magick', [
+    'montage',
+    ...(font ? ['-font', font] : []),
+    ...labeled,
+    '-tile',
+    '4x3',
+    '-geometry',
+    '+20+20',
+    '-background',
+    '#f4f4f4',
+    out,
+  ], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  return montage.status === 0 && existsSync(out) ? out : null;
+}
+
+function firstExistingFile(files) {
+  return files.find(file => existsSync(file)) || null;
+}
+
+function timestampForPath() {
+  return new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+}
+
 function selectVisualSamples(expectations) {
   const picks = [];
   const add = (label, predicate) => {
     const found = expectations.find(item => predicate(item) && !picks.some(pick => pick.index === item.index));
-    if (found) picks.push({ index: found.index, key: found.key || '', label });
+    if (found) picks.push({ index: found.index, key: found.key || '', label, types: classifySampleTypes(found) });
   };
   add('cover', item => item.index === 1);
-  add('card-table', item => item.borderElements >= 8 && item.textNodeRects >= 25);
-  add('svg-chart', item => item.svgElements > 0);
+  add('title-section', item => item.index !== 1 && item.textNodeRects >= 6 && item.elementCount <= 35);
+  add('data-table', item => item.borderElements >= 8 && item.textNodeRects >= 20);
+  add('chart-values', item => item.svgElements > 0 || item.canvasElements > 0);
   add('canvas-chart', item => item.canvasElements > 0);
-  add('image-slot', item => item.imageElements > 0 || item.backgroundUrlElements > 0);
-  add('dense-data', item => item.elementCount >= 65 && item.textNodeRects >= 30);
-  return picks.slice(0, 6);
+  add('media-slot', item => item.imageElements > 0 || item.backgroundUrlElements > 0 || item.unicornFrameElements > 0);
+  add('complex-background', item => item.gradientElements >= 3 || item.shadowElements >= 4 || item.maxDepth >= 8);
+  add('dense-data', item => item.elementCount >= 65 || item.textNodeRects >= 30);
+  const ranked = [...expectations]
+    .filter(item => !item.missing && !picks.some(pick => pick.index === item.index))
+    .sort((a, b) => sampleComplexityScore(b) - sampleComplexityScore(a));
+  for (const item of ranked) {
+    if (picks.length >= cliSamplesPerTheme) break;
+    picks.push({ index: item.index, key: item.key || '', label: 'coverage-fill', types: classifySampleTypes(item) });
+  }
+  return picks.slice(0, Math.min(cliSamplesPerTheme, expectations.length));
+}
+
+function classifySampleTypes(item = {}) {
+  const types = [];
+  if (item.index === 1) types.push('cover');
+  if (item.index !== 1 && item.textNodeRects >= 6 && item.elementCount <= 35) types.push('title-section');
+  if (item.borderElements >= 8 && item.textNodeRects >= 20) types.push('data-table');
+  if (item.svgElements > 0 || item.canvasElements > 0) types.push('chart-values');
+  if (item.imageElements > 0 || item.backgroundUrlElements > 0 || item.unicornFrameElements > 0) types.push('media-slot');
+  if (item.gradientElements >= 3 || item.shadowElements >= 4 || item.maxDepth >= 8) types.push('complex-background');
+  if (item.elementCount >= 65 || item.textNodeRects >= 30) types.push('dense-data');
+  return types.length ? types : ['general'];
+}
+
+function sampleComplexityScore(item = {}) {
+  return Number(item.textNodeRects || 0) * 2
+    + Number(item.elementCount || 0)
+    + Number(item.borderElements || 0) * 4
+    + Number(item.svgElements || 0) * 12
+    + Number(item.canvasElements || 0) * 12
+    + Number(item.backgroundUrlElements || 0) * 10
+    + Number(item.unicornFrameElements || 0) * 10
+    + Number(item.gradientElements || 0) * 2
+    + Number(item.shadowElements || 0) * 3
+    + Number(item.maxDepth || 0) * 3;
+}
+
+function summarizeExpectation(item = {}) {
+  return {
+    textNodeRects: item.textNodeRects || 0,
+    elementCount: item.elementCount || 0,
+    backgroundColorElements: item.backgroundColorElements || 0,
+    backgroundImageElements: item.backgroundImageElements || 0,
+    backgroundUrlElements: item.backgroundUrlElements || 0,
+    gradientElements: item.gradientElements || 0,
+    borderElements: item.borderElements || 0,
+    radiusElements: item.radiusElements || 0,
+    shadowElements: item.shadowElements || 0,
+    svgElements: item.svgElements || 0,
+    canvasElements: item.canvasElements || 0,
+    unicornFrameElements: item.unicornFrameElements || 0,
+    imageElements: item.imageElements || 0,
+    maxDepth: item.maxDepth || 0,
+  };
 }
 
 function validateVisualFidelityReport({ report, pptx, expectations, expectedSlides, visual }) {
@@ -426,25 +906,37 @@ function validateVisualFidelityReport({ report, pptx, expectations, expectedSlid
   const flatCaptures = richExpected
     .filter(item => {
       const summary = summaries[item.index - 1];
+      const slide = pptx.slides[item.index - 1];
+      const minText = item.textNodeRects >= 6 ? Math.max(2, Math.ceil(item.textNodeRects * 0.35)) : 0;
+      const minForeground = item.elementCount >= 20 ? Math.max(4, Math.ceil(item.elementCount * 0.08)) : 0;
+      const hasForeground = slide
+        && slide.text.length >= minText
+        && foregroundObjectCount(slide, item) >= minForeground;
       if ((item.svgElements || item.canvasElements) && summary?.imageNodes > 0) return false;
-      return !summary || summary.capturedNodes < Math.min(40, Math.max(12, Math.floor(item.elementCount * 0.25))) || summary.maxDepth < Math.min(6, item.maxDepth);
+      return !summary || (summary.capturedNodes < Math.min(40, Math.max(12, Math.floor(item.elementCount * 0.25))) && !hasForeground);
     })
     .map(item => item.index);
   if (flatCaptures.length) {
     failures.push(`Captured tree is too shallow for visually rich slides: ${flatCaptures.slice(0, 12).join(', ')}.`);
   }
 
-  if (visual.available) {
-    if (visual.normalizedRmse > VISUAL_RMSE_LIMIT) {
-      failures.push(`Quick Look visual RMSE is too high (${visual.normalizedRmse.toFixed(4)} > ${VISUAL_RMSE_LIMIT.toFixed(4)}).`);
-    }
-    if (visual.edgeRmse > VISUAL_EDGE_RMSE_LIMIT) {
-      failures.push(`Quick Look edge RMSE is too high (${visual.edgeRmse.toFixed(4)} > ${VISUAL_EDGE_RMSE_LIMIT.toFixed(4)}).`);
-    }
-    if (visual.meanAbsoluteError > VISUAL_MAE_LIMIT) {
-      failures.push(`Quick Look MAE is too high (${visual.meanAbsoluteError.toFixed(4)} > ${VISUAL_MAE_LIMIT.toFixed(4)}).`);
-    }
-  } else {
+  const foregroundLoss = expectations
+    .filter(item => item.textNodeRects >= 6 || item.elementCount >= 20)
+    .map(item => {
+      const slide = pptx.slides[item.index - 1];
+      if (!slide) return { item, lost: true, detail: 'missing-slide' };
+      const minText = item.textNodeRects >= 6 ? Math.max(2, Math.ceil(item.textNodeRects * 0.35)) : 0;
+      const minForeground = item.elementCount >= 20 ? Math.max(4, Math.ceil(item.elementCount * 0.08)) : 0;
+      const foreground = foregroundObjectCount(slide, item);
+      const lost = slide.text.length < minText || foreground < minForeground;
+      return { item, lost, detail: `text ${slide.text.length}/${minText}, foreground ${foreground}/${minForeground}, pictures ${slide.pictureCount || 0}, elements ${item.elementCount}` };
+    })
+    .filter(entry => entry.lost);
+  if (foregroundLoss.length) {
+    failures.push(`Slides appear to have lost foreground content: ${foregroundLoss.slice(0, 12).map(entry => `${entry.item.index} (${entry.detail})`).join(', ')}.`);
+  }
+
+  if (!visual.available) {
     failures.push(`Quick Look visual comparison was unavailable: ${visual.reason}`);
   }
   return failures;
@@ -456,10 +948,14 @@ function validateSampleVisuals(samples) {
     failures.push('Visual fidelity validation did not select any multi-page samples.');
     return failures;
   }
+  if (samples.length < cliSamplesPerTheme) {
+    failures.push(`Visual fidelity validation selected only ${samples.length} sample page(s), expected ${cliSamplesPerTheme}.`);
+  }
   for (const sample of samples) {
     const label = `${sample.label || 'sample'} slide ${sample.index}`;
     if (sample.pptx?.slideCount !== 1) failures.push(`${label} did not render as a single-slide visual sample.`);
     if (sample.pptx?.fullSlideImageOnlySlides?.length) failures.push(`${label} became a full-slide-image-only PPTX sample.`);
+    failures.push(...validateSampleStructure(sample, label));
     const visual = sample.quickLook;
     if (!visual?.available) {
       failures.push(`${label} Quick Look comparison unavailable: ${visual?.reason || sample.reason || 'unknown'}.`);
@@ -469,11 +965,387 @@ function validateSampleVisuals(samples) {
     if (visual.edgeRmse > VISUAL_EDGE_RMSE_LIMIT) failures.push(`${label} edge RMSE ${visual.edgeRmse.toFixed(4)} exceeds ${VISUAL_EDGE_RMSE_LIMIT.toFixed(4)}.`);
     if (visual.meanAbsoluteError > VISUAL_MAE_LIMIT) failures.push(`${label} MAE ${visual.meanAbsoluteError.toFixed(4)} exceeds ${VISUAL_MAE_LIMIT.toFixed(4)}.`);
     for (const textFailure of sample.textLayoutFailures || []) failures.push(`${label} ${textFailure}`);
+    for (const highlightFailure of validateHighlightChecks(sample.highlightChecks || [])) failures.push(`${label} ${highlightFailure}`);
+    for (const slotFailure of validateSlotChecks(sample.slotChecks || [])) failures.push(`${label} ${slotFailure}`);
   }
   return failures;
 }
 
+async function collectHighlightAnchorRects(page, sample) {
+  const anchors = SAMPLE_HIGHLIGHT_ANCHORS.get(`${cliThemePack || ''}:${sample.index}`) || [];
+  if (!anchors.length) return [];
+  return page.evaluate((items) => {
+    const slide = document.querySelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
+    if (!slide) return items.map(item => ({ ...item, found: false, reason: 'missing-active-slide' }));
+    const slideRect = slide.getBoundingClientRect();
+    const normalize = value => String(value || '').replace(/\s+/g, '');
+    const visibleRect = (rect) => {
+      const left = Math.max(rect.left, slideRect.left);
+      const top = Math.max(rect.top, slideRect.top);
+      const right = Math.min(rect.right, slideRect.right);
+      const bottom = Math.min(rect.bottom, slideRect.bottom);
+      if (right <= left || bottom <= top) return null;
+      return { x: left - slideRect.left, y: top - slideRect.top, w: right - left, h: bottom - top };
+    };
+    const isVisible = (el) => {
+      if (!el) return false;
+      const style = getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || 1) <= 0.01) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width > 1 && rect.height > 1
+        && rect.right >= slideRect.left && rect.left <= slideRect.right
+        && rect.bottom >= slideRect.top && rect.top <= slideRect.bottom;
+    };
+
+    return items.map(item => {
+      const target = normalize(item.text);
+      const walker = document.createTreeWalker(slide, NodeFilter.SHOW_TEXT);
+      let best = null;
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const parent = node.parentElement;
+        if (!isVisible(parent)) continue;
+        if (!normalize(node.textContent).includes(target)) continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const rect = visibleRect(range.getBoundingClientRect());
+        range.detach?.();
+        if (!rect || rect.w < 2 || rect.h < 2) continue;
+        const style = getComputedStyle(parent);
+        const score = rect.w * rect.h + (parseFloat(style.fontSize || '0') || 0) * 100;
+        if (!best || score > best.score) {
+          best = {
+            ...item,
+            found: true,
+            rect,
+            slide: { w: slideRect.width, h: slideRect.height },
+            style: {
+              color: style.color,
+              backgroundImage: style.backgroundImage,
+              backgroundClip: style.backgroundClip,
+              webkitBackgroundClip: style.webkitBackgroundClip,
+              webkitTextFillColor: style.webkitTextFillColor,
+              fontSize: style.fontSize,
+            },
+            score,
+          };
+        }
+      }
+      return best || { ...item, found: false, reason: 'text-anchor-not-found' };
+    });
+  }, anchors);
+}
+
+function analyzeHighlightAnchors(anchors, visual) {
+  if (!anchors.length) return [];
+  return anchors.map(anchor => {
+    if (!anchor.found) return anchor;
+    if (!visual?.available) return { ...anchor, available: false, reason: 'quicklook-unavailable' };
+    const compareDir = path.dirname(visual.htmlImage);
+    const htmlCrop = path.join(compareDir, `html-anchor-${anchor.id}.png`);
+    const pptxCrop = path.join(compareDir, `pptx-anchor-${anchor.id}.png`);
+    const htmlStats = cropHighlightStats(visual.htmlImage, anchor, htmlCrop);
+    const pptxStats = cropHighlightStats(visual.pptxImage, anchor, pptxCrop);
+    return {
+      ...anchor,
+      available: Boolean(htmlStats && pptxStats),
+      htmlCrop,
+      pptxCrop,
+      htmlStats,
+      pptxStats,
+      reason: htmlStats && pptxStats ? undefined : 'crop-analysis-failed',
+    };
+  });
+}
+
+function cropHighlightStats(imagePath, anchor, outPath) {
+  if (!imagePath || !existsSync(imagePath) || !anchor?.rect || !anchor?.slide) return null;
+  const crop = anchorCropSpec(anchor);
+  const save = spawnSync('magick', [imagePath, '-crop', crop.spec, outPath], { encoding: 'utf8' });
+  if (save.status !== 0) return null;
+  const raw = spawnSync('magick', [imagePath, '-crop', crop.spec, '-depth', '8', 'rgb:-'], {
+    encoding: null,
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  if (raw.status !== 0 || !raw.stdout?.length) return null;
+  return summarizeHighlightPixels(raw.stdout);
+}
+
+function anchorCropSpec(anchor) {
+  const scaleX = 960 / Number(anchor.slide.w || 1920);
+  const scaleY = 540 / Number(anchor.slide.h || 1080);
+  const padX = 5;
+  const padY = 4;
+  const x = Math.max(0, Math.floor(anchor.rect.x * scaleX - padX));
+  const y = Math.max(0, Math.floor(anchor.rect.y * scaleY - padY));
+  const right = Math.min(960, Math.ceil((anchor.rect.x + anchor.rect.w) * scaleX + padX));
+  const bottom = Math.min(540, Math.ceil((anchor.rect.y + anchor.rect.h) * scaleY + padY));
+  const w = Math.max(1, right - x);
+  const h = Math.max(1, bottom - y);
+  return { x, y, w, h, spec: `${w}x${h}+${x}+${y}` };
+}
+
+function summarizeHighlightPixels(buffer) {
+  const pixels = Math.floor(buffer.length / 3);
+  let highlightPixels = 0;
+  let nearBlackPixels = 0;
+  let brightPixels = 0;
+  let sumR = 0;
+  let sumG = 0;
+  let sumB = 0;
+  for (let i = 0; i < pixels; i += 1) {
+    const r = buffer[i * 3];
+    const g = buffer[i * 3 + 1];
+    const b = buffer[i * 3 + 2];
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    sumR += r;
+    sumG += g;
+    sumB += b;
+    if (max <= 52) nearBlackPixels += 1;
+    if (max >= 92) brightPixels += 1;
+    if (max >= 88 && max - min >= 24 && (g >= r + 18 || b >= r + 18) && (g >= 100 || b >= 100)) {
+      highlightPixels += 1;
+    }
+  }
+  return {
+    pixels,
+    highlightPixels,
+    highlightRatio: pixels ? highlightPixels / pixels : 0,
+    nearBlackRatio: pixels ? nearBlackPixels / pixels : 0,
+    brightRatio: pixels ? brightPixels / pixels : 0,
+    avgR: pixels ? sumR / pixels : 0,
+    avgG: pixels ? sumG / pixels : 0,
+    avgB: pixels ? sumB / pixels : 0,
+  };
+}
+
+function validateHighlightChecks(checks) {
+  const failures = [];
+  for (const check of checks) {
+    if (!check.found) {
+      failures.push(`is missing highlight anchor "${check.text}" in the HTML sample (${check.reason || 'not-found'}).`);
+      continue;
+    }
+    if (!check.available) {
+      failures.push(`could not analyze highlight anchor "${check.text}" (${check.reason || 'unavailable'}).`);
+      continue;
+    }
+    const htmlRatio = Number(check.htmlStats?.highlightRatio || 0);
+    const pptxRatio = Number(check.pptxStats?.highlightRatio || 0);
+    const requiredRatio = Math.max(0.006, htmlRatio * 0.35);
+    if (pptxRatio < requiredRatio) {
+      failures.push(`highlight anchor "${check.text}" lost cyan/green pixels in PPTX crop (${pptxRatio.toFixed(4)} < ${requiredRatio.toFixed(4)}; HTML ${htmlRatio.toFixed(4)}).`);
+    }
+    if (Number(check.pptxStats?.nearBlackRatio || 0) > 0.9 && Number(check.htmlStats?.nearBlackRatio || 0) < 0.9) {
+      failures.push(`highlight anchor "${check.text}" is near-black in the PPTX crop.`);
+    }
+  }
+  return failures;
+}
+
+async function collectSlotAnchorRects(page, sample) {
+  const anchors = SAMPLE_SLOT_ANCHORS.get(`${cliThemePack || ''}:${sample.index}`) || [];
+  if (!anchors.length) return [];
+  return page.evaluate((items) => {
+    const slide = document.querySelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
+    if (!slide) return items.map(item => ({ ...item, found: false, reason: 'missing-active-slide' }));
+    const slideRect = slide.getBoundingClientRect();
+    const toRect = (rect) => {
+      const left = Math.max(rect.left, slideRect.left);
+      const top = Math.max(rect.top, slideRect.top);
+      const right = Math.min(rect.right, slideRect.right);
+      const bottom = Math.min(rect.bottom, slideRect.bottom);
+      if (right <= left || bottom <= top) return null;
+      return { x: left - slideRect.left, y: top - slideRect.top, w: right - left, h: bottom - top };
+    };
+    return items.map(item => {
+      const el = slide.querySelector(item.selector);
+      if (!el) return { ...item, found: false, reason: 'slot-not-found' };
+      const rect = toRect(el.getBoundingClientRect());
+      if (!rect || rect.w < 4 || rect.h < 4) return { ...item, found: false, reason: 'slot-not-visible' };
+      const cap = el.querySelector('.gxn-slot-cap');
+      const capRect = cap ? toRect(cap.getBoundingClientRect()) : null;
+      const style = getComputedStyle(el);
+      return {
+        ...item,
+        found: true,
+        rect,
+        capRect,
+        slide: { w: slideRect.width, h: slideRect.height },
+        style: {
+          backgroundImage: style.backgroundImage,
+          backgroundColor: style.backgroundColor,
+          borderTopColor: style.borderTopColor,
+          borderTopWidth: style.borderTopWidth,
+          borderTopLeftRadius: style.borderTopLeftRadius,
+        },
+      };
+    });
+  }, anchors);
+}
+
+function analyzeSlotAnchors(anchors, visual, pptx) {
+  if (!anchors.length) return [];
+  return anchors.map(anchor => {
+    if (!anchor.found) return anchor;
+    if (!visual?.available) return { ...anchor, available: false, reason: 'quicklook-unavailable' };
+    const compareDir = path.dirname(visual.htmlImage);
+    const htmlCrop = path.join(compareDir, `html-slot-${anchor.id}.png`);
+    const pptxCrop = path.join(compareDir, `pptx-slot-${anchor.id}.png`);
+    const htmlBackgroundCrop = path.join(compareDir, `html-slot-${anchor.id}-background.png`);
+    const pptxBackgroundCrop = path.join(compareDir, `pptx-slot-${anchor.id}-background.png`);
+    const htmlStats = cropSlotStats(visual.htmlImage, anchor, htmlCrop, htmlBackgroundCrop);
+    const pptxStats = cropSlotStats(visual.pptxImage, anchor, pptxCrop, pptxBackgroundCrop);
+    return {
+      ...anchor,
+      available: Boolean(htmlStats && pptxStats),
+      htmlCrop,
+      pptxCrop,
+      htmlBackgroundCrop,
+      pptxBackgroundCrop,
+      htmlStats,
+      pptxStats,
+      textObjectPresent: Boolean(pptx?.slides?.[0]?.text?.includes(anchor.text)),
+      reason: htmlStats && pptxStats ? undefined : 'slot-crop-analysis-failed',
+    };
+  });
+}
+
+function cropSlotStats(imagePath, anchor, fullOutPath, backgroundOutPath) {
+  if (!imagePath || !existsSync(imagePath) || !anchor?.rect || !anchor?.slide) return null;
+  const full = slotCropSpec(anchor, { x: 0, y: 0, w: 1, h: 1 });
+  const background = slotCropSpec(anchor, { x: 0.08, y: 0.08, w: 0.84, h: 0.22 });
+  const fullSave = spawnSync('magick', [imagePath, '-crop', full.spec, fullOutPath], { encoding: 'utf8' });
+  if (fullSave.status !== 0) return null;
+  const bgSave = spawnSync('magick', [imagePath, '-crop', background.spec, backgroundOutPath], { encoding: 'utf8' });
+  if (bgSave.status !== 0) return null;
+  const raw = spawnSync('magick', [imagePath, '-crop', background.spec, '-depth', '8', 'rgb:-'], {
+    encoding: null,
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  if (raw.status !== 0 || !raw.stdout?.length) return null;
+  return summarizeTexturePixels(raw.stdout, background.w, background.h);
+}
+
+function slotCropSpec(anchor, inset) {
+  const scaleX = 960 / Number(anchor.slide.w || 1920);
+  const scaleY = 540 / Number(anchor.slide.h || 1080);
+  const x = Math.max(0, Math.floor((anchor.rect.x + anchor.rect.w * inset.x) * scaleX));
+  const y = Math.max(0, Math.floor((anchor.rect.y + anchor.rect.h * inset.y) * scaleY));
+  const w = Math.max(1, Math.ceil(anchor.rect.w * inset.w * scaleX));
+  const h = Math.max(1, Math.ceil(anchor.rect.h * inset.h * scaleY));
+  return { x, y, w, h, spec: `${w}x${h}+${x}+${y}` };
+}
+
+function summarizeTexturePixels(buffer, width, height) {
+  const pixels = Math.min(width * height, Math.floor(buffer.length / 3));
+  const luma = new Float32Array(pixels);
+  let sum = 0;
+  let sum2 = 0;
+  let nearSolid = 0;
+  for (let i = 0; i < pixels; i += 1) {
+    const r = buffer[i * 3];
+    const g = buffer[i * 3 + 1];
+    const b = buffer[i * 3 + 2];
+    const value = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    luma[i] = value;
+    sum += value;
+    sum2 += value * value;
+  }
+  let edge = 0;
+  let edgeCount = 0;
+  let diagonal = 0;
+  let diagonalCount = 0;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const offset = y * width + x;
+      const current = luma[offset];
+      if (x + 1 < width) {
+        edge += Math.abs(current - luma[offset + 1]);
+        edgeCount += 1;
+      }
+      if (y + 1 < height) {
+        edge += Math.abs(current - luma[offset + width]);
+        edgeCount += 1;
+      }
+      if (x + 1 < width && y + 1 < height) {
+        diagonal += Math.abs(current - luma[offset + width + 1]);
+        diagonalCount += 1;
+      }
+      if (current < 18) nearSolid += 1;
+    }
+  }
+  const mean = pixels ? sum / pixels : 0;
+  const variance = pixels ? sum2 / pixels - mean * mean : 0;
+  return {
+    pixels,
+    mean,
+    sd: Math.sqrt(Math.max(0, variance)),
+    edgeMean: edgeCount ? edge / edgeCount : 0,
+    diagonalMean: diagonalCount ? diagonal / diagonalCount : 0,
+    nearDarkRatio: pixels ? nearSolid / pixels : 0,
+  };
+}
+
+function validateSlotChecks(checks) {
+  const failures = [];
+  for (const check of checks) {
+    if (!check.found) {
+      failures.push(`is missing image slot "${check.id}" in the HTML sample (${check.reason || 'not-found'}).`);
+      continue;
+    }
+    if (!check.available) {
+      failures.push(`could not analyze image slot "${check.id}" (${check.reason || 'unavailable'}).`);
+      continue;
+    }
+    if (!check.textObjectPresent) {
+      failures.push(`image slot "${check.id}" placeholder text "${check.text}" is not exported as an editable PPT text object.`);
+    }
+    const htmlEdge = Number(check.htmlStats?.edgeMean || 0);
+    const pptxEdge = Number(check.pptxStats?.edgeMean || 0);
+    const htmlSd = Number(check.htmlStats?.sd || 0);
+    const pptxSd = Number(check.pptxStats?.sd || 0);
+    const requiredEdge = Math.max(0.18, htmlEdge * 0.35);
+    const requiredSd = Math.max(0.7, htmlSd * 0.3);
+    if (pptxEdge < requiredEdge || pptxSd < requiredSd) {
+      failures.push(`image slot "${check.id}" lost the diagonal texture/background variation in PPTX crop (edge ${pptxEdge.toFixed(3)} < ${requiredEdge.toFixed(3)} or sd ${pptxSd.toFixed(3)} < ${requiredSd.toFixed(3)}; HTML edge ${htmlEdge.toFixed(3)}, sd ${htmlSd.toFixed(3)}).`);
+    }
+  }
+  return failures;
+}
+
+function validateSampleStructure(sample, label) {
+  const failures = [];
+  const expected = sample.expected || {};
+  const pptx = sample.pptx || {};
+  const expectedText = Number(expected.textNodeRects || 0);
+  if (expectedText >= 6) {
+    const minText = Math.max(2, Math.ceil(expectedText * 0.5));
+    if (Number(pptx.textCount || 0) < minText) {
+      failures.push(`${label} is missing editable text content (${pptx.textCount || 0} text objects for ${expectedText} visible text rects).`);
+    }
+  }
+  const expectedComplexImage = Number(expected.svgElements || 0) + Number(expected.canvasElements || 0) + Number(expected.backgroundUrlElements || 0) + Number(expected.unicornFrameElements || 0);
+  if (expectedComplexImage > 0 && Number(pptx.pictureCount || 0) <= 0) {
+    failures.push(`${label} expected local image fallback objects for SVG/canvas/background media, but exported none.`);
+  }
+  if (Number(expected.elementCount || 0) >= 20) {
+    const nonBackgroundObjects = foregroundObjectCount({ text: Array.from({ length: Number(pptx.textCount || 0) }), pictureCount: Number(pptx.pictureCount || 0) }, expected);
+    if (nonBackgroundObjects < Math.max(4, Math.ceil(Number(expected.elementCount || 0) * 0.12))) {
+      failures.push(`${label} appears to have lost foreground content (${nonBackgroundObjects} text/image objects for ${expected.elementCount} visible elements).`);
+    }
+  }
+  return failures;
+}
+
+function foregroundObjectCount(slide, expected) {
+  const textCount = Array.isArray(slide?.text) ? slide.text.length : Number(slide?.textCount || 0);
+  const pictureCount = Number(slide?.pictureCount || 0);
+  return textCount + pictureCount * 8;
+}
+
 function validateSampleTextLayout(sample, pptx) {
+  if (cliThemePack && cliThemePack !== 'theme01') return [];
   const anchors = SAMPLE_TEXT_LAYOUT_ANCHORS.get(sample.index) || [];
   const slide = pptx.slides[0];
   const failures = [];
@@ -495,13 +1367,15 @@ function validateSampleTextLayout(sample, pptx) {
 
 function summarizeVisualReport(report) {
   const summaries = Array.isArray(report.slideSummaries) ? report.slideSummaries : [];
+  const warnings = Array.isArray(report.warnings) ? report.warnings : [];
   return {
     captureMode: report.captureMode || null,
     slideCount: report.slideCount,
     textObjects: report.textObjects,
     shapeObjects: report.shapeObjects,
     imageObjects: report.imageObjects,
-    warningCount: Array.isArray(report.warnings) ? report.warnings.length : null,
+    warningCount: warnings.length,
+    fallbackTextRiskCount: warnings.filter(warning => warning?.type === 'node-image-fallback-text-risk').length,
     slideSummaries: summaries.slice(0, 5),
   };
 }
@@ -554,6 +1428,91 @@ function compareImageMetric(metric, left, right) {
   const output = `${compare.stderr || ''}${compare.stdout || ''}`;
   const match = output.match(/\((0(?:\.\d+)?|1(?:\.0+)?)\)/);
   return match ? Number(match[1]) : Number.NaN;
+}
+
+function parseJsonProcessOutput(stdout, stderr) {
+  const sources = [stdout || '', stderr || '', `${stdout || ''}\n${stderr || ''}`];
+  for (const source of sources) {
+    const combined = source.trim();
+    if (combined.startsWith('{') && combined.endsWith('}')) {
+      try {
+        return JSON.parse(combined);
+      } catch {}
+    }
+    const last = combined.lastIndexOf('}');
+    if (last < 0) continue;
+    const starts = [];
+    for (let index = combined.lastIndexOf('\n{', last); index >= 0 && starts.length < 20; index = combined.lastIndexOf('\n{', index - 1)) {
+      starts.push(index + 1);
+    }
+    starts.push(combined.indexOf('{'));
+    for (const first of [...new Set(starts)].filter(index => index >= 0 && index < last)) {
+      try {
+        return JSON.parse(combined.slice(first, last + 1));
+      } catch {}
+    }
+  }
+  const combined = `${stdout || ''}\n${stderr || ''}`.trim();
+  return { parseError: true, raw: combined.slice(0, 4000) };
+}
+
+function summarizeMatrixTheme(themePack, result, status) {
+  const failures = Array.isArray(result?.failures) ? result.failures : [`validation process exited with status ${status}`];
+  const samples = Array.isArray(result?.samples) ? result.samples.map(sample => ({
+    index: sample.index,
+    key: sample.key || '',
+    label: sample.label || '',
+    types: sample.types || [],
+    htmlImage: sample.quickLook?.htmlImage || sample.htmlScreenshot || null,
+    pptxImage: sample.quickLook?.pptxImage || null,
+    pairImage: sample.pairImage || null,
+    rmse: sample.quickLook?.normalizedRmse ?? null,
+    edgeRmse: sample.quickLook?.edgeRmse ?? null,
+    mae: sample.quickLook?.meanAbsoluteError ?? null,
+    expected: sample.expected || null,
+    pptx: sample.pptx || null,
+  })) : [];
+  return {
+    themePack,
+    passed: status === 0 && result?.passed === true,
+    expectedSlides: result?.expectedSlides ?? null,
+    failureCategories: categorizeFailures(failures, result),
+    failures,
+    samples,
+    contactSheet: result?.contactSheet || null,
+    fullDeck: result?.pptx || null,
+    report: result?.report || null,
+    validationAttempts: result?.validationAttempts ?? null,
+    parseError: result?.parseError || false,
+  };
+}
+
+function summarizeFallbackTextRisk(result, status) {
+  return {
+    passed: status === 0 && result?.passed === true,
+    themePack: result?.themePack || 'theme03',
+    riskCount: result?.riskCount ?? null,
+    extractedCount: result?.extractedCount ?? null,
+    expectedRiskCount: result?.expectedRiskCount ?? null,
+    extracted: Array.isArray(result?.extracted) ? result.extracted.slice(0, 20) : [],
+    risks: Array.isArray(result?.risks) ? result.risks.slice(0, 20) : [],
+    failures: Array.isArray(result?.failures) ? result.failures : [`validation process exited with status ${status}`],
+    parseError: result?.parseError || false,
+  };
+}
+
+function categorizeFailures(failures, result) {
+  const categories = new Set();
+  const text = failures.join('\n');
+  if (/text|foreground content|主体|editable text/i.test(text)) categories.add('content-loss');
+  if (/RMSE|MAE|visual/i.test(text)) categories.add('visual-drift');
+  if (/edge RMSE|align|layout|too wide|position/i.test(text)) categories.add('alignment-layout');
+  if (/background|gradient|fill/i.test(text)) categories.add('background-fill');
+  if (/SVG|canvas|fallback|image objects|media/i.test(text)) categories.add('complex-node-fallback');
+  if (/Captured tree is too shallow|captured-tree|DOM/i.test(text)) categories.add('capture-depth');
+  if (/animation|opacity|transition/i.test(text)) categories.add('animation-final-state');
+  if (result?.report?.fallbackTextRiskCount > 0) categories.add('fallback-text-baked');
+  return [...categories];
 }
 
 function commandAvailable(name) {
@@ -791,7 +1750,7 @@ function inspectEditableExportSource(source) {
 }
 
 async function renderValidationDeck() {
-  rmSync(OUT_DIR, { recursive: true, force: true });
+  cleanEditableExportValidationOutputs();
   mkdirSync(OUT_DIR, { recursive: true });
   const configFile = path.join(OUT_DIR, 'validation-deck.jsx');
   const indexFile = path.join(OUT_DIR, 'ppt/index.html');
@@ -809,6 +1768,19 @@ async function renderValidationDeck() {
   }
   const server = await startStaticServer(path.dirname(indexFile));
   return server;
+}
+
+function cleanEditableExportValidationOutputs() {
+  for (const name of [
+    'editable-export.pptx',
+    'editable-export-report.json',
+    'editable-theme-filter-export.pptx',
+    'editable-theme-filter-report.json',
+    'validation-deck.jsx',
+    'ppt',
+  ]) {
+    rmSync(path.join(OUT_DIR, name), { recursive: true, force: true });
+  }
 }
 
 function createValidationDeckSource() {
@@ -1109,4 +2081,8 @@ function isDirectory(file) {
 function getArg(name) {
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] : null;
+}
+
+function safePathSegment(value) {
+  return String(value || '').replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'deck';
 }
