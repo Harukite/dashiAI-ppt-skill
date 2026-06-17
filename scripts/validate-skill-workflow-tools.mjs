@@ -266,9 +266,9 @@ function testCodexImageGenExportDeliveryGuidance() {
   if (!/Codex\s*环境/.test(skill)) missing.push('Codex environment detection rule');
   if (!/Codex\s*环境[\s\S]{0,160}image-gen[\s\S]{0,120}生成图片/.test(skill)) missing.push('Codex image-gen prompt guidance');
   if (!/询问用户/.test(skill) && !/先询问/.test(skill)) missing.push('ask user before image-gen guidance');
-  if (!/预览\s*(URL|链接)/.test(skill)) missing.push('final delivery preview URL requirement');
+  if (!/(预览\s*(URL|链接|地址)|HTTP 导出地址)/.test(skill)) missing.push('final delivery preview URL requirement');
   if (!/HTML 文件路径/.test(skill)) missing.push('final delivery HTML file path requirement');
-  if (!/HTTP\/HTTPS[\s\S]{0,80}(导出|用于导出).*(PPT|PPTX)/.test(skill)) missing.push('HTTP/HTTPS export-capable delivery distinction');
+  if (!/(本机 HTTP|HTTP\/HTTPS)[\s\S]{0,120}(导出|用于导出).*(PPT|PPTX)/.test(skill)) missing.push('HTTP/HTTPS export-capable delivery distinction');
   if (!/(file:\/\/|本地 HTML)[\s\S]{0,120}不能导出可编辑 PPTX/.test(skill)) missing.push('file local HTML cannot export editable PPTX distinction');
   if (!/HTTP\/HTTPS/.test(sync)) missing.push('synced installed skill preserves HTTP/HTTPS wording');
   assert(!missing.length, `Codex/image-gen/export delivery guidance missing: ${missing.join(', ')}`);
@@ -327,17 +327,19 @@ function testHttpPreviewDelivery() {
   const template = readFileSync(path.join(ROOT, 'assets/template-swiss.html'), 'utf8');
   const missing = [];
   if (!/preview:start/.test(skill)) missing.push('skill preview:start workflow');
-  if (!/http:\/\/jadon\.local:<port>\//.test(skill)) missing.push('jadon.local HTTP preview URL guidance');
+  if (!/http:\/\/(?:127\.0\.0\.1|localhost):<port>\//.test(skill)) missing.push('local HTTP export URL guidance');
+  if (!/不要把\s*`?http:\/\/jadon\.local:<port>\/`?\s*作为最终 HTTP 导出地址/.test(skill)) missing.push('do not use jadon.local HTTP as final export URL rule');
+  if (!/HTTP LAN\/jadon\.local[\s\S]{0,80}下载失败/.test(skill)) missing.push('HTTP LAN/jadon.local download failure warning');
   if (!/https:\/\/jadon\.local:<port>\//.test(skill)) missing.push('jadon.local preview URL guidance');
   if (!/HTML 文件路径/.test(skill)) missing.push('HTML file path delivery rule');
-  if (!/HTTP\/HTTPS[\s\S]{0,80}(导出|用于导出).*(PPT|PPTX)/.test(skill)) missing.push('HTTP/HTTPS links export PPT/PPTX rule');
+  if (!/(本机 HTTP|HTTP 本机)[\s\S]{0,120}(导出|用于导出).*(PPT|PPTX)/.test(skill)) missing.push('local HTTP link exports PPT/PPTX rule');
   if (!/(file:\/\/|本地 HTML)[\s\S]{0,120}不能导出可编辑 PPTX/.test(skill)) missing.push('file/local HTML cannot export editable PPTX rule');
   if (!/preview:start/.test(sync)) missing.push('synced render shell starts preview');
   if (!/DASHI_PPT_PROJECT_ROOT/.test(sync)) missing.push('synced render shell project root override');
+  if (!/http:\/\/(?:127\.0\.0\.1|localhost):<port>\//.test(sync)) missing.push('synced installed skill local HTTP wording');
   if (!/location\.protocol\s*===\s*['"]file:/.test(template)) missing.push('file:// PPTX export guard');
   if (!/preview:start/.test(template)) missing.push('file:// export message should point to preview:start');
-  if (!/HTTP.*预览|HTTPS.*预览/.test(template)) missing.push('file:// export message should mention HTTP preview');
-  if (!/http:\/\/jadon\.local:<port>\//.test(template)) missing.push('HTTP jadon.local preview example');
+  if (!/http:\/\/(?:127\.0\.0\.1|localhost):<port>\//.test(template)) missing.push('file:// export message should point to local HTTP');
   assert(!missing.length, `HTTP preview delivery guidance missing: ${missing.join(', ')}`);
 
   const tmp = mkdtempSync(path.join(tmpdir(), 'dashi-http-preview-'));
@@ -404,14 +406,19 @@ function testHttpPreviewDelivery() {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-    assert(output.includes(`http://jadon.local:${port}/`), 'render shell should print the final jadon.local HTTP preview URL');
+    assert(output.includes(`http://127.0.0.1:${port}/`) || output.includes(`http://localhost:${port}/`), 'render shell should print the final local HTTP export URL');
+    assert(!/HTTP preview URL:\s*http:\/\/jadon\.local:/i.test(output), 'render shell must not label jadon.local HTTP as the final HTTP preview URL');
     assert(output.includes(`https://jadon.local:${port}/`), 'render shell should print the final jadon.local HTTPS preview URL');
     const html = fetchHttpsWithRetry(`https://localhost:${port}/`);
     const httpHtml = fetchHttpWithRetry(`http://localhost:${port}/`);
     assert(html.includes('HTTP Preview'), 'HTTPS preview should serve the rendered deck');
     assert(httpHtml.includes('HTTP Preview'), 'HTTP preview should serve the rendered deck on the same port');
     const previewState = JSON.parse(readFileSync(path.join(tmp, 'ppt/.preview-server.json'), 'utf8'));
-    assert(previewState.httpUrl === `http://jadon.local:${port}/`, 'preview state should include jadon.local HTTP URL');
+    assert(
+      previewState.httpUrl === `http://127.0.0.1:${port}/` || previewState.httpUrl === `http://localhost:${port}/`,
+      'preview state httpUrl should be the local HTTP export URL',
+    );
+    assert(previewState.jadonHttpUrl === `http://jadon.local:${port}/` || previewState.lanHttpUrl === `http://jadon.local:${port}/`, 'preview state should keep jadon.local HTTP only as a backup field');
     assert(previewState.url === `https://jadon.local:${port}/`, 'preview state should keep jadon.local HTTPS URL');
     assert(previewState.pid, 'preview state should include server pid');
     cleanupPreviewProcess(previewState.pid);

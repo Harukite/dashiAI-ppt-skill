@@ -61,7 +61,7 @@ node scripts/check_latest_version.mjs
 - 不要改页面元数据、组件源码、className、CSS、样式字段或默认视觉结构来完成内容填充。只在 `props` 内填写内容和用户明确要求的页面属性。
 - 允许用顶层 `text` 覆盖可见文字槽位,但只用于替换文字内容。不要在普通生成中启动浏览器批量抽取全页面文本槽位;只有用户明确要求“彻底清除所有模板默认文案/逐页校对可见文案”时才做运行时槽位抽取。
 - 禁止复用 `output/` 里已有的旧 `goal.json` 或旧 HTML。每次请求都新建本次输出目录和本次 JSON 计划。
-- 最终交付必须同时给本次请求的本地 HTTP/HTTPS 预览链接和对应 HTML 文件路径,例如 `http://jadon.local:<port>/`、`https://jadon.local:<port>/` 和 `output/<deck-name>/ppt/index.html`。必须明确说明 HTTP/HTTPS 预览链接可以用于导出 HTML/PDF/PPT/PPTX,直接打开本地 HTML 路径或 `file://` 只能浏览,不能导出可编辑 PPTX。不要返回 `theme-preview` 或其它调试页。
+- 最终交付必须同时给本次请求的本机 HTTP 导出地址、HTTPS/局域网备用预览地址和对应 HTML 文件路径,例如 `http://127.0.0.1:<port>/`、`https://jadon.local:<port>/` 和 `output/<deck-name>/ppt/index.html`。用于导出 PPT/PPTX 的 HTTP 预览地址必须给本机地址,优先 `http://127.0.0.1:<port>/` 或 `http://localhost:<port>/`;不要把 `http://jadon.local:<port>/` 作为最终 HTTP 导出地址给用户。`jadon.local` 可以作为 HTTPS 或局域网浏览备用地址,但必须提示 HTTP LAN/jadon.local 可能导致下载失败,不作为导出主入口。必须明确说明本机 HTTP 链接可用于导出 HTML/PDF/PPT/PPTX,直接打开本地 HTML 路径或 `file://` 只能浏览,不能导出可编辑 PPTX。不要返回 `theme-preview` 或其它调试页。
 - 如果输出正文里出现与用户主题无关的默认文案,例如 AI Capital / 投融资 / SoundWave / 声浪 / Key Metrics / Roadmap / End of Report 等,必须重写 JSON 后重新渲染,不能交付。
 
 ## 工作流
@@ -76,7 +76,7 @@ node scripts/check_latest_version.mjs
 8. 运行 `npm run validate:swiss -- output/<deck-name>/ppt/index.html`。
 9. 运行 `npm run validate:goal-copy -- output/<deck-name>/goal.json output/<deck-name>/ppt/index.html`。
 10. 从项目目录启动本地 HTTP/HTTPS 预览服务: `npm run preview:start -- output/<deck-name>/ppt <port>`。
-11. 最终回复必须给本地 HTTP/HTTPS 预览链接和 HTML 文件路径,并说明 HTTP/HTTPS 链接可用于导出 PPT/PPTX,直接打开本地 HTML 或 `file://` 不能导出可编辑 PPTX。
+11. 最终回复必须给本机 HTTP 导出地址、HTTPS/局域网备用预览地址和 HTML 文件路径,并说明本机 HTTP 链接可用于导出 PPT/PPTX,`http://jadon.local:<port>/` 这类 HTTP LAN/jadon.local 地址可能导致下载失败且不作为导出主入口,直接打开本地 HTML 或 `file://` 不能导出可编辑 PPTX。
 
 ## 返工与浏览器检查
 

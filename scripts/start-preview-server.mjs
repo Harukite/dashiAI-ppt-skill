@@ -39,8 +39,9 @@ await waitForPreview(port);
 
 const url = `https://${localName}.local:${port}/`;
 const localUrl = `https://localhost:${port}/`;
-const httpUrl = `http://${localName}.local:${port}/`;
+const httpUrl = `http://127.0.0.1:${port}/`;
 const localHttpUrl = `http://localhost:${port}/`;
+const jadonHttpUrl = `http://${localName}.local:${port}/`;
 writeFileSync(path.join(serveRoot, '.preview-server.json'), `${JSON.stringify({
   pid: child.pid,
   port,
@@ -48,15 +49,17 @@ writeFileSync(path.join(serveRoot, '.preview-server.json'), `${JSON.stringify({
   url,
   localHttpUrl,
   localUrl,
+  jadonHttpUrl,
   serveRoot,
   logFile,
   startedAt: new Date().toISOString(),
 }, null, 2)}\n`);
 
-console.log(`HTTP preview URL: ${httpUrl}`);
+console.log(`HTTP export URL: ${httpUrl}`);
 console.log(`HTTPS preview URL: ${url}`);
 console.log(`Local HTTP URL: ${localHttpUrl}`);
 console.log(`Local HTTPS URL: ${localUrl}`);
+console.log(`LAN HTTP URL (browse only, not export): ${jadonHttpUrl}`);
 console.log(`PID: ${child.pid}`);
 
 async function findAvailablePort(start, bindHost) {
