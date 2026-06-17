@@ -3399,6 +3399,12 @@ refreshRailCatalog();
 
   window.__exportDeckPptx = async function(){
     if(window.__deckExportLocked) return;
+    if(isCodexInAppBrowser()){
+      const message = 'codex 自带浏览器不支持导出，需要复制地址到浏览器再进行操作';
+      window.__codexExportBlockedMessage = message;
+      alert(message);
+      return;
+    }
     const button = document.getElementById('preview-export-pptx');
     const buttonLabel = button?.textContent;
     let exportUi = null;
@@ -3415,7 +3421,7 @@ refreshRailCatalog();
       window.__syncDeckViewModelFromDom?.();
       throwIfDeckExportCancelled(exportUi);
 
-      const slides = await materializeExportSlides(exportUi, 'PPTX');
+      const slides = window.__getVisibleSlides?.() || [...document.querySelectorAll('#deck > .slide:not([hidden])')];
       const progressId = createEditablePptxProgressId();
       progressPoll = beginEditablePptxProgressPolling(exportUi, progressId);
       updateDeckExport(exportUi, 1, 100, '提交可编辑 PPTX 生成任务...');
@@ -3465,6 +3471,14 @@ refreshRailCatalog();
   function createEditablePptxProgressId(){
     const random = Math.random().toString(36).slice(2, 10);
     return `pptx-${Date.now().toString(36)}-${random}`;
+  }
+
+  function isCodexInAppBrowser(){
+    const ua = String(navigator.userAgent || '');
+    const brands = (navigator.userAgentData?.brands || [])
+      .map(item => `${item.brand || ''} ${item.version || ''}`)
+      .join(' ');
+    return /\b(CodexBrowser|OpenAI Codex|Codex Desktop|ChatGPT-Codex)\b/i.test(`${ua} ${brands}`);
   }
 
   function beginEditablePptxProgressPolling(exportUi, progressId){
@@ -3521,6 +3535,7 @@ refreshRailCatalog();
       const slideRect = slide.getBoundingClientRect();
       if(!slideRect.width || !slideRect.height) return;
       slide.querySelectorAll('canvas').forEach((canvas, canvasIndex) => {
+        if(canvas.closest('.bt-unicorn-frame')) return;
         const style = getComputedStyle(canvas);
         const rect = canvas.getBoundingClientRect();
         if(style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || 1) <= 0.01) return;

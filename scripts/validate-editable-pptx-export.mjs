@@ -73,6 +73,7 @@ const args = new Set(process.argv.slice(2));
 const legacyRed = args.has('--legacy-red');
 const uiExport = args.has('--ui-export');
 const uiExportProgress = args.has('--ui-export-progress');
+const uiExportCodexBrowserGuard = args.has('--ui-export-codex-browser-guard');
 const uiVisualFidelity = args.has('--ui-visual-fidelity');
 const uiVisualMatrix = args.has('--ui-visual-matrix');
 const fallbackTextRisk = args.has('--fallback-text-risk');
@@ -94,6 +95,8 @@ if (legacyRed) {
   await runUiExportValidation();
 } else if (uiExportProgress) {
   await runUiExportProgressValidation();
+} else if (uiExportCodexBrowserGuard) {
+  await runUiExportCodexBrowserGuardValidation();
 } else if (uiVisualMatrix) {
   await runUiVisualMatrixValidation();
 } else if (uiVisualFidelity) {
@@ -143,7 +146,7 @@ async function runUiVisualMatrixValidation() {
     encoding: 'utf8',
     maxBuffer: 60 * 1024 * 1024,
     timeout: 5 * 60 * 1000,
-    env: { ...process.env, EDITABLE_PPTX_VALIDATION_OUT_DIR: matrixDir },
+    env: { ...process.env, EDITABLE_PPTX_VALIDATION_OUT_DIR: matrixDir, EDITABLE_PPTX_COMPACT_OUTPUT: '1' },
   });
   const fallbackParsed = parseJsonProcessOutput(fallbackChild.stdout, fallbackChild.stderr);
   const fallbackSummary = summarizeFallbackTextRisk(fallbackParsed, fallbackChild.status);
@@ -191,7 +194,7 @@ function runVisualMatrixThemeChild(script, theme, matrixDir) {
       encoding: 'utf8',
       maxBuffer: 120 * 1024 * 1024,
       timeout: 10 * 60 * 1000,
-      env: { ...process.env, EDITABLE_PPTX_VALIDATION_OUT_DIR: matrixDir },
+      env: { ...process.env, EDITABLE_PPTX_VALIDATION_OUT_DIR: matrixDir, EDITABLE_PPTX_COMPACT_OUTPUT: '1' },
     });
     let parsed = parseJsonProcessOutput(child.stdout, child.stderr);
     if (parsed?.parseError && child.stderr?.trim().startsWith('{')) {
@@ -227,8 +230,9 @@ async function runUiVisualFidelityValidation() {
   let htmlScreenshot = null;
   let sampleVisuals = [];
   let contactSheet = null;
+  let context = null;
   try {
-    const context = await browser.newContext({
+    context = await browser.newContext({
       acceptDownloads: true,
       viewport: { width: 1920, height: 1080 },
       ignoreHTTPSErrors: true,
@@ -249,6 +253,31 @@ async function runUiVisualFidelityValidation() {
     }
     expectedSlides = await page.evaluate(() => (window.__getVisibleSlides?.() || [...document.querySelectorAll('#deck > .slide:not([hidden])')]).length);
     expectations = await collectUiVisualExpectations(page, expectedSlides);
+    await closePage(page);
+    await context.close().catch(() => {});
+    context = await browser.newContext({
+      acceptDownloads: true,
+      viewport: { width: 1920, height: 1080 },
+      ignoreHTTPSErrors: true,
+    });
+    page = await context.newPage();
+    page.setDefaultTimeout(180000);
+    page.on('dialog', dialog => dialog.dismiss().catch(() => {}));
+    await page.goto(`${url}${url.includes('?') ? '&' : '?'}ui_visual_export=${Date.now()}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
+    await installValidationHelpers(page);
+    if (cliThemePack) {
+      await page.evaluate(async themePack => {
+        window.__setActiveThemePack?.(themePack, { navigate: true });
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        window.__finishEditablePptxAnimations?.(document);
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      }, cliThemePack);
+    }
+    const exportSlides = await page.evaluate(() => (window.__getVisibleSlides?.() || [...document.querySelectorAll('#deck > .slide:not([hidden])')]).length);
+    if (exportSlides !== expectedSlides) {
+      throw new Error(`Visual fidelity export page has ${exportSlides} visible slides; expected ${expectedSlides}.`);
+    }
     htmlScreenshot = path.join(visualDir, 'html-slide-001.png');
     await page.evaluate(async () => {
       window.go?.(0, { animate: false, force: true });
@@ -270,6 +299,7 @@ async function runUiVisualFidelityValidation() {
     contactSheet = createSampleContactSheet(sampleVisuals, visualDir);
   } finally {
     await closePage(page);
+    await context?.close().catch(() => {});
     await closeBrowser(browser);
   }
 
@@ -480,6 +510,107 @@ async function runUiExportProgressValidation() {
   process.exit(0);
 }
 
+async function runUiExportCodexBrowserGuardValidation() {
+  if (!cliUrl) throw new Error('Usage: node scripts/validate-editable-pptx-export.mjs --ui-export-codex-browser-guard --url <preview-url>');
+  const url = cliUrl;
+  const expectedMessage = 'codex 自带浏览器不支持导出，需要复制地址到浏览器再进行操作';
+  const browser = await chromium.launch({ headless: true, executablePath: CHROME_PATH });
+  let codexResult = null;
+  let normalResult = null;
+  try {
+    codexResult = await runCodexBrowserGuardScenario(browser, url, {
+      userAgent: 'Mozilla/5.0 CodexBrowser/1.0',
+      expectedMessage,
+    });
+    normalResult = await runCodexBrowserGuardScenario(browser, url, {
+      userAgent: 'Mozilla/5.0 Chrome/140.0.0.0 Safari/537.36',
+      expectedMessage,
+    });
+  } finally {
+    await closeBrowser(browser);
+  }
+  const failures = [];
+  if (codexResult.dialogMessage !== expectedMessage) {
+    failures.push(`Codex browser guard did not show the required alert. Got: ${codexResult.dialogMessage || 'none'}.`);
+  }
+  if (codexResult.exportRequestSeen) failures.push('Codex browser guard still entered the editable PPTX export request path.');
+  if (!normalResult.exportRequestSeen) failures.push('Normal browser path did not enter the editable PPTX export request path.');
+  if (normalResult.dialogMessage === expectedMessage) failures.push('Normal browser path was incorrectly blocked by the Codex browser guard.');
+  const result = {
+    mode: 'ui-export-codex-browser-guard',
+    url,
+    passed: failures.length === 0,
+    codexResult,
+    normalResult,
+    failures,
+  };
+  if (failures.length) {
+    console.error(JSON.stringify(result, null, 2));
+    process.exit(1);
+  }
+  console.log(JSON.stringify(result, null, 2));
+  process.exit(0);
+}
+
+async function runCodexBrowserGuardScenario(browser, url, { userAgent, expectedMessage }) {
+  const context = await browser.newContext({
+    acceptDownloads: true,
+    viewport: { width: 1920, height: 1080 },
+    ignoreHTTPSErrors: true,
+    userAgent,
+  });
+  let page;
+  const result = {
+    userAgent,
+    dialogMessage: null,
+    blockedMessage: null,
+    exportRequestSeen: false,
+  };
+  try {
+    page = await context.newPage();
+    page.setDefaultTimeout(90000);
+    page.on('dialog', async dialog => {
+      result.dialogMessage = dialog.message();
+      await dialog.dismiss().catch(() => {});
+    });
+    await page.route('**/api/export-editable-pptx', async route => {
+      result.exportRequestSeen = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          filePath: '/tmp/codex-browser-guard-test.pptx',
+          relativePath: 'codex-browser-guard-test.pptx',
+          downloadUrl: '/api/export-editable-pptx-download?file=codex-browser-guard-test.pptx',
+          downloadName: 'codex-browser-guard-test.pptx',
+        }),
+      });
+    });
+    await page.route('**/api/export-editable-pptx-progress**', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ stage: 'test', detail: 'test', percent: 50 }),
+      });
+    });
+    await page.goto(`${url}${url.includes('?') ? '&' : '?'}codex_browser_guard=${Date.now()}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
+    await page.click('#preview-export-main');
+    await page.click('#preview-export-pptx');
+    await page.waitForFunction(
+      message => window.__lastPptxExportResult || window.__codexExportBlockedMessage === message,
+      expectedMessage,
+      { timeout: 45000 },
+    ).catch(() => {});
+    await page.waitForTimeout(500);
+    result.blockedMessage = await page.evaluate(() => window.__codexExportBlockedMessage || null).catch(() => null);
+  } finally {
+    await closePage(page);
+    await context.close().catch(() => {});
+  }
+  return result;
+}
+
 function parseProgressPercent(text) {
   const match = String(text || '').match(/(\d+)\s*%/);
   return match ? Number(match[1]) : 0;
@@ -507,23 +638,8 @@ async function runFallbackTextRiskMatrixValidation() {
   mkdirSync(matrixDir, { recursive: true });
   const themeResults = [];
   for (const theme of themes) {
-    const child = spawnSync(process.execPath, [
-      script,
-      '--fallback-text-risk',
-      '--url',
-      cliUrl,
-      '--theme-pack',
-      theme,
-      '--samples-per-theme',
-      String(cliSamplesPerTheme),
-    ], {
-      cwd: ROOT,
-      encoding: 'utf8',
-      maxBuffer: 120 * 1024 * 1024,
-      timeout: 12 * 60 * 1000,
-      env: { ...process.env, EDITABLE_PPTX_VALIDATION_OUT_DIR: matrixDir },
-    });
-    const parsed = parseJsonProcessOutput(child.stdout, child.stderr);
+    const child = runFallbackTextRiskThemeChild(script, theme, matrixDir);
+    const parsed = child.parsed;
     themeResults.push({
       themePack: theme,
       passed: child.status === 0 && parsed?.passed === true,
@@ -536,7 +652,7 @@ async function runFallbackTextRiskMatrixValidation() {
       evidenceDir: parsed?.evidenceDir || null,
       reportFile: parsed?.reportFile || null,
       pptxFile: parsed?.pptxFile || null,
-      failures: parsed?.failures || (child.status === 0 ? [] : ['fallback text risk child validation failed']),
+      failures: parsed?.failures || (parsed?.parseError ? ['fallback text risk child JSON parse failed'] : child.status === 0 ? [] : ['fallback text risk child validation failed']),
     });
     writeFileSync(path.join(matrixDir, 'fallback-text-risk-matrix.partial.json'), JSON.stringify({
       mode: 'fallback-text-risk-matrix',
@@ -565,6 +681,36 @@ async function runFallbackTextRiskMatrixValidation() {
   process.exit(0);
 }
 
+function runFallbackTextRiskThemeChild(script, theme, matrixDir) {
+  let last = null;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const child = spawnSync(process.execPath, [
+      script,
+      '--fallback-text-risk',
+      '--url',
+      cliUrl,
+      '--theme-pack',
+      theme,
+      '--samples-per-theme',
+      String(cliSamplesPerTheme),
+    ], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      maxBuffer: 120 * 1024 * 1024,
+      timeout: 12 * 60 * 1000,
+      env: { ...process.env, EDITABLE_PPTX_VALIDATION_OUT_DIR: matrixDir, EDITABLE_PPTX_COMPACT_OUTPUT: '1' },
+    });
+    const parsed = parseJsonProcessOutput(child.stdout, child.stderr);
+    if (!parsed?.parseError) {
+      parsed.validationAttempts = attempt;
+      return { parsed, status: child.status };
+    }
+    writeFileSync(path.join(matrixDir, `fallback-text-risk-${theme}-raw-attempt-${attempt}.txt`), `${child.stdout || ''}\n${child.stderr || ''}`);
+    last = { parsed, status: child.status };
+  }
+  return last;
+}
+
 async function runFallbackTextRiskValidation() {
   if (!cliUrl) throw new Error('Usage: node scripts/validate-editable-pptx-export.mjs --fallback-text-risk --url <preview-url> --theme-pack <theme>');
   const themePack = cliThemePack || 'theme03';
@@ -575,6 +721,7 @@ async function runFallbackTextRiskValidation() {
   let expectedSlides = null;
   let expectedRisks = [];
   let selectedRisks = [];
+  let evidenceChecks = [];
   let evidenceDir = null;
   try {
     const context = await browser.newContext({
@@ -599,7 +746,7 @@ async function runFallbackTextRiskValidation() {
     mkdirSync(outDir, { recursive: true });
     evidenceDir = path.join(outDir, 'evidence');
     selectedRisks = selectFallbackTextRiskSamples(expectedRisks, cliSamplesPerTheme);
-    await captureFallbackTextRiskEvidence(page, selectedRisks, evidenceDir);
+    evidenceChecks = await captureFallbackTextRiskEvidence(page, selectedRisks, evidenceDir);
     if (expectedRisks.length) {
       const slideIndexes = [...new Set(selectedRisks.map(item => item.slide - 1))]
         .filter(index => Number.isInteger(index) && index >= 0)
@@ -619,18 +766,28 @@ async function runFallbackTextRiskValidation() {
     await closeBrowser(browser);
   }
   const report = reportFile && existsSync(reportFile) ? JSON.parse(readFileSync(reportFile, 'utf8')) : null;
+  const pptx = pptxFile && existsSync(pptxFile) ? inspectPptx(pptxFile) : null;
   const risks = (report?.warnings || []).filter(warning => warning?.type === 'node-image-fallback-text-risk');
   const extracted = (report?.warnings || []).filter(warning => warning?.type === 'node-image-fallback-text-extracted');
   const missingClassifications = selectedRisks.filter(risk => !fallbackRiskWasClassified(risk, [...risks, ...extracted]));
+  const missingTextObjects = pptx ? missingFallbackTextObjects(selectedRisks, pptx) : [];
   const failures = [];
   if (expectedRisks.length && !report) failures.push('Fallback text risk validation did not write a report file.');
+  if (expectedRisks.length && !pptx) failures.push('Fallback text risk validation did not write a PPTX file.');
   if (expectedRisks.length && !risks.length && !extracted.length) {
     failures.push(`${themePack} has ${expectedRisks.length} DOM fallback text candidate(s), but export report did not classify them as extracted or risky.`);
   }
   if (missingClassifications.length) {
     failures.push(`${themePack} has ${missingClassifications.length} selected fallback text candidate(s) that were not classified by the export report.`);
   }
-  if (risks.length) failures.push(`${themePack} has ${risks.length} local fallback image(s) that include visible descendant text.`);
+  if (missingTextObjects.length) {
+    failures.push(`${themePack} has ${missingTextObjects.length} selected fallback text candidate(s) missing corresponding PPT text object probes.`);
+  }
+  const failedEvidenceChecks = evidenceChecks.filter(check => check.checked && !check.passed);
+  if (failedEvidenceChecks.length) {
+    failures.push(`${themePack} has ${failedEvidenceChecks.length} fallback evidence text crop(s) that did not change after hiding text paint.`);
+  }
+  if (risks.length) failures.push(`${themePack} has ${risks.length} local fallback image(s) that include visible fallback text.`);
   const result = {
     mode: 'fallback-text-risk',
     themePack,
@@ -646,16 +803,60 @@ async function runFallbackTextRiskValidation() {
     expectedRisks: expectedRisks.slice(0, 40),
     selectedRisks,
     missingClassifications,
+    missingTextObjects,
+    evidenceChecks,
+    pptx: pptx ? summarizeInspection(pptx) : null,
     extracted: extracted.slice(0, 40),
     risks: risks.slice(0, 40),
     failures,
   };
+  const printableResult = process.env.EDITABLE_PPTX_COMPACT_OUTPUT ? compactFallbackTextRiskResult(result) : result;
   if (failures.length) {
-    console.error(JSON.stringify(result, null, 2));
+    console.error(JSON.stringify(printableResult, null, 2));
     process.exit(1);
   }
-  console.log(JSON.stringify(result, null, 2));
+  console.log(JSON.stringify(printableResult, null, 2));
   process.exit(0);
+}
+
+function compactFallbackTextRiskResult(result) {
+  return {
+    mode: result.mode,
+    themePack: result.themePack,
+    expectedSlides: result.expectedSlides,
+    passed: result.passed,
+    pptxFile: result.pptxFile,
+    reportFile: result.reportFile,
+    evidenceDir: result.evidenceDir,
+    riskCount: result.riskCount,
+    extractedCount: result.extractedCount,
+    expectedRiskCount: result.expectedRiskCount,
+    selectedRiskCount: result.selectedRiskCount,
+    missingClassifications: (result.missingClassifications || []).map(compactFallbackRisk),
+    missingTextObjects: result.missingTextObjects || [],
+    evidenceChecks: (result.evidenceChecks || []).map(check => ({
+      slide: check.slide,
+      kind: check.kind,
+      checked: check.checked,
+      passed: check.passed,
+      minRmse: check.minRmse,
+      failures: check.failures,
+    })),
+    pptx: result.pptx,
+    extracted: (result.extracted || []).slice(0, 12),
+    risks: (result.risks || []).slice(0, 12),
+    failures: result.failures || [],
+  };
+}
+
+function compactFallbackRisk(risk) {
+  return {
+    slide: risk.slide,
+    key: risk.key,
+    kind: risk.kind,
+    textCount: risk.textCount,
+    sample: risk.sample,
+  };
 }
 
 async function collectUiVisualExpectations(page, expectedSlides) {
@@ -805,8 +1006,34 @@ async function collectFallbackTextRiskExpectations(page, expectedSlides) {
           && rect.right >= slideRect.left && rect.left <= slideRect.right
           && rect.bottom >= slideRect.top && rect.top <= slideRect.bottom;
       };
-      const visibleText = (root) => {
-        const texts = new Set();
+      const rectObject = (rect) => ({
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+      });
+      const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      const textInRect = (root, clipRect) => {
+        const items = [];
+        const seen = new Set();
+        const add = (text, rect) => {
+          const value = (text || '').trim().replace(/\s+/g, ' ');
+          if (!value || rect.width <= 1 || rect.height <= 1 || !intersects(rect, clipRect)) return;
+          const key = `${value}:${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(rect.width)}:${Math.round(rect.height)}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          items.push({
+            text: value,
+            rect: {
+              x: Math.max(0, rect.left - slideRect.left),
+              y: Math.max(0, rect.top - slideRect.top),
+              w: Math.max(1, rect.width),
+              h: Math.max(1, rect.height),
+            },
+          });
+        };
         const walk = (node) => {
           for (const child of node.childNodes || []) {
             if (child.nodeType === Node.TEXT_NODE) {
@@ -814,26 +1041,33 @@ async function collectFallbackTextRiskExpectations(page, expectedSlides) {
               if (!text) continue;
               const range = document.createRange();
               range.selectNodeContents(child);
+              const rects = [...range.getClientRects()];
               const rect = range.getBoundingClientRect();
               range.detach?.();
-              if (rect.width > 1 && rect.height > 1) texts.add(text);
+              for (const item of rects.length ? rects : [rect]) add(text, item);
             } else if (child.nodeType === Node.ELEMENT_NODE && isVisible(child)) {
               walk(child);
             }
           }
         };
         walk(root);
-        return [...texts];
+        root.querySelectorAll?.('svg text')?.forEach(el => {
+          if (!isVisible(el)) return;
+          add(el.textContent || '', el.getBoundingClientRect());
+        });
+        return items;
       };
-      const addRisk = (el, kind, texts) => {
-        if (!texts.length) return;
+      const addRisk = (el, kind, textItems) => {
+        if (!textItems.length) return;
         const rect = el.getBoundingClientRect();
+        const texts = textItems.map(item => item.text);
         out.push({
           slide: index + 1,
           key: slide.dataset.vmSlideId || slide.dataset.layoutKey || slide.id || '',
           kind,
           textCount: texts.length,
           sample: texts.join(' ').slice(0, 120),
+          textItems: textItems.slice(0, 40),
           rect: {
             x: Math.max(0, rect.left - slideRect.left),
             y: Math.max(0, rect.top - slideRect.top),
@@ -843,13 +1077,17 @@ async function collectFallbackTextRiskExpectations(page, expectedSlides) {
         });
       };
       slide.querySelectorAll('.bt-unicorn-frame').forEach(el => {
-        if (isVisible(el)) addRisk(el, 'unicorn-background', visibleText(el));
+        if (!isVisible(el)) return;
+        addRisk(el, 'unicorn-overlay-text', textInRect(slide, rectObject(el.getBoundingClientRect())));
       });
       slide.querySelectorAll('svg').forEach(el => {
         if (!isVisible(el)) return;
         const texts = [...el.querySelectorAll('text')]
-          .map(textEl => (textEl.textContent || '').trim().replace(/\s+/g, ' '))
-          .filter(Boolean);
+          .map(textEl => ({
+            text: (textEl.textContent || '').trim().replace(/\s+/g, ' '),
+            rect: rectObject(textEl.getBoundingClientRect()),
+          }))
+          .filter(item => item.text);
         addRisk(el, 'svg-text', texts);
       });
       return out;
@@ -873,6 +1111,7 @@ function selectFallbackTextRiskSamples(expectedRisks, limit) {
 }
 
 function fallbackRiskPriority(risk) {
+  if (risk.kind === 'unicorn-overlay-text') return 120;
   if (risk.kind === 'unicorn-background') return 100;
   if (risk.kind === 'canvas') return 80;
   if (risk.kind === 'svg-text') return 60;
@@ -880,13 +1119,16 @@ function fallbackRiskPriority(risk) {
 }
 
 async function captureFallbackTextRiskEvidence(page, risks, evidenceDir) {
-  if (!risks.length) return;
+  if (!risks.length) return [];
   mkdirSync(evidenceDir, { recursive: true });
+  const checks = [];
   for (const risk of risks) {
     const sampleDir = path.join(evidenceDir, `slide-${String(risk.slide).padStart(3, '0')}-${safePathSegment(risk.kind)}`);
     mkdirSync(sampleDir, { recursive: true });
     const htmlSlide = path.join(sampleDir, 'html-slide.png');
     const htmlFallback = path.join(sampleDir, 'html-fallback-region.png');
+    const hiddenSlide = path.join(sampleDir, 'html-slide-text-hidden.png');
+    const hiddenFallback = path.join(sampleDir, 'html-fallback-region-text-hidden.png');
     await page.evaluate(async slideIndex => {
       window.go?.(slideIndex - 1, { animate: false, force: true });
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -899,18 +1141,154 @@ async function captureFallbackTextRiskEvidence(page, risks, evidenceDir) {
     if (risk.rect && commandAvailable('magick')) {
       const crop = `${Math.max(1, Math.round(risk.rect.w))}x${Math.max(1, Math.round(risk.rect.h))}+${Math.max(0, Math.round(risk.rect.x))}+${Math.max(0, Math.round(risk.rect.y))}`;
       spawnSync('magick', [htmlSlide, '-crop', crop, htmlFallback], { encoding: 'utf8' });
+      await page.evaluate(async rect => {
+        const slide = document.querySelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
+        if (!slide) return;
+        const slideRect = slide.getBoundingClientRect();
+        const clip = {
+          left: slideRect.left + rect.x,
+          top: slideRect.top + rect.y,
+          right: slideRect.left + rect.x + rect.w,
+          bottom: slideRect.top + rect.y + rect.h,
+        };
+        const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+        const entries = [];
+        const mark = (el) => {
+          if (!el || entries.some(entry => entry.el === el)) return;
+          entries.push({ el, style: el.getAttribute('style') });
+          const style = getComputedStyle(el);
+          el.style.setProperty('color', 'transparent', 'important');
+          el.style.setProperty('-webkit-text-fill-color', 'transparent', 'important');
+          el.style.setProperty('-webkit-text-stroke-color', 'transparent', 'important');
+          el.style.setProperty('text-shadow', 'none', 'important');
+          el.style.setProperty('text-decoration-color', 'transparent', 'important');
+          el.style.setProperty('fill', 'transparent', 'important');
+          el.style.setProperty('stroke', 'transparent', 'important');
+          if (String(style.backgroundClip || '').includes('text') || String(style.webkitBackgroundClip || '').includes('text')) {
+            el.style.setProperty('background-image', 'none', 'important');
+          }
+        };
+        const walker = document.createTreeWalker(slide, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+          if (!(walker.currentNode.textContent || '').trim()) continue;
+          const range = document.createRange();
+          range.selectNodeContents(walker.currentNode);
+          const rects = [...range.getClientRects()];
+          const bounds = range.getBoundingClientRect();
+          range.detach?.();
+          if ((rects.length ? rects : [bounds]).some(item => item.width > 1 && item.height > 1 && intersects(item, clip))) {
+            mark(walker.currentNode.parentElement);
+          }
+        }
+        slide.querySelectorAll('svg text').forEach(el => {
+          const rect = el.getBoundingClientRect();
+          if (rect.width > 1 && rect.height > 1 && intersects(rect, clip)) mark(el);
+        });
+        window.__fallbackRiskHiddenTextEntries = entries;
+      }, risk.rect);
+      await activeSlide.screenshot({ path: hiddenSlide });
+      spawnSync('magick', [hiddenSlide, '-crop', crop, hiddenFallback], { encoding: 'utf8' });
+      checks.push(analyzeFallbackTextRemoval(risk, htmlFallback, hiddenFallback, sampleDir));
+      await page.evaluate(() => {
+        const entries = window.__fallbackRiskHiddenTextEntries || [];
+        for (const entry of entries) {
+          if (entry.style == null) entry.el.removeAttribute('style');
+          else entry.el.setAttribute('style', entry.style);
+        }
+        delete window.__fallbackRiskHiddenTextEntries;
+      });
     }
     writeFileSync(path.join(sampleDir, 'risk.json'), JSON.stringify(risk, null, 2) + '\n');
   }
+  return checks;
+}
+
+function analyzeFallbackTextRemoval(risk, htmlFallback, hiddenFallback, sampleDir) {
+  if (risk.kind !== 'unicorn-overlay-text' || !risk.rect || !commandAvailable('magick')) {
+    return { slide: risk.slide, kind: risk.kind, checked: false, passed: true, reason: 'not-unicorn-overlay' };
+  }
+  const cropDir = path.join(sampleDir, 'text-removal-crops');
+  mkdirSync(cropDir, { recursive: true });
+  const candidates = (risk.textItems || [])
+    .map((item, index) => {
+      const rect = item.rect || {};
+      const x = Number(rect.x ?? rect.left ?? 0) - Number(risk.rect.x || 0);
+      const y = Number(rect.y ?? rect.top ?? 0) - Number(risk.rect.y || 0);
+      const w = Number(rect.w ?? rect.width ?? 0);
+      const h = Number(rect.h ?? rect.height ?? 0);
+      return { index, text: item.text || '', x, y, w, h, area: w * h };
+    })
+    .filter(item => item.w >= 8 && item.h >= 8 && item.area >= 120 && String(item.text || '').trim().length >= 2)
+    .sort((a, b) => b.area - a.area)
+    .slice(0, 8);
+  const results = [];
+  for (const item of candidates) {
+    const spec = `${Math.max(1, Math.round(item.w))}x${Math.max(1, Math.round(item.h))}+${Math.max(0, Math.round(item.x))}+${Math.max(0, Math.round(item.y))}`;
+    const before = path.join(cropDir, `text-${String(item.index).padStart(2, '0')}-before.png`);
+    const after = path.join(cropDir, `text-${String(item.index).padStart(2, '0')}-after.png`);
+    spawnSync('magick', [htmlFallback, '-crop', spec, before], { encoding: 'utf8' });
+    spawnSync('magick', [hiddenFallback, '-crop', spec, after], { encoding: 'utf8' });
+    const rmse = compareImageMetric('RMSE', before, after);
+    results.push({
+      index: item.index,
+      text: item.text.slice(0, 80),
+      rmse,
+      before,
+      after,
+      passed: Number.isFinite(rmse) && rmse >= 0.004,
+    });
+  }
+  const failures = results.filter(item => !item.passed);
+  return {
+    slide: risk.slide,
+    key: risk.key,
+    kind: risk.kind,
+    checked: results.length > 0,
+    passed: failures.length === 0,
+    minRmse: results.length ? Math.min(...results.map(item => Number.isFinite(item.rmse) ? item.rmse : 0)) : null,
+    failures: failures.map(item => ({ index: item.index, text: item.text, rmse: item.rmse, before: item.before, after: item.after })),
+    samples: results,
+  };
 }
 
 function fallbackRiskWasClassified(risk, warnings) {
   return warnings.some(warning => {
     if (Number(warning?.slide) !== Number(risk.slide)) return false;
     if (risk.kind === 'svg-text') return warning.node === 'svg';
-    if (risk.kind === 'unicorn-background') return warning.node === 'unicorn-background';
+    if (risk.kind === 'unicorn-background' || risk.kind === 'unicorn-overlay-text') return warning.node === 'unicorn-background';
     return warning.node === risk.kind;
   });
+}
+
+function missingFallbackTextObjects(risks, pptx) {
+  const allText = normalizeSearchText(pptx.allText);
+  const missing = [];
+  for (const risk of risks) {
+    const probes = [...new Set((risk.textItems || [])
+      .map(item => fallbackTextProbe(item?.text))
+      .filter(Boolean))]
+      .slice(0, 8);
+    const missingProbes = probes.filter(probe => !allText.includes(probe));
+    if (missingProbes.length) {
+      missing.push({
+        slide: risk.slide,
+        key: risk.key,
+        kind: risk.kind,
+        missingProbes,
+      });
+    }
+  }
+  return missing;
+}
+
+function fallbackTextProbe(value) {
+  const normalized = normalizeSearchText(value);
+  if (normalized.length < 2) return '';
+  return normalized.slice(0, Math.min(24, normalized.length));
+}
+
+function normalizeSearchText(value) {
+  return String(value || '').replace(/[^\p{L}\p{N}%]+/gu, '').toLowerCase();
 }
 
 async function collectSampleVisualComparisons(page, expectations, visualDir) {

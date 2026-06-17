@@ -243,30 +243,61 @@ async function resolveElementScreenshots(page, root, warnings, options = {}) {
     let hiddenToken = null;
     try {
       if (node.stripTextForScreenshot) {
-        hiddenToken = await page.evaluate(exportId => {
+        hiddenToken = await page.evaluate(({ exportId, mode }) => {
           const root = document.querySelector(`[data-editable-pptx-export-id="${exportId}"]`);
           if (!root) return null;
           const token = `hide-${Date.now()}-${Math.random().toString(36).slice(2)}`;
           const entries = [];
+          const rootRect = root.getBoundingClientRect();
+          const slide = mode === 'screenshot-rect'
+            ? root.closest('#deck > .slide') || document.querySelector('#deck > .slide.active, #deck > .slide[data-deck-active]')
+            : root;
+          const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
           const mark = (el) => {
             if (!el || entries.some(entry => entry.el === el)) return;
             entries.push({ el, style: el.getAttribute('style') });
+            const style = getComputedStyle(el);
             el.style.setProperty('color', 'transparent', 'important');
             el.style.setProperty('-webkit-text-fill-color', 'transparent', 'important');
+            el.style.setProperty('-webkit-text-stroke-color', 'transparent', 'important');
             el.style.setProperty('text-shadow', 'none', 'important');
             el.style.setProperty('text-decoration-color', 'transparent', 'important');
             el.style.setProperty('fill', 'transparent', 'important');
             el.style.setProperty('stroke', 'transparent', 'important');
+            if (String(style.backgroundClip || '').includes('text') || String(style.webkitBackgroundClip || '').includes('text')) {
+              el.style.setProperty('background-image', 'none', 'important');
+            }
           };
-          const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+          const shouldHideRange = (range) => {
+            if (mode !== 'screenshot-rect') return true;
+            const rects = [...range.getClientRects()];
+            const bounds = range.getBoundingClientRect();
+            return (rects.length ? rects : [bounds]).some(rect => rect.width > 1 && rect.height > 1 && intersects(rect, rootRect));
+          };
+          const walker = document.createTreeWalker(slide || root, NodeFilter.SHOW_TEXT);
           while (walker.nextNode()) {
-            if ((walker.currentNode.textContent || '').trim()) mark(walker.currentNode.parentElement);
+            if (!(walker.currentNode.textContent || '').trim()) continue;
+            const range = document.createRange();
+            range.selectNodeContents(walker.currentNode);
+            const shouldHide = shouldHideRange(range);
+            range.detach?.();
+            if (shouldHide) mark(walker.currentNode.parentElement);
           }
-          root.querySelectorAll('svg text, text').forEach(mark);
+          (slide || root).querySelectorAll('svg text, text').forEach(el => {
+            if (mode !== 'screenshot-rect') {
+              mark(el);
+              return;
+            }
+            const rect = el.getBoundingClientRect();
+            if (rect.width > 1 && rect.height > 1 && intersects(rect, rootRect)) mark(el);
+          });
           window.__editablePptxHiddenTextStyles ||= new Map();
           window.__editablePptxHiddenTextStyles.set(token, entries);
           return token;
-        }, node.exportId);
+        }, {
+          exportId: node.exportId,
+          mode: node.imageKind === 'unicorn-background' ? 'screenshot-rect' : 'descendant',
+        });
       }
       const bytes = await page.locator(`[data-editable-pptx-export-id="${node.exportId}"]`).screenshot({ type: 'png' });
       node.imageData = `data:image/png;base64,${bytes.toString('base64')}`;
@@ -377,6 +408,8 @@ async function installBrowserCollector(page) {
           'webkitTextStrokeColor',
           'webkitTextStrokeWidth',
           'whiteSpace',
+          'writingMode',
+          'textOrientation',
           'verticalAlign',
           'objectFit',
           'objectPosition',
@@ -429,8 +462,10 @@ async function installBrowserCollector(page) {
         ${rotateFromTransform.toString()}
         ${scaleFromTransform.toString()}
         ${finishEditablePptxAnimations.toString()}
+        ${markUnicornOverlayText.toString()}
         ${fallbackTextRisk.toString()}
         ${visibleTextInSubtree.toString()}
+        ${visibleTextInScreenshotRect.toString()}
         ${collectDomFallbackTextNodes.toString()}
         ${svgTextRisk.toString()}
         ${fetchImageDataUrl.toString()}
@@ -569,7 +604,8 @@ function renderText(slide, node, slideRect, warnings, totals) {
   const fontFace = firstFont(style.fontFamily);
   const weight = String(style.fontWeight || '');
   const singleLine = node.singleLine && !/[\r\n]/.test(value);
-  const autoWidth = singleLine && shouldUseAutoWidthText(value, fontSizePx, c, node);
+  const verticalText = isVerticalWritingMode(style);
+  const autoWidth = !verticalText && singleLine && shouldUseAutoWidthText(value, fontSizePx, c, node);
   const align = normalizeAlign(style.textAlign);
   const options = {
     x: c.x,
@@ -592,6 +628,9 @@ function renderText(slide, node, slideRect, warnings, totals) {
     transparency: combinedTransparency(color.alpha, style.opacity),
     charSpacing: letterSpacing(style.letterSpacing),
   };
+  if (verticalText) {
+    options.vert = 'eaVert';
+  }
   if (/Songti SC/i.test(fontFace) && fontSizePx >= 80 && node.parentTag === 'span') {
     options.y = Math.max(0, options.y - c.h * 0.28);
   }
@@ -629,9 +668,15 @@ function isDecorativeLowAlphaText(color, style, fontSizePx) {
 
 function isDecorativeRotatedSmallText(value, style, fontSizePx, node = {}) {
   return node.source !== 'svg-text'
+    && !node.requiredText
+    && !isVerticalWritingMode(style)
     && rotateFromTransform(style?.transform)
     && fontSizePx <= 32
     && String(value || '').trim().length >= 4;
+}
+
+function isVerticalWritingMode(style = {}) {
+  return String(style.writingMode || '').includes('vertical');
 }
 
 function isDecorativeSparkleText(value) {
@@ -729,6 +774,7 @@ async function collectActiveSlide(slideNumber) {
   const rawRect = slide.getBoundingClientRect();
   const slideRect = rectObject(rawRect);
   const warnings = [];
+  markUnicornOverlayText(slide, slideRect);
   const root = await captureElement(slide, slideRect, warnings, 0, slideNumber);
   const summary = summarizeCapturedTree(root);
   summary.key = slide.dataset.vmSlideId || slide.dataset.layoutKey || slide.id || '';
@@ -760,13 +806,16 @@ async function captureElement(el, slideRect, warnings, depth, slideIndex) {
     node.elementScreenshot = true;
     node.imageKind = 'unicorn-background';
     const textNodes = collectDomFallbackTextNodes(el, slideRect, slideIndex);
+    const overlayText = visibleTextInScreenshotRect(el, slideRect);
     if (textNodes.length) {
-      node.stripTextForScreenshot = true;
       node.children.push(...textNodes);
     }
+    if (textNodes.length || overlayText.count) node.stripTextForScreenshot = true;
     const risk = fallbackTextRisk(el, slideRect);
-    if (risk.count && textNodes.length) {
-      warnings.push({ slide: slideIndex, type: 'node-image-fallback-text-extracted', node: 'unicorn-background', textCount: textNodes.length, sample: risk.sample });
+    if (overlayText.count) {
+      warnings.push({ slide: slideIndex, type: 'node-image-fallback-text-extracted', node: 'unicorn-background', textCount: overlayText.count, sample: overlayText.sample, scope: 'screenshot-rect' });
+    } else if (risk.count && textNodes.length) {
+      warnings.push({ slide: slideIndex, type: 'node-image-fallback-text-extracted', node: 'unicorn-background', textCount: textNodes.length, sample: risk.sample, scope: 'descendant' });
     } else if (risk.count) {
       warnings.push({ slide: slideIndex, type: 'node-image-fallback-text-risk', node: 'unicorn-background', textCount: risk.count, sample: risk.sample });
     }
@@ -953,6 +1002,7 @@ function captureTextNode(textNode, parent, slideRect, style, slideIndex) {
     text: value,
     singleLine,
     parentTag: tag,
+    requiredText: parent.hasAttribute('data-editable-pptx-required-text'),
     href: parent.closest('a')?.href || undefined,
     children: [],
   };
@@ -1507,6 +1557,39 @@ function finishEditablePptxAnimations(scope) {
   } catch {}
 }
 
+function markUnicornOverlayText(slide, slideRect) {
+  slide.querySelectorAll?.('[data-editable-pptx-required-text]')?.forEach(el => {
+    el.removeAttribute('data-editable-pptx-required-text');
+  });
+  const frames = [...slide.querySelectorAll?.('.bt-unicorn-frame') || []]
+    .filter(el => isVisibleElement(el, slideRect))
+    .map(el => el.getBoundingClientRect());
+  if (!frames.length) return;
+  const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  const mark = (el) => {
+    if (el) el.setAttribute('data-editable-pptx-required-text', 'unicorn-overlay');
+  };
+  const walker = document.createTreeWalker(slide, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    if (!normalizeText(walker.currentNode.textContent || '')) continue;
+    const parent = walker.currentNode.parentElement;
+    if (!parent || !isVisibleElement(parent, slideRect)) continue;
+    const range = document.createRange();
+    range.selectNodeContents(walker.currentNode);
+    const rects = [...range.getClientRects()];
+    const bounds = range.getBoundingClientRect();
+    range.detach?.();
+    if ((rects.length ? rects : [bounds]).some(rect => rect.width > 1 && rect.height > 1 && frames.some(frame => intersects(rect, frame)))) {
+      mark(parent);
+    }
+  }
+  slide.querySelectorAll?.('svg text, text')?.forEach(el => {
+    if (!isVisibleElement(el, slideRect)) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 1 && rect.height > 1 && frames.some(frame => intersects(rect, frame))) mark(el);
+  });
+}
+
 function fallbackTextRisk(root, slideRect) {
   const texts = visibleTextInSubtree(root, slideRect);
   return { count: texts.length, sample: texts.join(' ').slice(0, 160) };
@@ -1531,6 +1614,44 @@ function visibleTextInSubtree(root, slideRect) {
   };
   walk(root);
   return texts;
+}
+
+function visibleTextInScreenshotRect(root, slideRect) {
+  const slide = root.closest('#deck > .slide') || root;
+  const targetRect = root.getBoundingClientRect();
+  const texts = [];
+  const seen = new Set();
+  const add = (text, rect) => {
+    const value = normalizeText(text || '');
+    if (!value || rect.width <= 1 || rect.height <= 1) return;
+    if (rect.right <= targetRect.left || rect.left >= targetRect.right || rect.bottom <= targetRect.top || rect.top >= targetRect.bottom) return;
+    const key = `${value}:${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(rect.width)}:${Math.round(rect.height)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    texts.push(value);
+  };
+  const walk = (node) => {
+    for (const child of node.childNodes || []) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        const parent = child.parentElement;
+        if (!parent || !isVisibleElement(parent, slideRect)) continue;
+        const range = document.createRange();
+        range.selectNodeContents(child);
+        const rects = [...range.getClientRects()];
+        const bounds = range.getBoundingClientRect();
+        range.detach?.();
+        for (const rect of rects.length ? rects : [bounds]) add(child.textContent || '', rect);
+      } else if (child.nodeType === Node.ELEMENT_NODE && isVisibleElement(child, slideRect)) {
+        walk(child);
+      }
+    }
+  };
+  walk(slide);
+  slide.querySelectorAll?.('svg text, text')?.forEach(el => {
+    if (!isVisibleElement(el, slideRect)) return;
+    add(el.textContent || '', el.getBoundingClientRect());
+  });
+  return { count: texts.length, sample: texts.join(' ').slice(0, 160) };
 }
 
 function collectDomFallbackTextNodes(root, slideRect, slideIndex) {
