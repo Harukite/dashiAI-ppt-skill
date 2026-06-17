@@ -1,6 +1,10 @@
 export const theme = {
   "key": "theme09",
-  "name": "09-深蓝杂志",
+  "displayName": "深蓝杂志风",
+  "label": "深蓝杂志风",
+  "name": "深蓝杂志风",
+  "scenario": "品牌故事、人物访谈、企业形象册、深度专题",
+  "audience": "公关团队、媒体编辑、创始人、企业品牌部",
   "mode": "new"
 };
 export const pages = [

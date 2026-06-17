@@ -96,8 +96,11 @@ for (const theme of goal.themes) {
     audit.conclusion = `已接入 ${pages.length} 页`;
     integratedThemes.push({
       key: theme.key,
-      label: theme.name,
-      name: theme.name,
+      displayName: themeDisplayName(theme),
+      label: themeDisplayName(theme),
+      name: themeDisplayName(theme),
+      scenario: theme.scenario || '',
+      audience: theme.audience || '',
       mode: theme.mode,
       pageCount: pages.length,
     });
@@ -1297,8 +1300,25 @@ function samplePages(pages) {
 function writeMetadata(themeDir, pages, theme) {
   fs.writeFileSync(
     path.join(themeDir, 'metadata.js'),
-    `export const theme = ${JSON.stringify({ key: theme.key, name: theme.name, mode: theme.mode }, null, 2)};\nexport const pages = ${JSON.stringify(pages, null, 2)};\n`,
+    `export const theme = ${JSON.stringify(themePackMetadata(theme), null, 2)};\nexport const pages = ${JSON.stringify(pages, null, 2)};\n`,
   );
+}
+
+function themePackMetadata(theme) {
+  const displayName = themeDisplayName(theme);
+  return {
+    key: theme.key,
+    displayName,
+    label: displayName,
+    name: displayName,
+    scenario: theme.scenario || '',
+    audience: theme.audience || '',
+    mode: theme.mode,
+  };
+}
+
+function themeDisplayName(theme) {
+  return theme.displayName || theme.label || theme.name || theme.key;
 }
 
 function writeGeneratedMetadata(themes, pages) {

@@ -1,6 +1,10 @@
 export const theme = {
   "key": "theme07",
-  "name": "07-冷白调研图谱",
+  "displayName": "冷白调研风",
+  "label": "冷白调研风",
+  "name": "冷白调研风",
+  "scenario": "调研报告、白皮书、竞品分析、学术/政策型表达",
+  "audience": "研究机构、咨询团队、政府/高校/智库、B2B 团队",
   "mode": "replace"
 };
 export const pages = [

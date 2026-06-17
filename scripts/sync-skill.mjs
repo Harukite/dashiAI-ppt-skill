@@ -252,7 +252,7 @@ function syncDistributionFiles() {
 
 function renderReadme({ packs }) {
   const version = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
-  const themes = packs.map(theme => `- ${theme.label} (${theme.pageCount} 页)`).join('\n');
+  const themes = packs.map(theme => `- \`${theme.key}\` ${themeDisplayName(theme)} (${theme.pageCount} 页): 适配场景: ${theme.scenario}; 适配人群: ${theme.audience}`).join('\n');
   return `# Dashi PPT Skill
 
 Dashi PPT Skill 是一个本地 PPT 生成助手。你给它一个汇报目标、受众、页数和内容重点,它会从已接入的视觉页面中组合出一份可离线打开、可翻页、可编辑和可导出的 HTML PPT。
@@ -326,7 +326,7 @@ scratch/
 }
 
 function renderThemeList(content, { packs }) {
-  const list = packs.map(theme => `  - \`${theme.key}\`: ${theme.label}`).join('\n');
+  const list = packs.map(theme => `  - \`${theme.key}\`: ${themeDisplayName(theme)} · 适配场景: ${theme.scenario} · 适配人群: ${theme.audience}`).join('\n');
   return content.replace(
     /- 当前可选风格:\n(?:  - `[^`]+`: .+\n)+/,
     `- 当前可选风格:\n${list}\n`,
@@ -393,7 +393,11 @@ function parseExportedJson(text, name) {
 }
 
 function renderOptionsReference({ packs }) {
-  const themes = packs.map(theme => `- \`${theme.key}\`: ${theme.label}`).join('\n');
+  const themes = [
+    '| themePack | 风格名 | 适配场景 | 适配人群 |',
+    '|---|---|---|---|',
+    ...packs.map(theme => `| \`${theme.key}\` | ${themeDisplayName(theme)} | ${theme.scenario} | ${theme.audience} |`),
+  ].join('\n');
   const firstLayout = packs[0] ? `${packs[0].key}_page001` : 'theme01_page001';
   const lastLayout = packs.at(-1) ? `${packs.at(-1).key}_page001` : firstLayout;
   return `# Current Options
@@ -433,7 +437,9 @@ function renderLayoutPoolReference({ packs, pages }) {
     const last = themePages.at(-1)?.key || first;
     return `## ${theme.key}
 
-- 主题名: ${theme.name}
+- 主题名: ${themeDisplayName(theme)}
+- 适配场景: ${theme.scenario}
+- 适配人群: ${theme.audience}
 - 页面数: ${theme.pageCount}
 - 页面 key: \`${first}\` 到 \`${last}\`
 - 封面候选: \`${theme.key}_page001\` 到 \`${theme.key}_page005\`,一个 deck 只选 1 页
@@ -472,4 +478,8 @@ function copyPath(from, to) {
     recursive: true,
     filter: source => !source.split(path.sep).some(part => MIGRATION_ONLY_DIRS.has(part.toLowerCase())),
   });
+}
+
+function themeDisplayName(theme) {
+  return theme.displayName || theme.label || theme.name || theme.key;
 }

@@ -1,6 +1,10 @@
 export const theme = {
   "key": "theme11",
-  "name": "11-高能增长图谱",
+  "displayName": "高能增长风",
+  "label": "高能增长风",
+  "name": "高能增长风",
+  "scenario": "增长复盘、商业计划、融资路演、市场扩张方案",
+  "audience": "创业者、增长团队、销售团队、VC/PE 路演团队",
   "mode": "new"
 };
 export const pages = [

@@ -13,7 +13,7 @@ export const LAYOUT_OPTIONS = Object.fromEntries([
   ...THEME_PAGES.map((page) => [
     page.key,
     {
-      label: `${page.themeKey} · ${String(page.pageNumber).padStart(3, '0')} · ${page.label}`,
+      label: `${THEME_PACK_OPTIONS[page.themeKey]?.label || page.themeKey} · ${page.themeKey} · ${String(page.pageNumber).padStart(3, '0')} · ${page.label}`,
       dataLayout: page.layout,
       component: makeImportedThemePage(page.key),
     },

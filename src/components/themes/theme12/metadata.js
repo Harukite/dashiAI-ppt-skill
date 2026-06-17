@@ -1,6 +1,10 @@
 export const theme = {
   "key": "theme12",
-  "name": "12-声波霓虹",
+  "displayName": "声波霓虹风",
+  "label": "声波霓虹风",
+  "name": "声波霓虹风",
+  "scenario": "音乐娱乐、潮流活动、直播内容、年轻化发布",
+  "audience": "娱乐品牌、活动策划、内容团队、潮流消费品牌",
   "mode": "replace"
 };
 export const pages = [

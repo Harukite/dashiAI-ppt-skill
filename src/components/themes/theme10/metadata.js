@@ -1,6 +1,10 @@
 export const theme = {
   "key": "theme10",
-  "name": "10-金色指数图表",
+  "displayName": "金色指数风",
+  "label": "金色指数风",
+  "name": "金色指数风",
+  "scenario": "金融数据、投资报告、商业指数、年度榜单",
+  "audience": "投资机构、金融分析师、咨询公司、商业媒体",
   "mode": "new"
 };
 export const pages = [

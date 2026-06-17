@@ -56,6 +56,7 @@ const ROLE_ALIASES = {
 
 const contracts = createLayoutContracts(THEME_PAGES);
 const pagesByKey = new Map(THEME_PAGES.map(page => [page.key, page]));
+const themePacksByKey = new Map(THEME_PACKS.map(theme => [theme.key, theme]));
 const manifest = readManifest();
 
 export function parseArgs(argv) {
@@ -121,6 +122,7 @@ export function inspectLayout(layout, { compact = false } = {}) {
   const record = getLayoutRecord(layout);
   if (!record) return null;
   const { page, contract, controls, countBindings, defaultProps } = record;
+  const theme = getThemePackMetadata(page.themeKey);
   const controlKeys = controls.map(control => control.key).filter(Boolean);
   const mediaSlots = getMediaSlots(record);
   const copyKeys = getCopyKeys(defaultProps, controls, mediaSlots);
@@ -132,6 +134,9 @@ export function inspectLayout(layout, { compact = false } = {}) {
   const base = {
     layout: page.key,
     theme: page.themeKey,
+    themeDisplayName: themeDisplayName(theme, page.themeKey),
+    themeScenario: theme?.scenario || null,
+    themeAudience: theme?.audience || null,
     pageNumber: page.pageNumber,
     label: page.label,
     slot: page.slot,
@@ -147,6 +152,10 @@ export function inspectLayout(layout, { compact = false } = {}) {
   if (compact) {
     return {
       layout: base.layout,
+      theme: base.theme,
+      themeDisplayName: base.themeDisplayName,
+      themeScenario: base.themeScenario,
+      themeAudience: base.themeAudience,
       label: base.label,
       slot: base.slot,
       roles: base.roles,
@@ -257,8 +266,16 @@ export function getLayoutRecord(layout) {
   };
 }
 
+export function getThemePackMetadata(themeKey) {
+  return themePacksByKey.get(themeKey) || null;
+}
+
 export function layoutExists(layout) {
   return pagesByKey.has(layout);
+}
+
+function themeDisplayName(theme, fallback) {
+  return theme?.displayName || theme?.label || theme?.name || fallback;
 }
 
 export function isCoverCandidate(layout) {

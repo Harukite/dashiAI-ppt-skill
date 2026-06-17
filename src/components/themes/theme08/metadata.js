@@ -1,6 +1,10 @@
 export const theme = {
   "key": "theme08",
-  "name": "08-黑金实验质感",
+  "displayName": "黑金实验风",
+  "label": "黑金实验风",
+  "name": "黑金实验风",
+  "scenario": "高端发布、品牌提案、实验性概念、奢华科技叙事",
+  "audience": "高端品牌、创意总监、科技品牌、发布会策划团队",
   "mode": "replace"
 };
 export const pages = [

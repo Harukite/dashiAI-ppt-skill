@@ -1,6 +1,10 @@
 export const theme = {
   "key": "theme06",
-  "name": "06-深色数据图谱",
+  "displayName": "深色图谱风",
+  "label": "深色图谱风",
+  "name": "深色图谱风",
+  "scenario": "高密度数据展示、战略分析、科技/金融/产业报告",
+  "audience": "战略团队、投资人、产业研究团队、高管汇报者",
   "mode": "new"
 };
 export const pages = [

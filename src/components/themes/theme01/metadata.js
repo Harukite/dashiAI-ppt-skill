@@ -1,6 +1,10 @@
 export const theme = {
   "key": "theme01",
-  "name": "01-轻拟态质感",
+  "displayName": "轻拟态风",
+  "label": "轻拟态风",
+  "name": "轻拟态风",
+  "scenario": "产品介绍、企业汇报、方案说明、轻量级发布",
+  "audience": "创业团队、产品经理、销售顾问、企业内部汇报者",
   "mode": "replace"
 };
 export const pages = [

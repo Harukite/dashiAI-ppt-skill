@@ -42,6 +42,9 @@ export const THEME_PACK_OPTIONS = Object.fromEntries(
     theme.key,
     {
       label: theme.label,
+      displayName: theme.displayName,
+      scenario: theme.scenario,
+      audience: theme.audience,
       layouts: THEME_PAGES.filter(page => page.themeKey === theme.key).map(page => page.key),
     },
   ]),

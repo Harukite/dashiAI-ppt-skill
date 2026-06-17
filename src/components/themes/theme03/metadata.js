@@ -1,6 +1,10 @@
 export const theme = {
   "key": "theme03",
-  "name": "03-深浅代码风",
+  "displayName": "深浅代码风",
+  "label": "深浅代码风",
+  "name": "深浅代码风",
+  "scenario": "技术方案、开发者大会、系统架构、AI 工程实践",
+  "audience": "工程师、技术管理者、架构师、开发者社区",
   "mode": "replace"
 };
 export const pages = [

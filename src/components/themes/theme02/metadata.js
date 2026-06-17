@@ -1,6 +1,10 @@
 export const theme = {
   "key": "theme02",
-  "name": "02-炫光紫绿",
+  "displayName": "炫光紫绿风",
+  "label": "炫光紫绿风",
+  "name": "炫光紫绿风",
+  "scenario": "科技发布会、AI/自动驾驶/机器人主题、增长故事、创新项目展示",
+  "audience": "科技公司创始人、技术负责人、品牌市场团队、投资路演团队",
   "mode": "replace"
 };
 export const pages = [
