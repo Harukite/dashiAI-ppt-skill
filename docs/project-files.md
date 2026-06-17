@@ -48,6 +48,7 @@
 |   |-- validate-goal-spec.mjs - 本地命令脚本。
 |   |-- validate-layout-showcase.mjs - 本地命令脚本。
 |   |-- validate-overview-performance.mjs - 本地命令脚本。
+|   |-- validate-pdf-export.mjs - 本地命令脚本。
 |   |-- validate-skill-media-workflow.mjs - 本地命令脚本。
 |   |-- validate-skill-workflow-tools.mjs - 本地命令脚本。
 |   |-- validate-swiss-deck.mjs - 本地命令脚本。
@@ -1183,6 +1184,8 @@
 |   |   |   |-- runtime-helpers.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   |   `-- unicorn-background.jsx - Claude Design 导入主题组件、运行时、素材或登记元数据。
 |   |   `-- index.jsx - 项目源码或配置文件。
+|   |-- export-pdf/
+|   |   `-- screenshot.mjs - 项目源码或配置文件。
 |   |-- export-pptx/
 |   |   `-- editable.mjs - 项目源码或配置文件。
 |   |-- view-model/

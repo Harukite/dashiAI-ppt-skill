@@ -22,6 +22,7 @@
     "validate:skill-workflow-tools": "node scripts/validate-skill-workflow-tools.mjs",
     "validate:skill-media-workflow": "node scripts/validate-skill-media-workflow.mjs",
     "validate:swiss": "node scripts/validate-swiss-deck.mjs",
+    "validate:pdf-export": "node scripts/validate-pdf-export.mjs",
     "validate:editor-presenter-modes": "npm run render:themes && node scripts/validate-editor-presenter-modes.mjs",
     "validate:editor-presenter-modes:only": "node scripts/validate-editor-presenter-modes.mjs",
     "validate:editor-ui-polish": "npm run render:themes && node scripts/validate-editor-ui-polish.mjs",
@@ -44,7 +45,9 @@
     "three": "^0.177.0"
   },
   "devDependencies": {
+    "pdf-lib": "^1.17.1",
     "playwright-core": "^1.60.0",
+    "pngjs": "^7.0.0",
     "tsx": "^4.20.0"
   }
 }
