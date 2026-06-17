@@ -324,6 +324,9 @@ function serializeThemePacks(registry) {
       key,
       {
         label: option.label,
+        displayName: option.displayName,
+        scenario: option.scenario,
+        audience: option.audience,
         layouts: option.layouts || [],
       },
     ]),

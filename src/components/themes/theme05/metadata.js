@@ -1,6 +1,10 @@
 export const theme = {
   "key": "theme05",
-  "name": "05-PULSE 色谱图表",
+  "displayName": "色谱图表风",
+  "label": "色谱图表风",
+  "name": "色谱图表风",
+  "scenario": "数据报告、市场分析、KPI 复盘、行业研究",
+  "audience": "数据分析师、咨询顾问、研究员、业务负责人",
   "mode": "new"
 };
 export const pages = [

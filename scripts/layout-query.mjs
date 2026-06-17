@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import {
   compactJson,
+  getThemePackMetadata,
   listLayouts,
   parseArgs,
 } from './skill-workflow-utils.mjs';
@@ -17,6 +18,7 @@ const result = {
   mediaCount,
   limit: Number(args.limit || 12),
 };
+const themeMetadata = result.theme ? getThemePackMetadata(result.theme) : null;
 
 const layouts = listLayouts({
   theme: result.theme,
@@ -33,9 +35,16 @@ const layouts = listLayouts({
 
 process.stdout.write(compactJson({
   ...result,
+  themeDisplayName: themeDisplayName(themeMetadata, result.theme),
+  themeScenario: themeMetadata?.scenario || null,
+  themeAudience: themeMetadata?.audience || null,
   count: layouts.length,
   layouts,
 }));
+
+function themeDisplayName(theme, fallback) {
+  return theme?.displayName || theme?.label || theme?.name || fallback || null;
+}
 
 function getMediaIntent(args) {
   if (args['provided-images']) return 'provided-images';

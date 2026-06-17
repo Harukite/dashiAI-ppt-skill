@@ -1,6 +1,10 @@
 export const theme = {
   "key": "theme04",
-  "name": "04-玻璃糖果",
+  "displayName": "玻璃糖果风",
+  "label": "玻璃糖果风",
+  "name": "玻璃糖果风",
+  "scenario": "年轻化品牌、消费产品、创意提案、社媒感内容",
+  "audience": "品牌团队、设计师、内容创作者、消费品团队",
   "mode": "replace"
 };
 export const pages = [

@@ -28,6 +28,7 @@
     "validate:overview-performance": "npm run render:themes && node scripts/validate-overview-performance.mjs",
     "validate:overview-performance:only": "node scripts/validate-overview-performance.mjs",
     "validate:goal-copy": "node scripts/validate-goal-copy.mjs",
+    "validate:theme-display-names": "node scripts/validate-theme-display-names.mjs",
     "test": "npm run render:themes && npm run validate:swiss -- output/theme-preview/ppt/index.html"
   },
   "dependencies": {
