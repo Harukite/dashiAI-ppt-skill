@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +13,7 @@ const tests = [
   ['write-safe-props preserves default array tail and count', testWriteSafeProps],
   ['media workflow supports planned/provided/image-gen slots', testMediaWorkflow],
   ['deck composer constrains media-aware roles', testDeckComposerMediaRoles],
+  ['skill prompt keeps user-visible style and image-slot guidance', testSkillPromptGuidance],
   ['validate-goal-spec rejects unsafe goal shapes', testValidateGoalSpec],
   ['preview panel handles type: images as an image list control', testImagesControl],
 ];
@@ -213,6 +214,25 @@ function testDeckComposerMediaRoles() {
     }
   `;
   execFileSync(tsx, ['-e', script], { cwd: ROOT, stdio: 'pipe' });
+}
+
+function testSkillPromptGuidance() {
+  const skill = readFileSync(path.join(ROOT, 'SKILL.md'), 'utf8');
+  const sync = readFileSync(path.join(ROOT, 'scripts/sync-skill.mjs'), 'utf8');
+  const missing = [];
+  if (!skill.includes('assets/skill/theme-style-grid.png')) missing.push('style grid image path');
+  if (!(/风格选择提问/.test(skill) && /用户可见回复/.test(skill))) missing.push('user-visible style-choice reply rule');
+  if (!/不能只在.*进度/.test(skill)) missing.push('progress-only style image warning');
+  if (!(/用户未提供图片/.test(skill) && /询问/.test(skill) && /预留图片槽/.test(skill))) missing.push('ask-to-reserve-image-slots rule');
+  for (const term of ['作品集', '品牌', '产品', '案例', '活动', '发布', '社媒', '设计', '人物', '团队', '方案展示']) {
+    if (!skill.includes(term)) missing.push(`visual task trigger ${term}`);
+  }
+  if (!(/不能默认.*图片 slot.*0/.test(skill) || /不能默认.*图片槽.*0/.test(skill))) missing.push('do-not-default-image-slot-count-to-0 rule');
+  if (!skill.includes('--planned-images <n>')) missing.push('planned-images workflow guidance');
+  if (!skill.includes('--provided-images <n>')) missing.push('provided-images workflow guidance');
+  if (!skill.includes('--image-gen')) missing.push('image-gen workflow guidance');
+  if (!sync.includes('theme-style-grid.png')) missing.push('sync style grid asset handling');
+  assert(!missing.length, `Skill prompt guidance missing: ${missing.join(', ')}`);
 }
 
 function testValidateGoalSpec() {

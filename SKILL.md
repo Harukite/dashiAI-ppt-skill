@@ -30,7 +30,7 @@ node scripts/check_latest_version.mjs
 ## 使用规则
 
 - 运行生成器需要 Node.js 18+ 和 npm;首次生成时渲染脚本会在 Skill 内置 `project/` 目录安装依赖。
-- 开始阶段先确认用户想要的风格。用户没有明确指定时,先列出全部可选风格并询问,不要直接生成。
+- 开始阶段先确认用户想要的风格。用户没有明确指定时,风格选择提问的用户可见回复必须嵌入 `assets/skill/theme-style-grid.png`;发送前把 Skill 根目录展开成绝对路径,例如 `![风格选择参考](<skill-root>/assets/skill/theme-style-grid.png)`。不能只在内部进度提示中提到这张图,不要只发文字编号让用户选。
 - 当前可选风格:
   - `theme01`: 01-轻拟态质感
   - `theme02`: 02-炫光紫绿
@@ -47,7 +47,7 @@ node scripts/check_latest_version.mjs
 - 不使用旧 token、旧主题、旧图片 slot、旧风格分支或旧入场动画控制。
 - 普通生成不要直接打开大型 `layout-manifest.json` 或 `generated-metadata.js`。选页先运行 `npm run layout:query -- --theme <themePack> --role <role> --limit 8`;需要图片槽时加 `--needs-media`、`--planned-images <n>`、`--provided-images <n>` 或 `--image-gen`。
 - 选定页面后运行 `npm run inspect:layout -- <layout>` 查看 `copyKeys`、`mediaSlots`、`countBindings` 和 `controlKeys`;写复杂数组或图片 props 前运行 `npm run props:safe -- <layout> '<props-json>' [--images <path...>]`。
-- 图片和视频的真实写入点是页面 `props.images` / `props.media`;不要写顶层 `media` 或 `slides[].media`。用户只提供纯文本但计划后续插图时,用带 media slot 的页面并保留 slot;需要 image-gen 时先询问用户是否同意。
+- 图片和视频的真实写入点是页面 `props.images` / `props.media`;不要写顶层 `media` 或 `slides[].media`。用户未提供图片时,如果任务类型可能需要视觉素材,例如作品集、品牌、产品、案例、活动、发布、社媒、设计、人物、团队、方案展示等,必须先询问是否预留图片槽;用户确认不需要时才选纯文案页或隐藏图片槽。不能默认把图片 slot 数量设为 0。用户说要预留图片时使用 `--planned-images <n>`,用户提供图片时使用 `--provided-images <n>`,需要 image-gen 时先询问用户是否同意并使用 `--image-gen`。
 - 元素出现动画使用 Claude Design 页面组件自带的原生效果。
 - 页面切换动画可以在预览控制面板里调整。
 - 面向用户交付的 deck 默认不显示风格/主题切换选项;风格切换只保留在内部调试 demo 页面。用户明确要求保留主题切换时,在 goal 顶层写 `preview: {"themeSwitcher": true}`。
@@ -65,7 +65,7 @@ node scripts/check_latest_version.mjs
 
 1. 提炼用户目标: `title`、`goal`、`audience`、`owner`、页数和内容重点。
 2. 确认 `themePack`。用户未指定时先询问风格;用户选定后生成 `randomSeed`,例如 `<主题>-<日期>-<3位随机词>`,保证随机选页可复现。
-3. 判断图片意图:用户已给图片用 `--provided-images <n>`;用户计划后续配图用 `--planned-images <n>`;需要生图用 `--image-gen` 并先询问。
+3. 判断图片意图:用户已给图片用 `--provided-images <n>`;用户计划后续配图用 `--planned-images <n>`;需要生图用 `--image-gen` 并先询问。用户未提供图片但任务天然需要视觉素材时,先问是否预留图片槽,不要默认把图片 slot 设为 0。
 4. 用 `layout:query` 选候选,用 `inspect:layout` 确认可写字段和 media slot,用 `props:safe` 生成安全 props。
 5. 每页只承载一个主要信息角色。无法安全覆盖的页面优先换 layout,不要改样式字段硬凑。
 6. 把 JSON 写入本次工作目录的 `output/<deck-name>/goal.json`;渲染前必须通过 goal spec 校验。

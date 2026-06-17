@@ -7,6 +7,8 @@
 |-- .githooks/
 |   `-- pre-commit - 项目源码或配置文件。
 |-- assets/
+|   |-- skill/
+|   |   `-- theme-style-grid.png - 静态模板或浏览器运行时资源。
 |   |-- unicorn/
 |   |   |-- automations_remix_scene.json - 静态模板或浏览器运行时资源。
 |   |   |-- goey_balls_remix_scene.json - 静态模板或浏览器运行时资源。

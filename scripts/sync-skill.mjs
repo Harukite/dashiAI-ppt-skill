@@ -7,9 +7,11 @@ const SKILL_ROOT = process.env.DASHI_PPT_SKILL_ROOT || path.join(os.homedir(), '
 const sourcePath = path.join(ROOT, 'SKILL.md');
 const rootSkillPath = path.join(SKILL_ROOT, 'SKILL.md');
 const MIGRATION_ONLY_DIRS = new Set(['uploads', 'screens', 'screenshots', 'shots', 'scratch']);
+const STYLE_GRID_ASSET = path.join('assets', 'skill', 'theme-style-grid.png');
 
 const themeMetadata = loadThemeMetadata();
 const source = renderThemeList(fs.readFileSync(sourcePath, 'utf8'), themeMetadata);
+const preservedSkillAssets = preserveSkillAssets();
 
 writeIfChanged(sourcePath, source);
 fs.rmSync(SKILL_ROOT, { recursive: true, force: true });
@@ -18,6 +20,7 @@ syncReferences();
 syncRunnerScript();
 syncVersionCheckScript();
 syncDistributionFiles();
+syncSkillAssets(preservedSkillAssets);
 writeIfChanged(rootSkillPath, renderInstalledSkill(source));
 
 console.log(`Synced SKILL.md to ${SKILL_ROOT}`);
@@ -250,6 +253,25 @@ function syncDistributionFiles() {
   writeIfChanged(path.join(SKILL_ROOT, '.gitignore'), renderGitignore());
 }
 
+function preserveSkillAssets() {
+  const sourceAsset = path.join(ROOT, STYLE_GRID_ASSET);
+  if (fs.existsSync(sourceAsset)) return new Map([[STYLE_GRID_ASSET, fs.readFileSync(sourceAsset)]]);
+  const installedAsset = path.join(SKILL_ROOT, STYLE_GRID_ASSET);
+  if (fs.existsSync(installedAsset)) return new Map([[STYLE_GRID_ASSET, fs.readFileSync(installedAsset)]]);
+  return new Map();
+}
+
+function syncSkillAssets(preservedAssets) {
+  const sourceAsset = path.join(ROOT, STYLE_GRID_ASSET);
+  const targetAsset = path.join(SKILL_ROOT, STYLE_GRID_ASSET);
+  if (fs.existsSync(sourceAsset)) {
+    copyPath(sourceAsset, targetAsset);
+    return;
+  }
+  const preserved = preservedAssets.get(STYLE_GRID_ASSET);
+  if (preserved) writeBufferIfChanged(targetAsset, preserved);
+}
+
 function renderReadme({ packs }) {
   const version = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
   const themes = packs.map(theme => `- ${theme.label} (${theme.pageCount} 页)`).join('\n');
@@ -462,6 +484,12 @@ ${sections}
 function writeIfChanged(filePath, content) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   if (fs.existsSync(filePath) && fs.readFileSync(filePath, 'utf8') === content) return;
+  fs.writeFileSync(filePath, content);
+}
+
+function writeBufferIfChanged(filePath, content) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  if (fs.existsSync(filePath) && fs.readFileSync(filePath).equals(content)) return;
   fs.writeFileSync(filePath, content);
 }
 
