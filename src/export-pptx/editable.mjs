@@ -244,7 +244,8 @@ async function resolveElementScreenshots(page, root, warnings, options = {}) {
     try {
       if (node.stripTextForScreenshot || node.stripOverlayForScreenshot) {
         hiddenToken = await page.evaluate(({ exportId, mode, stripText, stripOverlay }) => {
-          const root = document.querySelector(`[data-editable-pptx-export-id="${exportId}"]`);
+          const root = document.querySelector(`#deck > .slide.active [data-editable-pptx-export-id="${exportId}"], #deck > .slide[data-deck-active] [data-editable-pptx-export-id="${exportId}"]`)
+            || document.querySelector(`[data-editable-pptx-export-id="${exportId}"]`);
           if (!root) return null;
           const token = `hide-${Date.now()}-${Math.random().toString(36).slice(2)}`;
           const entries = [];
@@ -352,7 +353,10 @@ async function resolveElementScreenshots(page, root, warnings, options = {}) {
           stripOverlay: Boolean(node.stripOverlayForScreenshot),
         });
       }
-      const bytes = await page.locator(`[data-editable-pptx-export-id="${node.exportId}"]`).screenshot({ type: 'png' });
+      if (hiddenToken) {
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      }
+      const bytes = await page.locator(`#deck > .slide.active [data-editable-pptx-export-id="${node.exportId}"], #deck > .slide[data-deck-active] [data-editable-pptx-export-id="${node.exportId}"]`).first().screenshot({ type: 'png' });
       node.imageData = `data:image/png;base64,${bytes.toString('base64')}`;
       if (hiddenToken) {
         await page.evaluate(token => {
@@ -367,7 +371,8 @@ async function resolveElementScreenshots(page, root, warnings, options = {}) {
       }
       if (!options.freeze) continue;
       await page.evaluate(({ exportId, data }) => {
-        const el = document.querySelector(`[data-editable-pptx-export-id="${exportId}"]`);
+        const el = document.querySelector(`#deck > .slide.active [data-editable-pptx-export-id="${exportId}"], #deck > .slide[data-deck-active] [data-editable-pptx-export-id="${exportId}"]`)
+          || document.querySelector(`[data-editable-pptx-export-id="${exportId}"]`);
         if (!el) return;
         el.replaceChildren();
         const img = document.createElement('img');
@@ -503,6 +508,8 @@ async function installBrowserCollector(page) {
         ${shadowOutsetPx.toString()}
         ${splitShadowLayers.toString()}
         ${shouldUseLocalMaterialFallback.toString()}
+        ${isEditableTextContainer.toString()}
+        ${isInsideEditableTextContainer.toString()}
         ${hasOnlyInlineTextChildren.toString()}
         ${isInlineTextOnlyElement.toString()}
         ${shouldSkipDecorativeGradientFallback.toString()}
@@ -598,9 +605,10 @@ function renderBox(slide, node, slideRect, warnings, totals) {
   const borderTriangle = cssBorderTriangle(style, c);
   const hasLocalBackgroundImage = node.backgroundImageData || node.patternImageData;
   const polygonPoints = borderTriangle?.points || cssClipPolygonPoints(style.clipPath, c);
+  const allowGradientFillApproximation = !hasLocalBackgroundImage && !shouldSuppressGradientFillApproximation(node, style, c);
   const fill = borderTriangle?.fill || (isTextClippedBackground(style)
     ? parseCssColor(style.backgroundColor)
-    : parseCssColor(style.backgroundColor) || (hasLocalBackgroundImage ? null : colorFromBackgroundImage(style.backgroundImage)));
+    : parseCssColor(style.backgroundColor) || (allowGradientFillApproximation ? colorFromBackgroundImage(style.backgroundImage) : null));
   const radiusPx = maxCssRadius(style, node.rect?.w || 0, node.rect?.h || 0);
   const radius = Math.min(radiusPx, 48) / slideRect.w * PPT_W;
   const borders = readBorders(style);
@@ -1048,7 +1056,12 @@ async function captureElement(el, slideRect, warnings, depth, slideIndex) {
     node.exportId = exportId;
     node.elementScreenshot = true;
     node.imageKind = 'material-background';
-    node.stripTextForScreenshot = visibleTextInScreenshotRect(el, slideRect).count > 0;
+    const materialText = fallbackTextRisk(el, slideRect);
+    const overlayText = visibleTextInScreenshotRect(el, slideRect);
+    node.stripTextForScreenshot = materialText.count > 0 || overlayText.count > 0;
+    if (materialText.count || overlayText.count) {
+      warnings.push({ slide: slideIndex, type: 'node-image-fallback-text-extracted', node: 'material-background', textCount: Math.max(materialText.count, overlayText.count), sample: materialText.sample || overlayText.sample });
+    }
     warnings.push({ slide: slideIndex, type: 'node-image-fallback', node: 'material-background', count: 1, source: 'browser-local-material' });
   }
 
@@ -1471,6 +1484,8 @@ function shouldUseLocalMaterialFallback(el, style, clipped, slideRect) {
   const tag = el.tagName.toLowerCase();
   if (['section', 'main', 'article', 'svg', 'canvas', 'img', 'video'].includes(tag)) return false;
   if (/^h[1-6]$/.test(tag) || ['p', 'li', 'td', 'th', 'blockquote'].includes(tag)) return false;
+  if (isEditableTextContainer(el)) return false;
+  if (!(el.innerText || el.textContent || '').trim() && isInsideEditableTextContainer(el)) return false;
   if (el.querySelector?.('svg, canvas, img, video')) return false;
   const rawRect = el.getBoundingClientRect();
   const slideLeft = Number(slideRect.left ?? slideRect.x ?? 0);
@@ -1507,6 +1522,23 @@ function shouldUseLocalMaterialFallback(el, style, clipped, slideRect) {
   return Boolean(hasDepth);
 }
 
+function isEditableTextContainer(el) {
+  return el.isContentEditable
+    || String(el.getAttribute?.('contenteditable') || '').toLowerCase() === 'true'
+    || String(el.getAttribute?.('role') || '').toLowerCase() === 'textbox'
+    || el.hasAttribute?.('data-editable-id')
+    || el.hasAttribute?.('data-editable-ready');
+}
+
+function isInsideEditableTextContainer(el) {
+  const slide = el.closest?.('#deck > .slide');
+  for (let parent = el.parentElement; parent && parent !== slide?.parentElement; parent = parent.parentElement) {
+    if (isEditableTextContainer(parent)) return true;
+    if (parent === slide) break;
+  }
+  return false;
+}
+
 function hasOnlyInlineTextChildren(el) {
   return [...(el.children || [])].every(child => isInlineTextOnlyElement(child));
 }
@@ -1533,9 +1565,24 @@ function shouldSkipDecorativeGradientFallback(el, style, clipped, slideRect) {
       && rect.height > 2;
   });
   if (visibleChildren.length) return false;
+  if (background.includes('radial-gradient') && transparentCssPaint(style.backgroundColor) && !String(style.filter || '').includes('blur(')) return false;
   return String(style.filter || '').includes('blur(')
-    || background.includes('radial-gradient')
     || Number(style.opacity || 1) < 0.9;
+}
+
+function shouldSuppressGradientFillApproximation(node, style, c) {
+  const background = String(style.backgroundImage || '');
+  if (!background.includes('radial-gradient') || !backgroundHasTransparentStop(background)) return false;
+  const areaRatio = (c.w || 0) * (c.h || 0) / Math.max(0.0001, PPT_W * PPT_H);
+  if (areaRatio <= 0.12) return false;
+  return !(node.children || []).length;
+}
+
+function backgroundHasTransparentStop(value) {
+  const raw = String(value || '').toLowerCase();
+  return raw.includes('transparent')
+    || /rgba?\([^)]*,\s*0(?:\.0+)?\s*\)/i.test(raw)
+    || /\/\s*0(?:\.0+)?\s*\)/i.test(raw);
 }
 
 function transparentCssPaint(value) {
@@ -1838,6 +1885,7 @@ function drawRadialGradient(ctx, layer, width, height) {
   let cx = width / 2;
   let cy = height / 2;
   const first = String(args[0] || '');
+  const firstLower = first.toLowerCase();
   if (!/^(?:rgba?|#)/i.test(first.trim())) {
     const at = first.match(/\bat\s+([-\d.]+)%?\s+([-\d.]+)%?/i);
     if (at) {
@@ -1846,7 +1894,9 @@ function drawRadialGradient(ctx, layer, width, height) {
     }
     startIndex = 1;
   }
-  const radius = Math.max(width, height) * 0.72;
+  const radius = firstLower.includes('closest-side')
+    ? Math.max(1, Math.min(cx, cy, width - cx, height - cy))
+    : Math.max(width, height) * 0.72;
   const stops = normalizeGradientStops(parseGradientColorStops(args.slice(startIndex)), radius);
   if (stops.length < 2) return;
   const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
