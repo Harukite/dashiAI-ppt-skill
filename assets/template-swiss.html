@@ -126,11 +126,12 @@
   .preview-field label,.preview-prop-row>span{font:600 13px/1.2 var(--sans);letter-spacing:0;color:var(--pp-fg);text-transform:none}
   .preview-field select{height:34px;border:1px solid transparent;border-radius:6px;background:var(--pp-chip);color:var(--pp-fg);padding:0 10px;font:500 12.5px/1 var(--sans-zh);cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 9px center;padding-right:30px}
   .preview-field select:hover{background-color:var(--pp-chip-h)}
-  .preview-transition-color-control{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:10px}
-  #preview-transition-color{width:42px;height:34px;padding:0;border:1px solid var(--pp-border);border-radius:7px;background:var(--pp-chip);cursor:pointer}
-  #preview-transition-color::-webkit-color-swatch-wrapper{padding:3px}
-  #preview-transition-color::-webkit-color-swatch{border:0;border-radius:5px}
-  .preview-transition-color-value{height:34px;display:flex;align-items:center;padding:0 10px;border-radius:7px;background:var(--pp-chip);color:var(--pp-fg2);font:600 12px/1 var(--mono);letter-spacing:.02em;text-transform:uppercase}
+  .preview-transition-color-control{display:block}
+  .preview-transition-color-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .preview-transition-color-option{height:32px;border:1px solid var(--pp-border);border-radius:7px;background:var(--transition-color,#05070b);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);cursor:pointer;transition:transform .14s var(--ease-prod),box-shadow .14s var(--ease-prod),border-color .14s var(--ease-prod)}
+  .preview-transition-color-option:hover{transform:scale(1.04)}
+  .preview-transition-color-option.is-active{border-color:var(--pp-blue);box-shadow:inset 0 0 0 1px rgba(0,0,0,.18),0 0 0 2px var(--pp-bg),0 0 0 4px var(--pp-blue)}
+  .preview-transition-color-option:focus-visible{outline:2px solid var(--pp-blue);outline-offset:3px}
   .preview-props{display:grid;gap:13px}
   /* property rows */
   .preview-prop-row{display:grid;grid-template-columns:minmax(92px,max-content) minmax(0,1fr);align-items:center;gap:10px}
@@ -356,10 +357,9 @@
       </select>
     </div>
     <div class="preview-field is-hidden" id="preview-transition-color-field">
-      <label for="preview-transition-color">色块颜色</label>
+      <label>色块颜色</label>
       <div class="preview-transition-color-control">
-        <input id="preview-transition-color" type="color" value="#05070b" aria-label="色块颜色">
-        <div class="preview-transition-color-value" id="preview-transition-color-value">#05070B</div>
+        <div class="preview-transition-color-options" id="preview-transition-color-options" role="radiogroup" aria-label="色块颜色"></div>
       </div>
     </div>
     <div class="preview-field is-hidden" id="preview-props-field">
@@ -430,8 +430,20 @@
     sliceHorizontal:'#f7f7f2',
     sliceGallery:'#f7f7f2',
   };
+  const transitionColorPalette = [
+    '#05070b',
+    '#111111',
+    '#f7f7f2',
+    '#b91c1c',
+    '#f97316',
+    '#facc15',
+    '#16a34a',
+    '#2563eb',
+    '#7c3aed',
+  ];
   window.__pageTransitionMode = 'none';
   window.__pageTransitionColorDefaults = transitionColorDefaults;
+  window.__pageTransitionColorPalette = transitionColorPalette;
   window.__pageTransitionColors = {};
   window.__setPageTransition = value => {
     window.__pageTransitionMode = window.__pageTransitionModes.includes(value) ? value : 'none';
@@ -444,7 +456,8 @@
   };
   window.__getPageTransitionColor = mode => window.__pageTransitionColors[mode] || transitionColorDefaults[mode] || '#05070b';
   function normalizeTransitionColor(value){
-    return /^#[0-9a-f]{6}$/i.test(value || '') ? value.toLowerCase() : '';
+    const color = /^#[0-9a-f]{6}$/i.test(value || '') ? value.toLowerCase() : '';
+    return transitionColorPalette.includes(color) ? color : '';
   }
   function updateHint(){
     const hint = document.getElementById('hint');
@@ -3373,8 +3386,7 @@ refreshRailCatalog();
   const themePackSelect = document.getElementById('preview-theme-pack');
   const transitionSelect = document.getElementById('preview-transition');
   const transitionColorField = document.getElementById('preview-transition-color-field');
-  const transitionColorInput = document.getElementById('preview-transition-color');
-  const transitionColorValue = document.getElementById('preview-transition-color-value');
+  const transitionColorOptions = document.getElementById('preview-transition-color-options');
 
   const urlViewState = window.__deckUrlStateInitial?.view || {};
   const saved = readSaved();
@@ -3399,6 +3411,7 @@ refreshRailCatalog();
   refreshDeckSlides();
   window.__setActiveThemePack?.(state.themePack || document.documentElement.dataset.themePack || 'theme3', {navigate:false});
   refreshDeckSlides();
+  renderTransitionColorOptions();
   syncTransitionControl();
   applyStoredSlideControls();
   renderPropControls();
@@ -3459,7 +3472,8 @@ refreshRailCatalog();
   }
 
   function normalizeTransitionColor(value){
-    return /^#[0-9a-f]{6}$/i.test(value || '') ? value.toLowerCase() : '';
+    const color = /^#[0-9a-f]{6}$/i.test(value || '') ? value.toLowerCase() : '';
+    return (window.__pageTransitionColorPalette || []).includes(color) ? color : '';
   }
 
   function sanitizeTransitionColors(source){
@@ -3478,14 +3492,6 @@ refreshRailCatalog();
     syncTransitionColorControl();
     transitionSelect.blur();
     writeSaved();
-  });
-
-  transitionColorInput?.addEventListener('input', () => {
-    updateTransitionColor(transitionColorInput.value, {persist:true});
-  });
-
-  transitionColorInput?.addEventListener('change', () => {
-    updateTransitionColor(transitionColorInput.value, {persist:true});
   });
 
   themePackSelect?.addEventListener('change', () => {
@@ -3515,16 +3521,37 @@ refreshRailCatalog();
     syncTransitionColorControl();
   }
 
+  function renderTransitionColorOptions(){
+    if(!transitionColorOptions) return;
+    transitionColorOptions.innerHTML = '';
+    (window.__pageTransitionColorPalette || []).forEach(color => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'preview-transition-color-option';
+      option.setAttribute('data-transition-color-option', 'true');
+      option.dataset.transitionColor = color;
+      option.style.setProperty('--transition-color', color);
+      option.setAttribute('role', 'radio');
+      option.setAttribute('aria-checked', 'false');
+      option.setAttribute('aria-label', color.toUpperCase());
+      option.title = color.toUpperCase();
+      option.addEventListener('click', () => updateTransitionColor(color, {persist:true}));
+      transitionColorOptions.appendChild(option);
+    });
+  }
+
   function syncTransitionColorControl(){
-    if(!transitionColorField || !transitionColorInput) return;
+    if(!transitionColorField || !transitionColorOptions) return;
     const mode = state.pageTransition || 'none';
     const canColor = !!window.__isPageTransitionColorMode?.(mode);
     transitionColorField.classList.toggle('is-hidden', !canColor);
     if(!canColor) return;
-    const color = state.pageTransitionColors?.[mode] || window.__getPageTransitionColor?.(mode) || '#05070b';
-    transitionColorInput.value = color;
-    if(transitionColorValue) transitionColorValue.textContent = color.toUpperCase();
+    const color = normalizeTransitionColor(state.pageTransitionColors?.[mode])
+      || normalizeTransitionColor(window.__getPageTransitionColor?.(mode))
+      || normalizeTransitionColor(window.__pageTransitionColorDefaults?.[mode])
+      || '#05070b';
     window.__setPageTransitionColor?.(mode, color);
+    syncTransitionColorButtons(window.__getPageTransitionColor?.(mode) || color);
   }
 
   function updateTransitionColor(value, opts={}){
@@ -3534,8 +3561,18 @@ refreshRailCatalog();
     if(!color) return;
     state.pageTransitionColors = {...(state.pageTransitionColors || {}), [mode]: color};
     window.__setPageTransitionColor?.(mode, color);
-    if(transitionColorValue) transitionColorValue.textContent = color.toUpperCase();
+    syncTransitionColorButtons(color);
     if(opts.persist) writeSaved();
+  }
+
+  function syncTransitionColorButtons(color){
+    if(!transitionColorOptions) return;
+    const current = normalizeTransitionColor(color);
+    transitionColorOptions.querySelectorAll('[data-transition-color-option]').forEach(option => {
+      const active = option.dataset.transitionColor === current;
+      option.classList.toggle('is-active', active);
+      option.setAttribute('aria-checked', active ? 'true' : 'false');
+    });
   }
 
   function applyStoredSlideControls(){

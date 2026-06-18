@@ -17,6 +17,7 @@ const cliUrl = getArg('--url');
 const REMOVED_MODES = ['canvasWipe', 'videoBands', 'videoDisplace', 'videoZoom', 'videoRotate'];
 const CUSTOM_TRANSITION_COLOR = '#b91c1c';
 const CUSTOM_TRANSITION_COLOR_RGB = 'rgb(185, 28, 28)';
+const MAX_TRANSITION_COLOR_OPTIONS = 9;
 const REQUIRED_MODES = [
   { value: 'pixelReveal', family: 'codrops/PixelTransition demo 1 row-random grid', type: 'pixel', reference: 'codrops/PixelTransition', variant: 'demo1-row-grid', minRows: 8, minColumns: 14, minCells: 112, axis: 'scale' },
   { value: 'pixelStretch', family: 'codrops/PixelTransition demo 2 side stretch grid', type: 'pixel', reference: 'codrops/PixelTransition', variant: 'demo2-side-stretch', minRows: 9, minColumns: 17, minCells: 153, axis: 'scale' },
@@ -130,8 +131,14 @@ function runStaticChecks() {
   }
   if (!options.includes('none')) failures.push('Template transition select is missing existing "none" mode.');
   if (!options.includes('liquidMorph')) failures.push('Template transition select is missing existing "liquidMorph" mode.');
-  if (!/id="preview-transition-color-field"/.test(html) || !/id="preview-transition-color"/.test(html)) {
-    failures.push('Template transition controls are missing the Pixel/Slice color picker field.');
+  if (!/id="preview-transition-color-field"/.test(html) || !/id="preview-transition-color-options"/.test(html)) {
+    failures.push('Template transition controls are missing the Pixel/Slice fixed color palette field.');
+  }
+  if (/<input\b[^>]*(?:id=["']preview-transition-color["'][^>]*type=["']color["']|type=["']color["'][^>]*id=["']preview-transition-color["'])/i.test(html)) {
+    failures.push('Template transition controls still expose a free color picker input instead of a fixed palette.');
+  }
+  if (!/__pageTransitionColorPalette/.test(html) || !/data-transition-color-option/.test(html)) {
+    failures.push('Transition runtime does not expose fixed color palette swatches.');
   }
   if (!/__setPageTransitionColor/.test(html) || !/__getPageTransitionColor/.test(html)) {
     failures.push('Transition runtime does not expose page transition color accessors.');
@@ -167,7 +174,10 @@ async function probeTransitionColorControl(page) {
   return page.evaluate(({ color, colorModes }) => {
     const select = document.getElementById('preview-transition');
     const field = document.getElementById('preview-transition-color-field');
-    const input = document.getElementById('preview-transition-color');
+    const optionsRoot = document.getElementById('preview-transition-color-options');
+    const freeColorInput = field?.querySelector('input[type="color"]') || document.getElementById('preview-transition-color');
+    const optionElements = [...(optionsRoot?.querySelectorAll('[data-transition-color-option]') || [])];
+    const palette = Array.isArray(window.__pageTransitionColorPalette) ? window.__pageTransitionColorPalette : [];
     const isVisible = element => Boolean(element)
       && !element.classList.contains('is-hidden')
       && getComputedStyle(element).display !== 'none'
@@ -180,6 +190,11 @@ async function probeTransitionColorControl(page) {
         window.__setPageTransition?.(mode);
       }
     };
+    const clickColor = value => {
+      const option = optionElements.find(element => (element.dataset.transitionColor || '').toLowerCase() === value.toLowerCase());
+      option?.click();
+      return Boolean(option);
+    };
     setMode('pixelReveal');
     const visibleForPixel = isVisible(field);
     setMode('sliceHorizontal');
@@ -189,21 +204,21 @@ async function probeTransitionColorControl(page) {
     const stored = [];
     for (const mode of colorModes) {
       setMode(mode);
-      if (input) {
-        input.value = color;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      }
+      const clicked = clickColor(color);
       stored.push({
         mode,
-        value: input?.value || '',
+        clicked,
         stored: window.__getPageTransitionColor?.(mode) || '',
+        active: field?.querySelector?.('[data-transition-color-option].is-active')?.dataset.transitionColor || '',
       });
     }
     return {
       fieldExists: Boolean(field),
-      inputExists: Boolean(input),
-      inputType: input?.type || '',
+      optionsRootExists: Boolean(optionsRoot),
+      freeColorInputExists: Boolean(freeColorInput),
+      optionCount: optionElements.length,
+      optionColors: optionElements.map(element => (element.dataset.transitionColor || '').toLowerCase()),
+      palette: palette.map(value => String(value).toLowerCase()),
       visibleForPixel,
       visibleForSlice,
       hiddenForContainer,
@@ -596,13 +611,19 @@ function validateReverseMechanism(result, config, failures) {
 }
 
 function validateColorControl(colorControl, failures) {
-  if (!colorControl?.fieldExists || !colorControl.inputExists) failures.push('Pixel/Slice transition color picker is missing at runtime.');
-  if (colorControl?.inputType !== 'color') failures.push(`Transition color picker input type is "${colorControl?.inputType || ''}", expected "color".`);
-  if (!colorControl?.visibleForPixel) failures.push('Transition color picker is not visible for Pixel modes.');
-  if (!colorControl?.visibleForSlice) failures.push('Transition color picker is not visible for Slice modes.');
-  if (!colorControl?.hiddenForContainer) failures.push('Transition color picker remains visible for non Pixel/Slice modes.');
+  if (!colorControl?.fieldExists || !colorControl.optionsRootExists) failures.push('Pixel/Slice transition fixed color palette is missing at runtime.');
+  if (colorControl?.freeColorInputExists) failures.push('Transition color control still exposes a free color picker input.');
+  if ((colorControl?.optionCount || 0) < 2) failures.push('Transition color palette has fewer than two fixed options.');
+  if ((colorControl?.optionCount || 0) > MAX_TRANSITION_COLOR_OPTIONS) failures.push(`Transition color palette exposes ${colorControl.optionCount} options, expected ${MAX_TRANSITION_COLOR_OPTIONS} or fewer.`);
+  const optionColors = colorControl?.optionColors || [];
+  if (new Set(optionColors).size !== optionColors.length) failures.push('Transition color palette contains duplicate colors.');
+  if (!optionColors.includes(CUSTOM_TRANSITION_COLOR)) failures.push(`Transition color palette does not include the validation color ${CUSTOM_TRANSITION_COLOR}.`);
+  if (!colorControl?.palette?.includes(CUSTOM_TRANSITION_COLOR)) failures.push(`Runtime color palette does not include ${CUSTOM_TRANSITION_COLOR}.`);
+  if (!colorControl?.visibleForPixel) failures.push('Transition color palette is not visible for Pixel modes.');
+  if (!colorControl?.visibleForSlice) failures.push('Transition color palette is not visible for Slice modes.');
+  if (!colorControl?.hiddenForContainer) failures.push('Transition color palette remains visible for non Pixel/Slice modes.');
   for (const item of colorControl?.stored || []) {
-    if (item.value.toLowerCase() !== CUSTOM_TRANSITION_COLOR || item.stored.toLowerCase() !== CUSTOM_TRANSITION_COLOR) {
+    if (!item.clicked || item.stored.toLowerCase() !== CUSTOM_TRANSITION_COLOR || item.active.toLowerCase() !== CUSTOM_TRANSITION_COLOR) {
       failures.push(`${item.mode} did not store the selected transition color ${CUSTOM_TRANSITION_COLOR}.`);
     }
   }
