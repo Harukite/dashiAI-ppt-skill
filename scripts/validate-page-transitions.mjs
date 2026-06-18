@@ -346,6 +346,10 @@ async function readStageState(page) {
         colors: uniqueCssValues(sliceCells, 'backgroundColor'),
         coverage: visibleCoverage(sliceCells, stageRect),
       },
+      timeline: {
+        pixel: transitionTweenTiming(stage, 'page-transition-pixel'),
+        slice: transitionTweenTiming(stage, 'page-transition-slice'),
+      },
       container: {
         variant: stage?.querySelector?.('[data-container-transition="true"]')?.dataset.containerVariant || '',
         directionStart: stage?.querySelector?.('[data-container-transition="true"]')?.dataset.containerDirectionStart || '',
@@ -381,6 +385,35 @@ async function readStageState(page) {
         area += width * height * Math.min(1, opacity);
       }
       return area / (rootRect.width * rootRect.height);
+    }
+    function transitionTweenTiming(stage, className) {
+      const tweens = (stage?.__transitionTimeline?.getChildren?.(false, true, false) || [])
+        .filter(tween => tween.targets?.().some(target => target.classList?.contains(className)))
+        .map(tween => {
+          const start = tween.startTime?.() || 0;
+          const totalDuration = tween.totalDuration?.() || tween.duration?.() || 0;
+          return {
+            start: roundTime(start),
+            duration: roundTime(tween.duration?.() || 0),
+            totalDuration: roundTime(totalDuration),
+            end: roundTime(start + totalDuration),
+          };
+        })
+        .filter(tween => tween.totalDuration > 0.02)
+        .sort((a, b) => a.start - b.start);
+      const cover = tweens[0] || null;
+      const uncover = tweens[1] || null;
+      return {
+        count: tweens.length,
+        coverStart: cover?.start ?? -1,
+        coverEnd: cover?.end ?? -1,
+        uncoverStart: uncover?.start ?? -1,
+        uncoverEnd: uncover?.end ?? -1,
+        coverUncoverGap: cover && uncover ? roundTime(uncover.start - cover.end) : null,
+      };
+    }
+    function roundTime(value) {
+      return Math.round(value * 1000) / 1000;
     }
   });
 }
@@ -507,6 +540,9 @@ function validatePixelMode(state, config, failures) {
   if (state.pixel.phase !== 'cover-uncover') failures.push(`${config.value} does not expose a cover/uncover pixel phase.`);
   if (state.pixel.axis !== config.axis) failures.push(`${config.value} pixel axis is "${state.pixel.axis}", expected "${config.axis}".`);
   if (state.pixel.colors.length !== 1) failures.push(`${config.value} uses mixed pixel colors (${state.pixel.colors.join(', ')}), expected one solid cover color.`);
+  if (state.timeline.pixel.count < 2) failures.push(`${config.value} does not expose separate pixel cover/uncover tweens.`);
+  if (state.timeline.pixel.coverUncoverGap > 0.06) failures.push(`${config.value} leaves a ${state.timeline.pixel.coverUncoverGap.toFixed(2)}s black-field gap between pixel cover and reveal, expected <= 0.06s.`);
+  if (state.timeline.pixel.coverUncoverGap < -0.08) failures.push(`${config.value} starts pixel reveal ${Math.abs(state.timeline.pixel.coverUncoverGap).toFixed(2)}s before cover is established, expected tighter sequencing.`);
 }
 
 function validateSliceMode(state, config, failures) {
@@ -516,6 +552,11 @@ function validateSliceMode(state, config, failures) {
   if (!state.slice.orientation || !state.slice.originShow || !state.slice.originHide) failures.push(`${config.value} does not expose orientation/show/hide slice origins.`);
   if (state.slice.colors.length !== 1) failures.push(`${config.value} uses mixed slice colors (${state.slice.colors.join(', ')}), expected one solid cover color.`);
   if (state.slice.coverage < 0.42) failures.push(`${config.value} slice coverage at mid-transition is ${state.slice.coverage.toFixed(2)}, expected slices to actively cover/reveal the slide.`);
+  if (['sliceReveal', 'sliceHorizontal'].includes(config.value)) {
+    if (state.timeline.slice.count < 2) failures.push(`${config.value} does not expose separate slice cover/uncover tweens.`);
+    if (state.timeline.slice.coverUncoverGap < -0.02) failures.push(`${config.value} starts slice uncover ${Math.abs(state.timeline.slice.coverUncoverGap).toFixed(2)}s before cover finishes.`);
+    if (state.timeline.slice.coverUncoverGap > 0.14) failures.push(`${config.value} waits ${state.timeline.slice.coverUncoverGap.toFixed(2)}s between slice cover and uncover, expected a continuous two-step reveal.`);
+  }
 }
 
 function validateContainerMode(state, config, failures) {

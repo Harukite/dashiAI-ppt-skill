@@ -5212,16 +5212,16 @@ refreshRailCatalog();
 	  }
 	  window.__prepareTransitionClone = prepareTransitionClone;
 		  const pixelTransitionConfigs = {
-		    pixelReveal: {variant:'demo1-row-grid', rows:8, columns:14, axis:'scale', originIn:ctx => ctx.direction > 0 ? '50% 0%' : '50% 100%', originOut:ctx => ctx.direction > 0 ? '50% 100%' : '50% 0%', from:'row-random', showDuration:.4, hideDuration:.4, current:{y:-15, scale:.98, opacity:.55}, next:{y:-18, scale:1.02}},
-		    pixelStretch: {variant:'demo2-side-stretch', rows:9, columns:17, axis:'scale', originIn:ctx => ctx.direction > 0 ? '0% 50%' : '100% 50%', originOut:ctx => ctx.direction > 0 ? '100% 50%' : '0% 50%', from:'columns', showDuration:.25, hideDuration:.32, current:{scaleX:1.35, opacity:.35}, next:{scaleX:.72, scale:1}},
-		    pixelZoom: {variant:'demo3-center-zoom', rows:7, columns:13, axis:'scale', originIn:ctx => ctx.direction > 0 ? '50% 50%' : '0% 0%', originOut:ctx => ctx.direction > 0 ? '50% 50%' : '100% 100%', from:'center', showDuration:.3, hideDuration:.36, current:{scale:.76, opacity:.6}, next:{scale:1.18}},
-		    pixelTight: {variant:'demo4-dense-zoom', rows:9, columns:17, axis:'scale', originIn:ctx => ctx.direction > 0 ? '50% 50%' : '100% 0%', originOut:ctx => ctx.direction > 0 ? '50% 50%' : '0% 100%', from:'center-fast', showDuration:.25, hideDuration:.32, current:{scale:.74, opacity:.42}, next:{scale:.52}},
-		    pixelBarsY: {variant:'demo5-vertical-bars', rows:20, columns:4, axis:'scaleY', originIn:ctx => ctx.direction > 0 ? '50% 100%' : '50% 0%', originOut:ctx => ctx.direction > 0 ? '50% 0%' : '50% 100%', from:'rows', showDuration:.3, hideDuration:.38, current:{y:-10, opacity:.5}, next:{y:10, scale:1.02}},
-		    pixelBarsX: {variant:'demo6-horizontal-bars', rows:6, columns:11, axis:'scaleX', originIn:ctx => ctx.direction > 0 ? '0% 50%' : '100% 50%', originOut:ctx => ctx.direction > 0 ? '100% 50%' : '0% 50%', from:'columns', showDuration:.32, hideDuration:.48, current:{x:-8, opacity:.5}, next:{x:8, scale:1.02}},
+		    pixelReveal: {variant:'demo1-row-grid', rows:8, columns:14, axis:'scale', originIn:ctx => ctx.direction > 0 ? '50% 0%' : '50% 100%', originOut:ctx => ctx.direction > 0 ? '50% 100%' : '50% 0%', from:'row-random', showDuration:.34, hideDuration:.34, revealGap:.02, current:{y:-15, scale:.98, opacity:.55}, next:{y:-18, scale:1.02}},
+		    pixelStretch: {variant:'demo2-side-stretch', rows:9, columns:17, axis:'scale', originIn:ctx => ctx.direction > 0 ? '0% 50%' : '100% 50%', originOut:ctx => ctx.direction > 0 ? '100% 50%' : '0% 50%', from:'columns', showDuration:.22, hideDuration:.28, revealGap:.02, current:{scaleX:1.35, opacity:.35}, next:{scaleX:.72, scale:1}},
+		    pixelZoom: {variant:'demo3-center-zoom', rows:7, columns:13, axis:'scale', originIn:ctx => ctx.direction > 0 ? '50% 50%' : '0% 0%', originOut:ctx => ctx.direction > 0 ? '50% 50%' : '100% 100%', from:'center', showDuration:.26, hideDuration:.3, revealGap:.02, current:{scale:.76, opacity:.6}, next:{scale:1.18}},
+		    pixelTight: {variant:'demo4-dense-zoom', rows:9, columns:17, axis:'scale', originIn:ctx => ctx.direction > 0 ? '50% 50%' : '100% 0%', originOut:ctx => ctx.direction > 0 ? '50% 50%' : '0% 100%', from:'center-fast', showDuration:.22, hideDuration:.28, revealGap:.02, current:{scale:.74, opacity:.42}, next:{scale:.52}},
+		    pixelBarsY: {variant:'demo5-vertical-bars', rows:20, columns:4, axis:'scaleY', originIn:ctx => ctx.direction > 0 ? '50% 100%' : '50% 0%', originOut:ctx => ctx.direction > 0 ? '50% 0%' : '50% 100%', from:'rows', showDuration:.25, hideDuration:.32, revealGap:.02, current:{y:-10, opacity:.5}, next:{y:10, scale:1.02}},
+		    pixelBarsX: {variant:'demo6-horizontal-bars', rows:6, columns:11, axis:'scaleX', originIn:ctx => ctx.direction > 0 ? '0% 50%' : '100% 50%', originOut:ctx => ctx.direction > 0 ? '100% 50%' : '0% 50%', from:'columns', showDuration:.26, hideDuration:.36, revealGap:.02, current:{x:-8, opacity:.5}, next:{x:8, scale:1.02}},
 		  };
 		  const sliceTransitionConfigs = {
-		    sliceReveal: {variant:'demo1-mixed-origins', count:9, orientation:'vertical', show:'bottom', hide:'bottom', color:'#111', stagger:'forward', showDuration:.48, hideDuration:.42, nextScale:1.12},
-		    sliceHorizontal: {variant:'demo2-horizontal-sequence', count:11, orientation:'horizontal', show:'left', hide:'right', color:'#f7f7f2', stagger:'forward', showDuration:.48, hideDuration:.44, nextScale:1.08},
+		    sliceReveal: {variant:'demo1-mixed-origins', count:9, orientation:'vertical', show:'bottom', hide:'bottom', color:'#111', stagger:'forward', showDuration:.36, hideDuration:.36, uncoverGap:.02, nextScale:1.12},
+		    sliceHorizontal: {variant:'demo2-horizontal-sequence', count:11, orientation:'horizontal', show:'left', hide:'right', color:'#f7f7f2', stagger:'forward', showDuration:.38, hideDuration:.38, uncoverGap:.02, nextScale:1.08},
 		    sliceGallery: {variant:'demo3-gallery-stagger', count:16, orientation:'vertical', show:'top', hide:'top', color:'#f7f7f2', stagger:'center', showDuration:.56, hideDuration:.38, nextScale:1.16},
 		  };
 		  const transitionPlayers = {
@@ -5371,6 +5371,10 @@ refreshRailCatalog();
 			    ctx.stage.appendChild(grid);
 		    const showVars = pixelScaleVars(config.axis, 0, 1.04);
 		    const hideVars = pixelScaleVars(config.axis, 1.04, 0);
+		    const coverEndAt = config.showDuration + maxPixelStagger(cells, rows, cols, config.from, ctx.direction, false);
+		    const revealAt = coverEndAt + resolveNumber(config.revealGap, .02);
+		    grid.dataset.pixelCoverEndAt = coverEndAt.toFixed(3);
+		    grid.dataset.pixelRevealStartAt = revealAt.toFixed(3);
 		    return playTimeline(ctx, tl => {
 		      gsap.set(ctx.current, {zIndex:1, autoAlpha:1, xPercent:0, yPercent:0, scale:1, scaleX:1, scaleY:1});
 		      gsap.set(ctx.next, {zIndex:0, autoAlpha:1, xPercent:resolveNumber(config.next.x, 0) * ctx.direction, yPercent:resolveNumber(config.next.y, 0) * ctx.direction, scale:resolveNumber(config.next.scale, 1.06), scaleX:resolveNumber(config.next.scaleX, 1), filter:'saturate(.82) brightness(.72)'});
@@ -5383,18 +5387,18 @@ refreshRailCatalog();
 		          ease:config.axis === 'scale' ? 'power3.inOut' : 'power4.in',
 		          stagger:index => pixelStagger(index, cells, rows, cols, config.from, ctx.direction, false),
 		        }, 0)
-		        .set(ctx.current, {autoAlpha:0}, .5)
-		        .set(ctx.next, {zIndex:2}, .5)
-		        .to(ctx.next, {xPercent:0, yPercent:0, scale:1, scaleX:1, filter:'saturate(1) brightness(1)', duration:.54, ease:'power3.out'}, .42)
-			        .set(cells, {transformOrigin:originOut}, .58)
+		        .set(ctx.current, {autoAlpha:0}, coverEndAt)
+		        .set(ctx.next, {zIndex:2}, coverEndAt)
+		        .to(ctx.next, {xPercent:0, yPercent:0, scale:1, scaleX:1, filter:'saturate(1) brightness(1)', duration:.42, ease:'power3.out'}, Math.max(0, coverEndAt - .12))
+			        .set(cells, {transformOrigin:originOut}, revealAt)
 		        .to(cells, {
 		          ...hideVars,
 		          autoAlpha:config.axis === 'scaleX' ? 1 : 0,
 		          duration:config.hideDuration,
 		          ease:'power3.inOut',
 		          stagger:index => pixelStagger(index, cells, rows, cols, config.from, ctx.direction, true),
-		        }, .62)
-		        .add(ctx.startTargetEnter, .5);
+		        }, revealAt)
+		        .add(ctx.startTargetEnter, revealAt);
 		    }, opts);
 		  }
 		  function playSliceGrid(ctx, opts, config){
@@ -5435,6 +5439,10 @@ refreshRailCatalog();
 			    ctx.stage.appendChild(grid);
 			    const showFrom = sliceOriginOffset(config.orientation, showOrigin);
 			    const hideTo = sliceOriginOffset(config.orientation, hideOrigin);
+			    const coverEndAt = config.showDuration + maxSliceStagger(config.count, config.stagger, ctx.direction, false);
+			    const uncoverAt = coverEndAt + resolveNumber(config.uncoverGap, .02);
+			    grid.dataset.sliceCoverEndAt = coverEndAt.toFixed(3);
+			    grid.dataset.sliceUncoverStartAt = uncoverAt.toFixed(3);
 		    return playTimeline(ctx, tl => {
 		      gsap.set(ctx.current, {zIndex:1, autoAlpha:1, scale:1});
 		      gsap.set(ctx.next, {zIndex:0, autoAlpha:1, scale:config.nextScale, filter:'brightness(.84) saturate(.86)'});
@@ -5447,17 +5455,17 @@ refreshRailCatalog();
 			          ease:'power4.inOut',
 			          stagger:index => sliceStagger(index, config.count, config.stagger, ctx.direction, false),
 			        }, 0)
-		        .set(ctx.current, {autoAlpha:0}, .5)
-		        .set(ctx.next, {zIndex:2}, .5)
-		        .to(ctx.next, {scale:1, filter:'brightness(1) saturate(1)', duration:.58, ease:'power3.out'}, .42)
+		        .set(ctx.current, {autoAlpha:0}, coverEndAt)
+		        .set(ctx.next, {zIndex:2}, coverEndAt)
+		        .to(ctx.next, {scale:1, filter:'brightness(1) saturate(1)', duration:.5, ease:'power3.out'}, Math.max(0, coverEndAt - .12))
 		        .to(slices, {
 		          xPercent:config.orientation === 'horizontal' ? hideTo : 0,
 		          yPercent:config.orientation === 'vertical' ? hideTo : 0,
 			          duration:config.hideDuration,
 			          ease:'power4.inOut',
 			          stagger:index => sliceStagger(index, config.count, config.stagger, ctx.direction, true),
-			        }, .6)
-		        .add(ctx.startTargetEnter, .5);
+			        }, uncoverAt)
+		        .add(ctx.startTargetEnter, uncoverAt);
 		    }, opts);
 		  }
 		  function playContainerMotion(ctx, opts, variant){
@@ -5539,6 +5547,9 @@ refreshRailCatalog();
 		    });
 		    return bestIndex;
 		  }
+		  function maxPixelStagger(cells, rows, cols, mode, direction, reverse){
+		    return cells.reduce((max, cell, index) => Math.max(max, pixelStagger(index, cells, rows, cols, mode, direction, reverse)), 0);
+		  }
 		  function pixelStagger(index, cells, rows, cols, mode, direction, reverse){
 		    const cell = cells[index];
 		    const row = Number(cell.dataset.pixelRow || 0);
@@ -5583,6 +5594,11 @@ refreshRailCatalog();
 		      }
 		    }
 		    return bestIndex;
+		  }
+		  function maxSliceStagger(count, mode, direction, reverse){
+		    let max = 0;
+		    for(let index=0; index<count; index+=1) max = Math.max(max, sliceStagger(index, count, mode, direction, reverse));
+		    return max;
 		  }
 		  function sliceStagger(index, count, mode, direction, reverse){
 		    let order = sliceOrderBase(index, count, mode, direction);
