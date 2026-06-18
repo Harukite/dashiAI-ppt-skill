@@ -67,6 +67,8 @@ try {
     themedPropControls: null,
     panelTextControls: null,
     templateTextControlRenderers: readTemplateTextControlRenderers(),
+    templatePreviewToggleResidue: readTemplatePreviewToggleResidue(),
+    previewToggle: null,
     theme03GlobalDark: null,
     railGutterBalance: null,
     railProgrammaticThumbs: null,
@@ -91,6 +93,7 @@ try {
     result.actionLayouts.push(await readActionPriority(page, width));
   }
   result.actions = result.actionLayouts[result.actionLayouts.length - 1] || await readActionPriority(page);
+  result.previewToggle = await readPreviewToggleState(page);
   result.panelCollapse = await runPanelCollapseValidation(page);
   result.authorLinks = await runAuthorLinksValidation(page);
 
@@ -770,6 +773,49 @@ function readTemplateTextControlRenderers() {
     matches,
     matchCount: matches.length,
   };
+}
+
+function readTemplatePreviewToggleResidue() {
+  const source = readFileSync(TEMPLATE, 'utf8');
+  const markers = [
+    '#preview-toggle',
+    'id="preview-toggle"',
+    "document.getElementById('preview-toggle')",
+    "toggle.addEventListener('click'",
+    '打开控制台',
+  ];
+  const matches = markers.filter(marker => source.includes(marker));
+  return {
+    checkedFile: path.relative(ROOT, TEMPLATE),
+    matches,
+    matchCount: matches.length,
+  };
+}
+
+async function readPreviewToggleState(page) {
+  return page.evaluate(() => {
+    const toggle = document.getElementById('preview-toggle');
+    if (!toggle) return { exists: false };
+    const rect = toggle.getBoundingClientRect();
+    const style = getComputedStyle(toggle);
+    return {
+      exists: true,
+      visible: style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) > 0.01 && rect.width > 2 && rect.height > 2,
+      ariaLabel: toggle.getAttribute('aria-label') || '',
+      title: toggle.getAttribute('title') || '',
+      hasInlineSvg: Boolean(toggle.querySelector('svg')),
+      rect: rectOf(rect),
+      background: style.backgroundColor,
+      color: style.color,
+      borderRadius: style.borderRadius,
+      opacity: style.opacity,
+      pointerEvents: style.pointerEvents,
+    };
+
+    function rectOf(targetRect) {
+      return { left: targetRect.left, top: targetRect.top, width: targetRect.width, height: targetRect.height, right: targetRect.right, bottom: targetRect.bottom };
+    }
+  });
 }
 
 async function readPanelTextControlState(page, location) {
@@ -1554,6 +1600,12 @@ function validateResult(result) {
   }
   if ((result.templateTextControlRenderers?.matchCount || 0) > 0) {
     failures.push(`Swiss template should not keep right-panel text editor renderers: ${JSON.stringify(result.templateTextControlRenderers)}`);
+  }
+  if ((result.templatePreviewToggleResidue?.matchCount || 0) > 0) {
+    failures.push(`Swiss template should not keep stale #preview-toggle residue: ${JSON.stringify(result.templatePreviewToggleResidue)}`);
+  }
+  if (result.previewToggle?.exists) {
+    failures.push(`Preview should not render the stale #preview-toggle sliders button: ${JSON.stringify(result.previewToggle)}`);
   }
 
   const dark = result.theme03GlobalDark || {};

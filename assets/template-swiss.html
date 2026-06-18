@@ -63,12 +63,6 @@
       --pp-rail:#565656; --pp-off:#565656; --pp-blue:#0d99ff; --pp-blue-h:#2aa5ff; --pp-blue-soft:rgba(13,153,255,.16); --pp-ui-icon-filter:invert(1);
     }
   }
-  #preview-toggle{position:fixed;right:18px;top:18px;z-index:25;width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--pp-border);border-radius:9px;background:var(--pp-bg);color:var(--pp-icon);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:opacity .2s var(--ease-prod),transform .2s var(--ease-prod),background .15s}
-  #preview-toggle:hover{background:var(--pp-chip)}
-  #preview-toggle svg{width:19px;height:19px}
-  body.preview-panel-open #preview-toggle{opacity:0;transform:scale(.85);pointer-events:none}
-  body.editor-panels-collapsed #preview-toggle{display:none}
-  body[data-mode="present"] #preview-toggle{display:none}
   #preview-panel-collapse{position:fixed;right:10px;top:10px;z-index:26;width:32px;height:32px;display:none;place-items:center;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--pp-icon);cursor:pointer;transition:background .15s,color .15s,border-color .15s,box-shadow .15s}
   body.preview-panel-open #preview-panel-collapse,body.editor-panels-collapsed #preview-panel-collapse{display:grid}
   #preview-panel-collapse:hover{background:var(--pp-chip);color:var(--pp-fg);border-color:var(--pp-border)}
@@ -266,7 +260,7 @@
   @media print{
     *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
     :root{--deck-scale:1!important}
-    #hint,#nav,#preview-toggle,#preview-panel-collapse,#preview-panel,#slide-rail,.deck-export-overlay,.page-transition-stage{display:none!important}
+    #hint,#nav,#preview-panel-collapse,#preview-panel,#slide-rail,.deck-export-overlay,.page-transition-stage{display:none!important}
     html,body{width:1920px!important;height:auto!important;margin:0!important;background:#fff!important;overflow:visible!important}
     body{user-select:auto!important}
     #deck-viewport{position:static!important;left:auto!important;top:auto!important;width:1920px!important;height:auto!important;overflow:visible!important;background:#fff!important}
@@ -301,9 +295,6 @@
 </div>
 
 <div id="nav" aria-hidden="true"></div>
-<button id="preview-toggle" type="button" aria-controls="preview-panel" aria-expanded="false" aria-label="打开控制台" title="控制台">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="10" y2="7"/><line x1="14" y1="7" x2="20" y2="7"/><circle cx="12" cy="7" r="2"/><line x1="4" y1="12" x2="6" y2="12"/><line x1="10" y1="12" x2="20" y2="12"/><circle cx="8" cy="12" r="2"/><line x1="4" y1="17" x2="13" y2="17"/><line x1="17" y1="17" x2="20" y2="17"/><circle cx="15" cy="17" r="2"/></svg>
-</button>
 <button id="preview-panel-collapse" type="button" aria-controls="preview-panel slide-rail" aria-expanded="true" aria-label="收起面板" title="收起面板">
   <img src="assets/ui-icons/sidebar.svg" data-ui-icon="sidebar-collapse" alt="" aria-hidden="true">
 </button>
@@ -1413,8 +1404,8 @@ window.__isDeckEditableTextTarget = isDeckEditableTextTarget;
 
 function isDeckInteractiveTarget(target){
   if(!(target instanceof Element)) return false;
-  if(isPresentMode()) return !!target.closest('#preview-panel,#preview-toggle,#preview-panel-collapse,#slide-rail');
-  return !!target.closest('button,select,input,textarea,a,#preview-panel,#preview-toggle,#preview-panel-collapse') ||
+  if(isPresentMode()) return !!target.closest('#preview-panel,#preview-panel-collapse,#slide-rail');
+  return !!target.closest('button,select,input,textarea,a,#preview-panel,#preview-panel-collapse') ||
     (canEditDeck() && isDeckFileSlotTarget(target)) ||
     isDeckEditableTextTarget(target);
 }
@@ -3287,9 +3278,8 @@ refreshRailCatalog();
 (function(){
   const optionsEl = document.getElementById('preview-options');
   const panel = document.getElementById('preview-panel');
-  const toggle = document.getElementById('preview-toggle');
   const panelCollapse = document.getElementById('preview-panel-collapse');
-  if(!optionsEl || !panel || !toggle) return;
+  if(!optionsEl || !panel) return;
 
   let options = {};
   try {
@@ -3925,14 +3915,6 @@ refreshRailCatalog();
     }
   }
 
-  function setOpen(open){
-    document.body.classList.remove('editor-panels-collapsed');
-    document.body.classList.toggle('preview-panel-open', open);
-    syncEditorPanelState();
-    window.__setEditableTextMode?.(canEditDeck());
-    requestEditorShellLayout();
-  }
-
   function setEditorPanelsCollapsed(collapsed){
     const next = Boolean(collapsed);
     document.body.classList.toggle('editor-panels-collapsed', next);
@@ -3944,8 +3926,6 @@ refreshRailCatalog();
 
   function syncEditorPanelState(){
     const collapsed = document.body.classList.contains('editor-panels-collapsed');
-    const panelOpen = !collapsed && document.body.classList.contains('preview-panel-open');
-    toggle.setAttribute('aria-expanded', panelOpen ? 'true' : 'false');
     panel.setAttribute('aria-hidden', collapsed ? 'true' : 'false');
     slideRail?.setAttribute('aria-hidden', collapsed ? 'true' : 'false');
     if(isEditMode()){
@@ -3971,12 +3951,12 @@ refreshRailCatalog();
   window.__getEditorPanelsCollapsed = () => document.body.classList.contains('editor-panels-collapsed');
 
   panel.addEventListener('mousedown', e => e.stopPropagation());
-  toggle.addEventListener('mousedown', e => e.stopPropagation());
   panelCollapse?.addEventListener('mousedown', e => e.stopPropagation());
-  toggle.addEventListener('click', () => setOpen(!document.body.classList.contains('preview-panel-open')));
   panelCollapse?.addEventListener('click', () => setEditorPanelsCollapsed(!document.body.classList.contains('editor-panels-collapsed')));
   document.getElementById('preview-present-btn')?.addEventListener('click', () => window.__enterPresentMode?.());
-  setOpen(document.body.classList.contains('preview-panel-open'));
+  syncEditorPanelState();
+  window.__setEditableTextMode?.(canEditDeck());
+  requestEditorShellLayout();
 
   // merged export dropdown
   const exportWrap = document.getElementById('preview-export-wrap');
@@ -4351,7 +4331,6 @@ refreshRailCatalog();
     else document.body.classList.toggle('editor-panels-collapsed', Boolean(state.panelsCollapsed));
     if(!state.panelsCollapsed){
       document.body.classList.toggle('preview-panel-open', state.panelOpen);
-      document.getElementById('preview-toggle')?.setAttribute('aria-expanded', state.panelOpen ? 'true' : 'false');
     }
     window.__layoutDeck?.();
   }
@@ -4839,7 +4818,6 @@ refreshRailCatalog();
     else document.body.classList.toggle('editor-panels-collapsed', Boolean(state.panelsCollapsed));
     if(!state.panelsCollapsed){
       document.body.classList.toggle('preview-panel-open', state.panelOpen);
-      document.getElementById('preview-toggle')?.setAttribute('aria-expanded', state.panelOpen ? 'true' : 'false');
     }
     window.__layoutDeck?.();
   }
@@ -4963,7 +4941,7 @@ refreshRailCatalog();
     if(e.defaultPrevented || (e.button !== undefined && e.button !== 0)) return;
     const target = e.target instanceof Element ? e.target : null;
     if(!target || !deck.contains(target)) return;
-    if(target.closest('button,input,textarea,select,a,#preview-panel,#preview-toggle,#preview-panel-collapse')) return;
+    if(target.closest('button,input,textarea,select,a,#preview-panel,#preview-panel-collapse')) return;
     if(window.__isDeckFileSlotTarget?.(target)) return;
     if(target.closest('[contenteditable="true"],[contenteditable="plaintext-only"],[role="textbox"]')) return;
     const el = findEditableAtPoint(e.clientX, e.clientY);
@@ -5113,7 +5091,7 @@ refreshRailCatalog();
     if(el.hasAttribute('data-editable-skip')) return false;
     if(el.closest('[data-dashi-page-number]')) return false;
     if(el.parentElement?.closest('[data-editable-id]')) return false;
-    if(window.__isDeckFileSlotTarget?.(el) || el.closest('#nav,#preview-panel,#preview-toggle,#preview-panel-collapse')) return false;
+    if(window.__isDeckFileSlotTarget?.(el) || el.closest('#nav,#preview-panel,#preview-panel-collapse')) return false;
     if(['SCRIPT','STYLE','CANVAS','SVG','PATH','BUTTON','INPUT','SELECT','TEXTAREA','VIDEO','IMG'].includes(el.tagName)) return false;
     if(!el.textContent?.trim()) return false;
     return [...el.children].every(child => ['BR','SPAN','B','I','EM','STRONG','SMALL'].includes(child.tagName));
