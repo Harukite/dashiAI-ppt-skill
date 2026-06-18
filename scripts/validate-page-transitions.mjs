@@ -143,6 +143,12 @@ function runStaticChecks() {
   if (/akella\/videoTransitions|playVideoTexture|page-transition-canvas|transitionTexture/.test(html)) {
     failures.push('Template still contains video texture transition runtime code.');
   }
+  if (/<script\s+src=["']assets\/vendor\/html-to-image\.js["']><\/script>/.test(html)) {
+    failures.push('Template transition runtime still eagerly loads html-to-image from the removed video texture work.');
+  }
+  if (/\bcancelExtra\b/.test(html)) {
+    failures.push('Template transition runtime still contains vestigial cancelExtra cleanup hook.');
+  }
   if (!options.includes('none')) failures.push('Template transition select is missing existing "none" mode.');
   if (!options.includes('liquidMorph')) failures.push('Template transition select is missing existing "liquidMorph" mode.');
   if (!/id="preview-transition-color-field"/.test(html) || !/id="preview-transition-color-options"/.test(html)) {

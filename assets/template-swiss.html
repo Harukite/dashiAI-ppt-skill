@@ -5306,7 +5306,6 @@ refreshRailCatalog();
 })();
 
 </script>
-<script src="assets/vendor/html-to-image.js"></script>
 <script src="assets/vendor/gsap.min.js"></script>
 <script>
 (function(){
@@ -5413,7 +5412,6 @@ refreshRailCatalog();
 	      cancel(){
 	        if(ctx.done) return;
 	        ctx.done = true;
-	        ctx.cancelExtra?.();
 	        ctx.timeline?.kill?.();
 	        stage.remove();
 	        ctx.resolve?.();
