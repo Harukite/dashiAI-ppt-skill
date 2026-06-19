@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import PptxGenJS from 'pptxgenjs';
+import { PNG } from 'pngjs';
 
 const SOURCE_W = 1920;
 const SOURCE_H = 1080;
@@ -356,8 +357,14 @@ async function resolveElementScreenshots(page, root, warnings, options = {}) {
       if (hiddenToken) {
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       }
-      const bytes = await page.locator(`#deck > .slide.active [data-editable-pptx-export-id="${node.exportId}"], #deck > .slide[data-deck-active] [data-editable-pptx-export-id="${node.exportId}"]`).first().screenshot({ type: 'png' });
-      node.imageData = `data:image/png;base64,${bytes.toString('base64')}`;
+      const locator = page.locator(`#deck > .slide.active [data-editable-pptx-export-id="${node.exportId}"], #deck > .slide[data-deck-active] [data-editable-pptx-export-id="${node.exportId}"]`).first();
+      let bytes = null;
+      if (shouldUseAlphaMatteScreenshot(node)) {
+        bytes = await captureAlphaMatteScreenshot(page, locator, node.exportId).catch(() => null);
+        if (!bytes) warnings.push({ slide: node.slideIndex, type: 'alpha-matte-screenshot-failed', tag: node.tag, kind: node.imageKind });
+      }
+      if (!bytes) bytes = await locator.screenshot({ type: 'png' });
+      node.imageData = pngBufferToDataUrl(bytes);
       if (hiddenToken) {
         await page.evaluate(token => {
           const entries = window.__editablePptxHiddenTextStyles?.get(token) || [];
@@ -403,6 +410,119 @@ async function resolveElementScreenshots(page, root, warnings, options = {}) {
       }
     }
   }
+}
+
+function shouldUseAlphaMatteScreenshot(node) {
+  return node.imageKind === 'material-background' || node.imageKind === 'unicorn-background';
+}
+
+async function captureAlphaMatteScreenshot(page, locator, exportId) {
+  let token = null;
+  try {
+    token = await page.evaluate(({ exportId }) => {
+      const root = document.querySelector(`#deck > .slide.active [data-editable-pptx-export-id="${exportId}"], #deck > .slide[data-deck-active] [data-editable-pptx-export-id="${exportId}"]`)
+        || document.querySelector(`[data-editable-pptx-export-id="${exportId}"]`);
+      if (!root) return null;
+      const slide = root.closest('#deck > .slide') || document.querySelector('#deck > .slide.active, #deck > .slide[data-deck-active]');
+      if (!slide) return null;
+      const token = `alpha-matte-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const entries = [];
+      const matteEls = [document.documentElement, document.body, slide].filter(Boolean);
+      const remember = (el) => {
+        if (!el || entries.some(entry => entry.el === el)) return;
+        entries.push({ el, style: el.getAttribute('style') });
+      };
+      const setStyle = (el, name, value) => {
+        remember(el);
+        el.style.setProperty(name, value, 'important');
+      };
+      const neutralizeAncestor = (el) => {
+        setStyle(el, 'background-image', 'none');
+        setStyle(el, 'background-color', 'transparent');
+        setStyle(el, 'box-shadow', 'none');
+        setStyle(el, 'border-color', 'transparent');
+      };
+      neutralizeAncestor(document.documentElement);
+      neutralizeAncestor(document.body);
+      [...slide.querySelectorAll('*')].forEach(el => {
+        if (el === root || root.contains(el)) return;
+        if (el.contains(root)) neutralizeAncestor(el);
+        else setStyle(el, 'opacity', '0');
+      });
+      setStyle(slide, 'background-image', 'none');
+      setStyle(slide, 'background-color', '#000');
+      setStyle(slide, 'box-shadow', 'none');
+      for (const el of matteEls) setStyle(el, 'background-color', '#000');
+      window.__editablePptxAlphaMatteStyles ||= new Map();
+      window.__editablePptxAlphaMatteStyles.set(token, { entries, matteEls });
+      return token;
+    }, { exportId });
+    if (!token) return null;
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const blackBytes = await locator.screenshot({ type: 'png' });
+    await page.evaluate(({ token, color }) => {
+      const state = window.__editablePptxAlphaMatteStyles?.get(token);
+      if (!state) return;
+      for (const el of state.matteEls || []) {
+        el.style.setProperty('background-color', color, 'important');
+      }
+    }, { token, color: '#fff' });
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const whiteBytes = await locator.screenshot({ type: 'png' });
+    return composeAlphaMattePng(blackBytes, whiteBytes);
+  } finally {
+    if (token) {
+      await page.evaluate(token => {
+        const state = window.__editablePptxAlphaMatteStyles?.get(token);
+        const entries = state?.entries || [];
+        for (const entry of entries) {
+          if (entry.style == null) entry.el.removeAttribute('style');
+          else entry.el.setAttribute('style', entry.style);
+        }
+        window.__editablePptxAlphaMatteStyles?.delete(token);
+      }, token).catch(() => {});
+    }
+  }
+}
+
+function composeAlphaMattePng(blackBytes, whiteBytes) {
+  const black = PNG.sync.read(Buffer.from(blackBytes));
+  const white = PNG.sync.read(Buffer.from(whiteBytes));
+  if (black.width !== white.width || black.height !== white.height) throw new Error('Alpha matte screenshot dimensions differ.');
+  const out = new PNG({ width: black.width, height: black.height });
+  for (let i = 0; i < black.data.length; i += 4) {
+    const br = black.data[i];
+    const bg = black.data[i + 1];
+    const bb = black.data[i + 2];
+    const wr = white.data[i];
+    const wg = white.data[i + 1];
+    const wb = white.data[i + 2];
+    const delta = ((wr - br) + (wg - bg) + (wb - bb)) / 3;
+    let alpha = Math.round(255 - delta);
+    alpha = Math.max(0, Math.min(255, alpha));
+    if (alpha <= 2) {
+      out.data[i] = 0;
+      out.data[i + 1] = 0;
+      out.data[i + 2] = 0;
+      out.data[i + 3] = 0;
+      continue;
+    }
+    if (alpha >= 253) alpha = 255;
+    const scale = 255 / alpha;
+    out.data[i] = clampByte(Math.round(br * scale));
+    out.data[i + 1] = clampByte(Math.round(bg * scale));
+    out.data[i + 2] = clampByte(Math.round(bb * scale));
+    out.data[i + 3] = alpha;
+  }
+  return PNG.sync.write(out);
+}
+
+function clampByte(value) {
+  return Math.max(0, Math.min(255, value));
+}
+
+function pngBufferToDataUrl(bytes) {
+  return `data:image/png;base64,${Buffer.from(bytes).toString('base64')}`;
 }
 
 function walkCapturedNodes(node, visit) {

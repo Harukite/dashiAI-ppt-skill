@@ -149,6 +149,20 @@ async function runJad64MaterialLayerRegressionValidation() {
       maxHiddenMaterialRmse: 0.10,
     },
     {
+      id: 'theme09-cover-glass-alpha',
+      themePack: 'theme09',
+      key: 'theme09_page001',
+      minTextCount: 12,
+      minTransparentMediaCount: 2,
+    },
+    {
+      id: 'theme07-data-year-lens-alpha',
+      themePack: 'theme07',
+      key: 'theme07_page005',
+      minTextCount: 18,
+      minTransparentMediaCount: 4,
+    },
+    {
       id: 'theme07-method-decorative-wash-hard-edge',
       themePack: 'theme07',
       key: 'theme07_page008',
@@ -221,7 +235,7 @@ async function runJad64MaterialLayerRegressionValidation() {
       const materialText = hiddenMaterial
         ? analyzeMaterialTextInRaster(sample, { pptx, media, dom, hiddenMaterial, sampleDir })
         : null;
-      const checks = validateMaterialLayerSample(sample, { pptx, dom, materialText });
+      const checks = validateMaterialLayerSample(sample, { pptx, dom, media, materialText });
       failures.push(...checks.failures);
       if (sample.screenshot && existsSync(sample.screenshot) && pairImage && commandAvailable('magick')) {
         spawnSync('magick', [
@@ -4187,7 +4201,7 @@ function analyzeMaterialTextInRaster(sample, { pptx, media, dom, hiddenMaterial,
   };
 }
 
-function validateMaterialLayerSample(sample, { pptx, dom, materialText }) {
+function validateMaterialLayerSample(sample, { pptx, dom, media, materialText }) {
   const failures = [];
   if (pptx.fullSlideImageOnlySlides.length) failures.push(`${sample.id} became full-slide-image-only: ${pptx.fullSlideImageOnlySlides.join(', ')}.`);
   if (Number.isFinite(sample.minTextCount) && pptx.textCount < sample.minTextCount) {
@@ -4197,6 +4211,10 @@ function validateMaterialLayerSample(sample, { pptx, dom, materialText }) {
   if (Number.isFinite(sample.maxLargeDecorativeGradientShapes) && largeDecorativeGradientShapes.length > sample.maxLargeDecorativeGradientShapes) {
     failures.push(`${sample.id} exported ${largeDecorativeGradientShapes.length} large decorative radial gradient region(s) as hard-edged native shape(s).`);
   }
+  const transparentMedia = countTransparentMedia(media);
+  if (Number.isFinite(sample.minTransparentMediaCount) && transparentMedia.length < sample.minTransparentMediaCount) {
+    failures.push(`${sample.id} exported only ${transparentMedia.length} transparent PNG media item(s), expected at least ${sample.minTransparentMediaCount}.`);
+  }
   const materialTextFailures = materialText?.rows?.filter(row => row.failed) || [];
   if (materialTextFailures.length) {
     failures.push(`${sample.id} has ${materialTextFailures.length} material raster fallback(s) that still include editable text.`);
@@ -4205,8 +4223,20 @@ function validateMaterialLayerSample(sample, { pptx, dom, materialText }) {
     passed: failures.length === 0,
     failures,
     largeDecorativeGradientShapes,
+    transparentMedia,
     materialText,
   };
+}
+
+function countTransparentMedia(media = []) {
+  return media.filter(item => {
+    const channels = String(item.channels || '').toLowerCase();
+    const hasAlpha = channels.includes('a');
+    const opaque = item.opaque === true || /^true$/i.test(String(item.opaque || ''));
+    const minAlpha = Number(item.minAlpha);
+    const maxAlpha = Number(item.maxAlpha);
+    return hasAlpha && !opaque && Number.isFinite(minAlpha) && Number.isFinite(maxAlpha) && minAlpha < maxAlpha;
+  });
 }
 
 function countDecorativeGradientShapes(pptx, dom) {
@@ -5879,15 +5909,24 @@ function inspectExtractedMedia(dir) {
   walk(dir);
   return files.map(file => {
     const identified = commandAvailable('magick')
-      ? spawnSync('magick', ['identify', '-format', '%w %h %[mean]', file], { encoding: 'utf8' })
+      ? spawnSync('magick', ['identify', '-format', '%w\t%h\t%[mean]\t%[channels]\t%[opaque]\t%[fx:minima.a]\t%[fx:maxima.a]', file], { encoding: 'utf8' })
       : null;
-    const [width, height, mean] = String(identified?.stdout || '').trim().split(/\s+/).map(Number);
+    const [widthValue, heightValue, meanValue, channels = '', opaqueValue = '', minAlphaValue = '', maxAlphaValue = ''] = String(identified?.stdout || '').trim().split(/\t/);
+    const width = Number(widthValue);
+    const height = Number(heightValue);
+    const mean = Number(meanValue);
+    const minAlpha = Number(minAlphaValue);
+    const maxAlpha = Number(maxAlphaValue);
     return {
       file,
       relativePath: path.relative(ROOT, file),
       width: Number.isFinite(width) ? width : 0,
       height: Number.isFinite(height) ? height : 0,
       mean: Number.isFinite(mean) ? mean : null,
+      channels,
+      opaque: /^true$/i.test(opaqueValue),
+      minAlpha: Number.isFinite(minAlpha) ? minAlpha : null,
+      maxAlpha: Number.isFinite(maxAlpha) ? maxAlpha : null,
       hash: hashBuffer(readFileSync(file)),
       size: readFileSync(file).length,
     };
