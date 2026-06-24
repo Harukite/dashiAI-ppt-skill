@@ -5361,6 +5361,7 @@ refreshRailCatalog();
   function prepareTextElements(scope = deck){
     const root = scope instanceof Element ? scope : deck;
     resetTextCounters(root);
+    const claimedTextIds = new Set();
     const candidates = [
       ...(isTextCandidate(root) ? [root] : []),
       ...root.querySelectorAll('*'),
@@ -5369,7 +5370,7 @@ refreshRailCatalog();
       if(el !== root && !root.contains(el)) return;
       if(el !== root && el.parentElement?.closest('[data-editable-id]')) return;
       if(!el.dataset.editableId && !isTextCandidate(el)) return;
-      if(!el.dataset.editableId) el.dataset.editableId = explicitTextId(el) || nextTextId(el);
+      el.dataset.editableId = claimTextId(el, el.dataset.editableId || explicitTextId(el));
       if(defaultTextState[el.dataset.editableId] === undefined) defaultTextState[el.dataset.editableId] = el.innerHTML;
       if(el.dataset.syncText && defaultTextState[`sync:${el.dataset.syncText}`] === undefined){
         defaultTextState[`sync:${el.dataset.syncText}`] = el.innerHTML;
@@ -5379,6 +5380,15 @@ refreshRailCatalog();
       else if(textState[el.dataset.editableId] !== undefined) el.innerHTML = textState[el.dataset.editableId];
       makeEditable(el);
     });
+
+    function claimTextId(el, preferredId){
+      let id = preferredId || nextTextId(el);
+      while(claimedTextIds.has(id)){
+        id = nextTextId(el);
+      }
+      claimedTextIds.add(id);
+      return id;
+    }
   }
 
   function resetTextCounters(root){
