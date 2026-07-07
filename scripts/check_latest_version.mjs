@@ -8,7 +8,7 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = path.resolve(SCRIPT_DIR, '..');
 const INSTALLED_PACKAGE = path.join(SKILL_ROOT, 'project/package.json');
 const SOURCE_PACKAGE = path.join(SKILL_ROOT, 'package.json');
-const REMOTE_PACKAGE_URL = 'https://raw.githubusercontent.com/chuspeeism/dashiAI-ppt-skill/main/project/package.json';
+const REMOTE_PACKAGE_URL = 'https://raw.githubusercontent.com/jadon7/dashi-ppt-skill/main/project/package.json';
 const REQUEST_TIMEOUT_MS = 8000;
 
 main().catch(() => {});
@@ -20,7 +20,7 @@ async function main() {
   if (!remoteVersion) return;
   if (compareVersions(remoteVersion, localVersion) <= 0) return;
   process.stdout.write(
-    `发现 DashiAI PPT 新版本 ${remoteVersion}（当前 ${localVersion}）。建议更新：重新拉取 https://github.com/chuspeeism/dashiAI-ppt-skill 后替换本地 DashiAI PPT。\n`
+    `发现 DashiAI PPT 新版本 ${remoteVersion}（当前 ${localVersion}）。建议更新：重新拉取 https://github.com/jadon7/dashi-ppt-skill 后替换本地 DashiAI PPT。\n`
   );
 }
 
