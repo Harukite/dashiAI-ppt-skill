@@ -2,6 +2,7 @@
   "name": "dashiai-ppt-runtime",
   "version": "0.1.20",
   "private": true,
+  "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
     "layout:query": "node scripts/layout-query.mjs",
