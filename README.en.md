@@ -7,6 +7,10 @@
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Supported-6B5B95?style=flat-square)
 ![Codex](https://img.shields.io/badge/Codex-Supported-222222?style=flat-square)
 ![Doubao](https://img.shields.io/badge/Doubao-Supported-3370FF?style=flat-square)
+![Marvis](https://img.shields.io/badge/Marvis-Supported-FF5A5F?style=flat-square)
+![Workbuddy](https://img.shields.io/badge/Workbuddy-Supported-2EA44F?style=flat-square)
+![Dumate](https://img.shields.io/badge/Dumate-Supported-F59E0B?style=flat-square)
+![Qclaw](https://img.shields.io/badge/Qclaw-Supported-14B8A6?style=flat-square)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square)](./LICENSE)
 
 > 🌏 **中文版：[README.md](./README.md)**
@@ -56,7 +60,7 @@ Or just hand this to your AI agent and let it figure out the install:
 Clone and install this skill: https://github.com/chuspeeism/dashiAI-ppt-skill
 ```
 
-> The skill content lives in the repo's `skills/dashiai-ppt/` subdirectory — the agent should place that subdirectory into its own skills directory.
+> The skill content lives in the repo's `skills/dashiai-ppt/` subdirectory — the agent should place that subdirectory into its own skills directory. Agents with no fixed skills-directory convention (e.g. Marvis / Workbuddy / Dumate / Qclaw) can just drop that subdirectory anywhere and point them at its `SKILL.md`.
 
 Already installed? Update with:
 
@@ -127,11 +131,14 @@ Page-by-page comparison between the HTML deck and the exported PPTX:
 
 ## Platform Support
 
+> **This skill is agent-agnostic.** The real bar is capability, not brand — any AI agent that can **read/write local files, run shell commands, and has a local Node.js environment** can use it to generate and export decks. The table below only lists platforms we've tested; it does not mean "these only".
+
 | Platform | Status | Notes |
 |------|------|------|
 | Claude Code | Supported | Native skill workflow: generation, iteration, and export end to end |
 | Codex | Supported | Ships with an `agents/openai.yaml` config; can also call image generation to fill in visuals |
 | Doubao | Supported | Doubao only just added skill support — and already runs this one remarkably well |
+| Marvis / Workbuddy / Dumate / Qclaw | Supported | Local agents with their own skill systems and no `~/.claude/skills` convention — drop `skills/dashiai-ppt/` anywhere and point them at `SKILL.md` |
 | Cursor / other local agents | Works | Needs file read/write and shell execution |
 | Plain web chatbots | Not recommended | The generator needs a local Node.js environment |
 

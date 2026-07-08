@@ -7,6 +7,10 @@
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Supported-6B5B95?style=flat-square)
 ![Codex](https://img.shields.io/badge/Codex-Supported-222222?style=flat-square)
 ![豆包](https://img.shields.io/badge/%E8%B1%86%E5%8C%85-Supported-3370FF?style=flat-square)
+![Marvis](https://img.shields.io/badge/Marvis-Supported-FF5A5F?style=flat-square)
+![Workbuddy](https://img.shields.io/badge/Workbuddy-Supported-2EA44F?style=flat-square)
+![Dumate](https://img.shields.io/badge/Dumate-Supported-F59E0B?style=flat-square)
+![Qclaw](https://img.shields.io/badge/Qclaw-Supported-14B8A6?style=flat-square)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square)](./LICENSE)
 
 > 🌏 **English version: [README.en.md](./README.en.md)**
@@ -56,7 +60,7 @@ npx skills add https://github.com/chuspeeism/dashiAI-ppt-skill --skill dashiai-p
 克隆安装这个 skill https://github.com/chuspeeism/dashiAI-ppt-skill
 ```
 
-> skill 内容在仓库的 `skills/dashiai-ppt/` 子目录，Agent 应把该子目录放进自己的 skills 目录。
+> skill 内容在仓库的 `skills/dashiai-ppt/` 子目录，Agent 应把该子目录放进自己的 skills 目录；没有固定 skills 目录约定的 Agent（如 Marvis / Workbuddy / Dumate / Qclaw），把该子目录放到任意位置、让它读取其中的 `SKILL.md` 执行即可。
 
 已经安装过的话，用这句话更新：
 
@@ -123,11 +127,14 @@ HTML 版与导出 PPTX 版的逐页对比：
 
 ## 平台支持
 
+> **这个 skill 与具体 Agent 无关。** 真正的门槛是能力，不是品牌——只要一个 AI Agent 能**读写本地文件、执行 shell 命令、且本机装有 Node.js**，就能用它生成并导出 PPT。下表只列出已实测的平台，不代表"仅限这些"。
+
 | 平台 | 状态 | 说明 |
 |------|------|------|
 | Claude Code | 支持 | 原生 Skill 工作流，生成、迭代、导出全流程 |
 | Codex | 支持 | 内置 `agents/openai.yaml` 配置，另可调用生图能力补充配图 |
 | 豆包 | 支持 | 刚支持 Skill 的豆包也能跑出很好的效果 |
+| Marvis / Workbuddy / Dumate / Qclaw | 支持 | 有自带技能体系、无 `~/.claude/skills` 约定的本地 Agent，把 `skills/dashiai-ppt/` 放到任意位置、让它读取 `SKILL.md` 执行即可 |
 | Cursor / 其他本地 Agent | 可用 | 需要能读写文件并执行 shell 命令 |
 | 普通网页 Chatbot | 不推荐 | 生成器需要本地 Node.js 环境 |
 
