@@ -54,6 +54,12 @@ async function main() {
     mkdirSync(serveRoot, { recursive: true });
     mkdirSync(path.dirname(logFile), { recursive: true });
     const output = openSync(logFile, 'a');
+    // 常驻服务不得继承宿主会话的临时目录:沙箱型 Agent App(如豆包)的 TMPDIR 指向
+    // 自己的沙箱,会话结束目录即被清理,而 daemonize 的服务还活着——之后导出时
+    // Playwright launch 的 mkdtemp 直接 ENOENT。这里出生即剥离,让服务用系统默认
+    // /tmp;serve-preview-https.mjs 内部另有运行时保险丝兜「绕过本包装直接启动」的场景。
+    const daemonEnv = { ...process.env, HOST: host };
+    for (const key of ['TMPDIR', 'TMP', 'TEMP']) delete daemonEnv[key];
     const child = spawn(process.execPath, [
       path.join(ROOT, 'scripts/serve-preview-https.mjs'),
       serveRoot,
@@ -61,7 +67,7 @@ async function main() {
     ], {
       cwd: ROOT,
       detached: true,
-      env: { ...process.env, HOST: host },
+      env: daemonEnv,
       stdio: ['ignore', output, output],
     });
     child.unref();
