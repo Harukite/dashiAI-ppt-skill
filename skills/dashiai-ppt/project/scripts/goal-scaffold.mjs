@@ -10,6 +10,7 @@ import {
   listLayouts,
   parseArgs,
 } from './skill-workflow-utils.mjs';
+import { hashSeed } from './workflow/layout-query.mjs';
 import { validateGoalSpec } from './validate-goal-spec.mjs';
 
 // 相对路径按调用方目录解析:npm run(含 --prefix)会把脚本 cwd 切到项目根,INIT_CWD 才是用户所在目录。
@@ -60,7 +61,10 @@ function run() {
   if (!out) throw new Error('Missing --out <goal.json>');
 
   const roles = parseRoles(args.roles);
-  const slides = buildSlides({ themePack, pageCount, roles, mediaIntent });
+  // 选页 seed:同分候选随机打散,让不同用户/不同次 scaffold 的骨架不再成片雷同;
+  // --seed 显式传入时可复现同一份骨架。
+  const seed = args.seed !== undefined && args.seed !== true ? String(args.seed) : String(Math.floor(Math.random() * 0xffffffff));
+  const slides = buildSlides({ themePack, pageCount, roles, mediaIntent, seed });
   const spec = {
     title,
     goal,
@@ -84,7 +88,7 @@ function run() {
   }));
 }
 
-function buildSlides({ themePack, pageCount, roles, mediaIntent }) {
+function buildSlides({ themePack, pageCount, roles, mediaIntent, seed = null }) {
   const used = new Set();
   let mediaAssigned = false;
   const slides = Array.from({ length: pageCount }, (_, index) => {
@@ -100,6 +104,7 @@ function buildSlides({ themePack, pageCount, roles, mediaIntent }) {
       used,
       body: index > 0,
       mediaIntent: useMediaIntent ? mediaIntent : null,
+      seed,
     });
     used.add(layout);
     const slide = { layout, props: {} };
@@ -115,10 +120,10 @@ function buildSlides({ themePack, pageCount, roles, mediaIntent }) {
   return slides;
 }
 
-function pickLayout({ themePack, role, used, body, mediaIntent = null }) {
+function pickLayout({ themePack, role, used, body, mediaIntent = null, seed = null }) {
   const mediaQuery = mediaIntent ? mediaIntentQuery(mediaIntent) : {};
-  const roleCandidates = listLayouts({ theme: themePack, role, ...mediaQuery, limit: 80 });
-  const fallbackCandidates = listLayouts({ theme: themePack, ...mediaQuery, limit: 200 });
+  const roleCandidates = listLayouts({ theme: themePack, role, ...mediaQuery, limit: 80, seed });
+  const fallbackCandidates = listLayouts({ theme: themePack, ...mediaQuery, limit: 200, seed });
   const seen = new Set();
   const candidates = [...roleCandidates, ...fallbackCandidates]
     .map(item => item.layout)
@@ -130,8 +135,12 @@ function pickLayout({ themePack, role, used, body, mediaIntent = null }) {
     })
     .filter(layout => !used.has(layout))
     .filter(layout => !body || (!isCoverCandidate(layout) && !isCoverLikeLayout(layout)));
-  const layout = candidates[0];
-  if (!layout) throw new Error(`No unused ${body ? 'body' : 'cover'} layout available for role "${role}" in ${themePack}`);
+  if (!candidates.length) throw new Error(`No unused ${body ? 'body' : 'cover'} layout available for role "${role}" in ${themePack}`);
+  // 从前 5 名合格候选里 seeded 随机挑:打分只有一两个精确命中时,永远取第一会让
+  // 不同用户的骨架在这些 role 上完全一致;候选都已通过过滤(均"符合"),前几名之间
+  // 的分差只是相关性排序,随机采样是多样性与相关性的折衷。
+  const pool = candidates.slice(0, 5);
+  const layout = pool[hashSeed(`${seed}:${role}:${used.size}`) % pool.length];
   return layout;
 }
 

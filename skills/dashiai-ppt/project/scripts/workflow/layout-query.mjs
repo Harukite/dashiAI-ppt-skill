@@ -71,6 +71,7 @@ export function listLayouts({
   mediaKind = null,
   requireInitialMedia = false,
   limit = 12,
+  seed = null,
 } = {}) {
   const requestedRole = role ? String(role).trim().toLowerCase() : '';
   const normalizedRole = requestedRole ? ROLE_ALIASES[requestedRole] || requestedRole : '';
@@ -81,11 +82,11 @@ export function listLayouts({
   const needsInitialMedia = Boolean(requireInitialMedia || providedImages || providedMedia);
   const requiresMedia = needsMedia || requestedMediaCount > 0 || normalizedRole === 'image' || needsInitialMedia || Boolean(normalizedMediaKind);
 
-  const rows = listLayoutsForMediaCount({ theme, normalizedRole, keywords, keywordText, requiresMedia, requestedMediaCount, normalizedMediaKind, needsInitialMedia });
+  const rows = listLayoutsForMediaCount({ theme, normalizedRole, keywords, keywordText, requiresMedia, requestedMediaCount, normalizedMediaKind, needsInitialMedia, seed });
   return rows.slice(0, Math.max(1, Math.min(50, Number(limit) || 12)));
 }
 
-function listLayoutsForMediaCount({ theme, normalizedRole, keywords, keywordText, requiresMedia, requestedMediaCount, normalizedMediaKind, needsInitialMedia }) {
+function listLayoutsForMediaCount({ theme, normalizedRole, keywords, keywordText, requiresMedia, requestedMediaCount, normalizedMediaKind, needsInitialMedia, seed }) {
   const rows = THEME_PAGES
     .filter(page => !theme || page.themeKey === theme)
     .filter(page => {
@@ -103,7 +104,16 @@ function listLayoutsForMediaCount({ theme, normalizedRole, keywords, keywordText
     .filter(row => !requestedMediaCount || mediaSlotsCanFit(row.mediaSlots, requestedMediaCount, { requireInitialMedia: true, mediaKind: normalizedMediaKind }))
     .filter(row => !normalizedMediaKind || mediaSlotsCanFit(row.mediaSlots, requestedMediaCount || 1, { requireInitialMedia: true, mediaKind: normalizedMediaKind }));
 
-  return rows.sort((a, b) => scoreLayout(b, { normalizedRole, keywordText, requiresMedia, requestedMediaCount, normalizedMediaKind, needsInitialMedia }) - scoreLayout(a, { normalizedRole, keywordText, requiresMedia, requestedMediaCount, normalizedMediaKind, needsInitialMedia }));
+  // 同分候选用 seed 随机打散:打分只表达"是否更匹配",同等匹配的页面之间没有天然
+  // 优先级。历史上并列项按页码稳定排序,所有调用方(Agent 与 goal:scaffold)都贪婪
+  // 取列表最前,导致不同用户生成的 deck 大量选中同一批"前面的页",成片雷同。
+  const tieBreakSeed = seed === null || seed === undefined || seed === '' ? String(Math.floor(Math.random() * 0xffffffff)) : String(seed);
+  const scoreOf = row => scoreLayout(row, { normalizedRole, keywordText, requiresMedia, requestedMediaCount, normalizedMediaKind, needsInitialMedia });
+  return rows.sort((a, b) => {
+    const diff = scoreOf(b) - scoreOf(a);
+    if (diff !== 0) return diff;
+    return hashSeed(`${tieBreakSeed}:${b.layout}`) - hashSeed(`${tieBreakSeed}:${a.layout}`);
+  });
 }
 
 function compactLayoutCandidate(row) {
@@ -194,6 +204,22 @@ function compactCandidateFillPlan(plan) {
   };
 }
 
+export function hashSeed(value) {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  // FNV-1a 对仅末字符不同的 key(themeNN_page010/011…)雪崩不足,直接用会让"随机"
+  // 顺序呈现大片连续页码;补一轮 murmur3 终混(fmix32)打散。
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 0x85ebca6b);
+  hash ^= hash >>> 13;
+  hash = Math.imul(hash, 0xc2b2ae35);
+  hash ^= hash >>> 16;
+  return hash >>> 0;
+}
+
 /** @param {import('../../src/types').CompactLayoutCandidate} layout */
 export function scoreLayout(layout, { normalizedRole, keywordText, requiresMedia, requestedMediaCount, normalizedMediaKind, needsInitialMedia }) {
   let score = 0;
@@ -203,7 +229,6 @@ export function scoreLayout(layout, { normalizedRole, keywordText, requiresMedia
   if (needsInitialMedia && layout.mediaSlots.some(slot => isWritableMediaSlot(slot) && slot.initialSrcSupported)) score += 6;
   if (normalizedMediaKind && layout.mediaSlots.some(slot => isWritableMediaSlot(slot) && slotAcceptsKind(slot, normalizedMediaKind))) score += 4;
   if (requestedMediaCount && layout.mediaSlots.some(slot => isWritableMediaSlot(slot) && Number(slot.defaultCount) === requestedMediaCount)) score += 3;
-  score -= (Number(layout.pageNumber) || 0) / 1000;
   return score;
 }
 

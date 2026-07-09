@@ -43,6 +43,8 @@ export interface ListLayoutsOptions {
   mediaKind?: string | null;
   requireInitialMedia?: boolean;
   limit?: number;
+  /** 同分候选洗牌种子;缺省时每次调用随机。 */
+  seed?: string | number | null;
 }
 
 /** THEME_PAGES / GENERATED_THEME_PAGES 的元素形状。注意:**没有** `spec` 字段。 */

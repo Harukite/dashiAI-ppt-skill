@@ -22,6 +22,8 @@ const result = {
   mediaKind,
   requireInitialMedia,
   limit: Number(args.limit || 12),
+  // 候选同分随机:未显式给 --seed 时每次调用生成新 seed(输出里回显,便于复现)。
+  seed: args.seed !== undefined && args.seed !== true ? String(args.seed) : String(Math.floor(Math.random() * 0xffffffff)),
 };
 const themeMetadata = result.theme ? getThemePackMetadata(result.theme) : null;
 
@@ -39,6 +41,7 @@ const layouts = listLayouts({
   mediaKind: result.mediaKind,
   requireInitialMedia: result.requireInitialMedia,
   limit: result.limit,
+  seed: result.seed,
 });
 
 process.stdout.write(compactJson({
