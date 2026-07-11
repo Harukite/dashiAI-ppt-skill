@@ -26,6 +26,7 @@ import {
   isFullThemeSet,
   normalizeThemeKeys,
 } from './components/themes/theme-registry-codegen.mjs';
+import { normalizeDeckLanguage, buildDeckI18nDict } from './i18n.mjs';
 import {
   buildClientRuntime,
   buildClientRuntimeFromModules,
@@ -46,12 +47,14 @@ export function renderDeck(deck, { outFile, includeThemeSwitcher = deck.preview?
     resolveOption,
   });
   const { key: themePackName } = viewModel.themePack;
+  const language = normalizeDeckLanguage(deck.language);
   const template = fs.readFileSync(path.join(ROOT, RUNTIME_TEMPLATE), 'utf8');
   const slides = renderToStaticMarkup(<>{renderDeckView(viewModel)}</>);
   let html = insertSlides(template, slides);
-  html = html.replace('<html lang="zh-CN">', `<html lang="zh-CN" data-theme-pack="${themePackName}">`);
+  const htmlLang = language === 'en' ? 'en' : 'zh-CN';
+  html = html.replace('<html lang="zh-CN">', `<html lang="${htmlLang}" data-theme-pack="${themePackName}">`);
   html = html.replace('<title>[必填] 替换为 PPT 标题 · Deck Title</title>', `<title>${escapeHtml(viewModel.model.title)}</title>`);
-  html = injectPreviewOptions(html, viewModel.options, { includeThemeSwitcher });
+  html = injectPreviewOptions(html, viewModel.options, { includeThemeSwitcher, language, viewModel });
   html = injectDeckViewModel(html, serializeDeckViewModel(viewModel));
 
   fs.mkdirSync(path.dirname(outFile), { recursive: true });
@@ -101,13 +104,16 @@ function findClosingDiv(html, start) {
   return -1;
 }
 
-function injectPreviewOptions(html, options, { includeThemeSwitcher = false } = {}) {
+function injectPreviewOptions(html, options, { includeThemeSwitcher = false, language = 'zh', viewModel = null } = {}) {
   const previewOptions = {
     ...options,
     themePacks: includeThemeSwitcher ? options.themePacks : {},
     // 多主题调试总览(showcase)不自动保存:它是共享调试产物,浏览器里的试验性编辑
     // 不应烧回 index.html(会污染 render:themes 与其上运行的其他测试)。
     ...(includeThemeSwitcher ? { autosave: false } : {}),
+    language,
+    // 英文 deck 才注入词典子集(按本 deck 用到的页面裁剪);中文 deck 零开销。
+    ...(language === 'en' && viewModel ? { i18n: buildDeckI18nDict(viewModel) } : {}),
   };
   const json = escapeScriptJson(JSON.stringify(previewOptions));
   return html.replace(
