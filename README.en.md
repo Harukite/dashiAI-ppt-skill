@@ -185,7 +185,7 @@ npm --prefix <project-dir> run export:pdf  -- <deck-output-dir>/ppt
 
 This project is open-sourced under the **GNU Affero General Public License v3.0 (AGPL-3.0)** — the strongest copyleft license among OSI-approved licenses. You may freely use, modify, and distribute this project (including commercially); but if you distribute a modified version, or provide a network service based on this project or its modifications (e.g. SaaS), you must make the complete corresponding source code available to users under AGPL-3.0.
 
-**Exception**: the subpackage [`project/packages/html-deck-to-pptx`](skills/dashiai-ppt/project/packages/html-deck-to-pptx) is independently licensed under **MIT** (see the LICENSE in that directory) and can be used freely in closed-source or commercial projects.
+**Exception**: the subpackage `project/packages/html-deck-to-pptx` (the export engine) is a **proprietary component**, licensed for use only as an integrated part of this skill — extracting, copying, or redistributing it separately is prohibited (see the LICENSE in that directory; versions up to v0.2.7 were historically published under MIT, and that grant applies to those versions only).
 
 Copyright (c) 2026 [chuspeeism](https://github.com/chuspeeism). Full license text in the root [LICENSE](LICENSE) file. For commercial licensing beyond AGPL-3.0, contact the author.
 

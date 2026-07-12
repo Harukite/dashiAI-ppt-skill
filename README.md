@@ -191,7 +191,7 @@ npm --prefix <project目录> run export:pdf  -- <PPT输出目录>/ppt
 
 本项目采用 **GNU Affero General Public License v3.0（AGPL-3.0）** 开源——这是 OSI 认证开源协议中 copyleft 效力最强的一个。你可以自由使用、修改、分发本项目（包括商业用途）；但如果你分发修改版，或基于本项目及其修改版通过网络对外提供服务（如 SaaS），必须以 AGPL-3.0 向用户公开完整的对应源代码。
 
-**例外**：子包 [`project/packages/html-deck-to-pptx`](skills/dashiai-ppt/project/packages/html-deck-to-pptx) 以 **MIT 协议**独立开源（见该目录下的 LICENSE），可自由用于闭源或商业项目。
+**例外**：子包 `project/packages/html-deck-to-pptx`（导出引擎）为**专有组件**，仅授权作为本 skill 的组成部分使用，不得单独提取、复制或再分发（详见该目录下的 LICENSE；其 v0.2.7 及之前的历史版本曾以 MIT 发布，该授权仅对历史版本有效）。
 
 Copyright (c) 2026 [chuspeeism](https://github.com/chuspeeism)。完整协议文本见根目录 [LICENSE](LICENSE) 文件。如需 AGPL-3.0 之外的商业授权，请联系作者。
 
