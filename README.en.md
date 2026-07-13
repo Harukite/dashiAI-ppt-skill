@@ -1,6 +1,6 @@
 # DashiAI PPT Skill · Web Decks / Per-Page Console / Editable PPTX Export
 
-![GitHub stars](https://img.shields.io/github/stars/chuspeeism/dashiAI-ppt-skill?style=flat-square)
+![GitHub stars](https://img.shields.io/github/stars/chuspeeism/dashi-ppt-skill?style=flat-square)
 ![Skill](https://img.shields.io/badge/Skill-Agent-111111?style=flat-square)
 ![HTML Deck](https://img.shields.io/badge/HTML-Deck-0A7CFF?style=flat-square)
 ![PPTX Export](https://img.shields.io/badge/PPTX-Editable%20Export-D24726?style=flat-square)
@@ -21,7 +21,7 @@ A PPT skill built for people who actually present at work. Hand a document to yo
 - 1,020 layout pages
 - 8,576 tunable controls
 
-![Generated deck demo](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/hero-result.gif)
+![Generated deck demo](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/hero-result.gif)
 
 ## 12 Built-in Visual Themes
 
@@ -29,19 +29,19 @@ The skill shows you theme previews to pick from, and you can ask the agent to re
 
 |  |  |
 |---|---|
-| <img src="https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/theme01.jpg" width="440" alt="theme01 preview"><br>**theme01**<br> | <img src="https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/theme02.jpg" width="440" alt="theme02 preview"><br>**theme02**<br> |
-| <img src="https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/theme03.jpg" width="440" alt="theme03 preview"><br>**theme03**<br> | <img src="https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/theme04.jpg" width="440" alt="theme04 preview"><br>**theme04**<br> |
-| <img src="https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/theme05.jpg" width="440" alt="theme05 preview"><br>**theme05**<br> | <img src="https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/theme06.jpg" width="440" alt="theme06 preview"><br>**theme06**<br> |
-| <img src="https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/theme07.jpg" width="440" alt="theme07 preview"><br>**theme07**<br> | <img src="https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/theme08.jpg" width="440" alt="theme08 preview"><br>**theme08**<br> |
-| <img src="https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/theme09.jpg" width="440" alt="theme09 preview"><br>**theme09**<br> | <img src="https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/theme10.jpg" width="440" alt="theme10 preview"><br>**theme10**<br> |
-| <img src="https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/theme11.jpg" width="440" alt="theme11 preview"><br>**theme11**<br> | <img src="https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/theme12.jpg" width="440" alt="theme12 preview"><br>**theme12**<br> |
+| <img src="https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/theme01.jpg" width="440" alt="theme01 preview"><br>**theme01**<br> | <img src="https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/theme02.jpg" width="440" alt="theme02 preview"><br>**theme02**<br> |
+| <img src="https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/theme03.jpg" width="440" alt="theme03 preview"><br>**theme03**<br> | <img src="https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/theme04.jpg" width="440" alt="theme04 preview"><br>**theme04**<br> |
+| <img src="https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/theme05.jpg" width="440" alt="theme05 preview"><br>**theme05**<br> | <img src="https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/theme06.jpg" width="440" alt="theme06 preview"><br>**theme06**<br> |
+| <img src="https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/theme07.jpg" width="440" alt="theme07 preview"><br>**theme07**<br> | <img src="https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/theme08.jpg" width="440" alt="theme08 preview"><br>**theme08**<br> |
+| <img src="https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/theme09.jpg" width="440" alt="theme09 preview"><br>**theme09**<br> | <img src="https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/theme10.jpg" width="440" alt="theme10 preview"><br>**theme10**<br> |
+| <img src="https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/theme11.jpg" width="440" alt="theme11 preview"><br>**theme11**<br> | <img src="https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/theme12.jpg" width="440" alt="theme12 preview"><br>**theme12**<br> |
 
 ## Get Started in 30 Seconds
 
 **One command to install or update** (it detects common skills directories automatically, installs into every one it finds, and keeps already-installed dependencies):
 
 ```bash
-npx dashiai-ppt-skill@latest
+npx dashi-ppt-skill@latest
 ```
 
 Use `--dir <path>` to target a specific skills directory (e.g. `--dir ~/.claude/skills`). Install and update are the same command — re-running it updates in place.
@@ -49,7 +49,7 @@ Use `--dir <path>` to target a specific skills directory (e.g. `--dir ~/.claude/
 Or hand this to your AI agent:
 
 ```text
-Install the dashiai-ppt skill for me: npx dashiai-ppt-skill@latest
+Install the dashiai-ppt skill for me: npx dashi-ppt-skill@latest
 ```
 
 Requirements: Node.js 20+ and npm; exporting PPTX / PDF requires Chrome / Chromium / Edge installed locally.
@@ -79,7 +79,7 @@ Requirements: Node.js 20+ and npm; exporting PPTX / PDF requires Chrome / Chromi
 
 HTML deck vs. exported PPTX, page by page:
 
-![HTML vs exported PPTX](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/html-vs-pptx.gif)
+![HTML vs exported PPTX](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/html-vs-pptx.gif)
 
 ## Platform Support
 
@@ -104,7 +104,7 @@ Throw in whatever document you have, say you want a deck, and get a complete dec
 4. Edit as you go — text, images, module counts, palettes; every change auto-saves
 5. Deliver — ask the agent to restyle or fine-tune; export to whatever format you need
 
-![Image placeholders filled in one step](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/image-placeholder.gif)
+![Image placeholders filled in one step](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/image-placeholder.gif)
 
 ## Editing After Generation
 
@@ -114,7 +114,7 @@ Design controls: every page ships with a console — 20+ dimensions of editing r
 
 | Click any text to edit in place | Add images |
 |---|---|
-| ![Click-to-edit text; decorations adapt to length](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/text-edit.gif) | ![Insert images into a page](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/add-image.gif) |
+| ![Click-to-edit text; decorations adapt to length](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/text-edit.gif) | ![Insert images into a page](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/add-image.gif) |
 
 ### Console edits: layout, module count, charts, palettes
 
@@ -122,17 +122,17 @@ Drag the sliders on the right-hand console to change how many modules a page sho
 
 | Drag sliders to add/remove modules | Switch layouts |
 |---|---|
-| ![Sliders adjust TOC, tables, lists, image counts](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/slider-edit.gif) | ![Switch a page layout with one sentence](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/layout-switch.gif) |
+| ![Sliders adjust TOC, tables, lists, image counts](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/slider-edit.gif) | ![Switch a page layout with one sentence](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/layout-switch.gif) |
 
 | Switch charts | Palette switching within a theme |
 |---|---|
-| ![Switch chart types with one sentence](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/chart-switch.gif) | ![Local palette switching inside each theme](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/palette-switch.gif) |
+| ![Switch chart types with one sentence](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/chart-switch.gif) | ![Local palette switching inside each theme](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/palette-switch.gif) |
 
 ### Page transitions
 
 9 transition styles to choose from:
 
-![Page transition effects](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/transitions.gif)
+![Page transition effects](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/transitions.gif)
 
 ### And more
 
@@ -141,19 +141,19 @@ Drag the sliders on the right-hand console to change how many modules a page sho
 
 Chart layouts:
 
-![Chart layout tour](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/layouts-tour.gif)
+![Chart layout tour](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/layouts-tour.gif)
 
 Analysis frameworks and specialist layouts:
 
-![Built-in analysis framework layouts](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/analysis-models.png)
+![Built-in analysis framework layouts](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/analysis-models.png)
 
 High-frequency layouts — TOC, tables, number posters, image-and-text:
 
-![Common layouts](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/common-layouts.png)
+![Common layouts](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/common-layouts.png)
 
 ## Export
 
-![One-click editable PPTX export](https://github.com/chuspeeism/dashiAI-ppt-skill/releases/download/readme-assets-v1/export-pptx.gif)
+![One-click editable PPTX export](https://github.com/chuspeeism/dashi-ppt-skill/releases/download/readme-assets-v1/export-pptx.gif)
 
 You can also skip the HTML intermediate entirely — tell the agent "use this skill to produce a PPT file" and go from prompt to PPTX in one step.
 
@@ -190,10 +190,10 @@ This project is open-sourced under the **GNU Affero General Public License v3.0 
 Copyright (c) 2026 [chuspeeism](https://github.com/chuspeeism). Full license text in the root [LICENSE](LICENSE) file. For commercial licensing beyond AGPL-3.0, contact the author.
 
 ## Star History
-<a href="https://www.star-history.com/?repos=chuspeeism%2FdashiAI-ppt-skill&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=chuspeeism%2Fdashi-ppt-skill&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=chuspeeism/dashiAI-ppt-skill&type=date&theme=dark&legend=top-left&sealed_token=U3gRkm794u4qnXIGSGM51xweW2r79vR1G0kp9AcwlAYR6O_QGdKwI8ZFD9cbI4ZVWU9KmXQn2n74NAJRcwu2X0O3tiB3IOc4U5R44dR5CjTadftJPQZq3Q" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=chuspeeism/dashiAI-ppt-skill&type=date&legend=top-left&sealed_token=U3gRkm794u4qnXIGSGM51xweW2r79vR1G0kp9AcwlAYR6O_QGdKwI8ZFD9cbI4ZVWU9KmXQn2n74NAJRcwu2X0O3tiB3IOc4U5R44dR5CjTadftJPQZq3Q" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=chuspeeism/dashiAI-ppt-skill&type=date&legend=top-left&sealed_token=U3gRkm794u4qnXIGSGM51xweW2r79vR1G0kp9AcwlAYR6O_QGdKwI8ZFD9cbI4ZVWU9KmXQn2n74NAJRcwu2X0O3tiB3IOc4U5R44dR5CjTadftJPQZq3Q" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=chuspeeism/dashi-ppt-skill&type=date&theme=dark&legend=top-left&sealed_token=U3gRkm794u4qnXIGSGM51xweW2r79vR1G0kp9AcwlAYR6O_QGdKwI8ZFD9cbI4ZVWU9KmXQn2n74NAJRcwu2X0O3tiB3IOc4U5R44dR5CjTadftJPQZq3Q" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=chuspeeism/dashi-ppt-skill&type=date&legend=top-left&sealed_token=U3gRkm794u4qnXIGSGM51xweW2r79vR1G0kp9AcwlAYR6O_QGdKwI8ZFD9cbI4ZVWU9KmXQn2n74NAJRcwu2X0O3tiB3IOc4U5R44dR5CjTadftJPQZq3Q" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=chuspeeism/dashi-ppt-skill&type=date&legend=top-left&sealed_token=U3gRkm794u4qnXIGSGM51xweW2r79vR1G0kp9AcwlAYR6O_QGdKwI8ZFD9cbI4ZVWU9KmXQn2n74NAJRcwu2X0O3tiB3IOc4U5R44dR5CjTadftJPQZq3Q" />
  </picture>
 </a>
