@@ -18,7 +18,7 @@ const DEFAULT_THEME_PREVIEW_INPUTS = [
   path.join(ROOT, 'src/runtime'),
   path.join(ROOT, 'src/runtime-assets.mjs'),
 ];
-const DEFAULT_RENDER_LOCK_FILE = path.join(os.tmpdir(), 'dashiai-ppt-theme-preview-render.lock');
+const DEFAULT_RENDER_LOCK_FILE = path.join(os.tmpdir(), 'dashi-ppt-theme-preview-render.lock');
 
 export function isDefaultThemePreviewRoot(serveRoot, defaultThemePreviewRoot = DEFAULT_THEME_PREVIEW_ROOT) {
   return path.resolve(serveRoot) === path.resolve(defaultThemePreviewRoot);

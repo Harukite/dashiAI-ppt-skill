@@ -21,7 +21,7 @@ const requestedPort = Number(process.env.DASHI_PPT_PREVIEW_PORT || process.argv[
 const host = process.env.DASHI_PPT_PREVIEW_HOST || process.env.HOST || '0.0.0.0';
 const localName = process.env.DASHI_PPT_PREVIEW_NAME || os.hostname().split('.')[0] || 'localhost';
 const portScanLimit = Math.max(40, Number(process.env.DASHI_PPT_PREVIEW_PORT_SCAN || 240));
-const lockDir = process.env.DASHI_PPT_PREVIEW_LOCK_DIR || path.join(os.tmpdir(), 'dashiai-ppt-preview-ports');
+const lockDir = process.env.DASHI_PPT_PREVIEW_LOCK_DIR || path.join(os.tmpdir(), 'dashi-ppt-preview-ports');
 const incompleteStartLockStaleMs = 1000;
 
 const isDirectRun = Boolean(process.argv[1]) && path.resolve(process.argv[1]) === path.resolve(import.meta.filename);

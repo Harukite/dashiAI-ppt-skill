@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 
 const PKG_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SKILL_SOURCE = path.join(PKG_ROOT, 'skill');
-const SKILL_NAME = 'dashiai-ppt';
+const SKILL_NAME = 'dashi-ppt';
 const MIRROR_REGISTRY = 'https://registry.npmmirror.com';
 const PROBED_MARK = '# dashi-registry-probed';
 
@@ -72,6 +72,20 @@ function resolveNpmrc(previousNpmrc) {
 function installInto(targetRoot, version) {
   const dest = path.join(targetRoot, SKILL_NAME);
   const destProject = path.join(dest, 'project');
+  // 0.4.0 改名迁移:旧目录 dashiai-ppt 存在时,仅把旧依赖 node_modules
+  // rename 进新目录(同盘瞬时;后续正常安装流程会照常保留它),然后整体
+  // 移除旧目录,避免宿主把新旧两个目录双注册。
+  const legacyDir = path.join(targetRoot, 'dashiai-ppt');
+  if (existsSync(legacyDir) && legacyDir !== dest) {
+    const legacyModules = path.join(legacyDir, 'project', 'node_modules');
+    const destModules = path.join(destProject, 'node_modules');
+    if (existsSync(legacyModules) && !existsSync(destModules)) {
+      mkdirSync(destProject, { recursive: true });
+      renameSync(legacyModules, destModules);
+    }
+    rmSync(legacyDir, { recursive: true, force: true });
+    console.log(`已迁移并移除旧目录 ${legacyDir}(skill 改名 dashiai-ppt → dashi-ppt)。`);
+  }
   // 原子替换:在同一目录构建 staging,rename 交换新旧目录。任何一步中断,
   // dest 要么是完整旧版要么是完整新版,最多留下带专属前缀的临时目录
   // (下次安装开头清理),绝不出现半删半拷的残缺 skill。
@@ -88,7 +102,7 @@ function installInto(targetRoot, version) {
   const previousNpmrc = readFileOr(path.join(destProject, '.npmrc'));
   const hadModules = existsSync(path.join(destProject, 'node_modules'));
 
-  console.log(`安装 DashiAI PPT Skill v${version} → ${dest}`);
+  console.log(`安装 Dashi PPT Skill v${version} → ${dest}`);
   cpSync(SKILL_SOURCE, staging, { recursive: true });
   writeFileSync(path.join(staging, 'project', '.npmrc'), resolveNpmrc(previousNpmrc));
 
@@ -137,7 +151,7 @@ function main() {
   for (const targetRoot of targetRoots) {
     installInto(targetRoot, version);
   }
-  console.log('重新打开会话后即可使用 dashiai-ppt。');
+  console.log('重新打开会话后即可使用 dashi-ppt。');
 }
 
 main();

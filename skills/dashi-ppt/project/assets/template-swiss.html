@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/png" href="assets/skill/dashiai-ppt-favicon.png">
+<link rel="icon" type="image/png" href="assets/skill/dashi-ppt-favicon.png">
 <title>[必填] 替换为 PPT 标题 · Deck Title</title>
 <!-- Self-hosted fonts (no external CDN): Anton, Archivo, Caveat, IBM Plex Mono, IBM Plex Sans, Inter, JetBrains Mono, Newsreader, Space Grotesk, Space Mono. -->
 <!-- Noto Sans SC / Noto Serif SC / Zhi Mang Xing are NOT self-hosted (unicode-range-sharded CJK webfonts exceed size budget); system CJK fonts are used as fallback via the --sans / --sans-zh stacks below. -->
@@ -2111,11 +2111,11 @@
     '当前非 HTTP 模式,无法导出': 'Not served over HTTP — export unavailable',
     '直接打开本地 HTML 文件时没有导出服务。把下面的提示词发给 AI,让它用 Dashi PPT 的预览服务打开后再导出:': 'Opening the local HTML file directly has no export service. Send the prompt below to your AI so it opens the deck with the Dashi PPT preview service, then export:',
     '发送给 AI,启动预览服务:': 'Send to your AI to start the preview service:',
-    '帮我用 dashiai-ppt 的预览服务启动这个 PPT 的预览 {dir}': 'Please start the preview of this deck with the dashiai-ppt preview service: {dir}',
+    '帮我用 dashi-ppt 的预览服务启动这个 PPT 的预览 {dir}': 'Please start the preview of this deck with the dashi-ppt preview service: {dir}',
     '当前服务不支持导出': 'This server does not support export',
     '这个地址后面没有可用的导出服务(可能是一个纯静态文件服务器,或预览服务已退出)。把下面的提示词发给 AI,让它用 Dashi PPT 自带的预览服务重新启动:': 'No export service is available at this address (it may be a plain static file server, or the preview service has exited). Send the prompt below to your AI so it restarts the deck with the Dashi PPT preview service:',
     '发送给 AI,重启预览服务:': 'Send to your AI to restart the preview service:',
-    '帮我用 dashiai-ppt 的预览服务重新启动这个 PPT 的预览': 'Please restart the preview of this deck with the dashiai-ppt preview service',
+    '帮我用 dashi-ppt 的预览服务重新启动这个 PPT 的预览': 'Please restart the preview of this deck with the dashi-ppt preview service',
     '也可以直接跟 AI 说:': 'Or simply tell your AI:',
     '帮我导出PPTX': 'Help me export the PPTX',
     '手动方式:在终端运行 npm --prefix <skill-root>/project run preview:start -- <输出 ppt 目录> <port>,再用它输出的 http://127.0.0.1:<port>/ 打开导出。': 'Manual option: run npm --prefix <skill-root>/project run preview:start -- <output ppt dir> <port> in a terminal, then open the printed http://127.0.0.1:<port>/ and export from there.',
@@ -7945,15 +7945,15 @@ refreshRailCatalog();
       title: window.__deckI18n.ui('当前非 HTTP 模式,无法导出'),
       desc: window.__deckI18n.ui('直接打开本地 HTML 文件时没有导出服务。把下面的提示词发给 AI,让它用 Dashi PPT 的预览服务打开后再导出:'),
       startLabel: window.__deckI18n.ui('发送给 AI,启动预览服务:'),
-      // 提示词必须指名 dashiai-ppt 的预览服务:只说"启动 http 服务"会诱导 AI 用
+      // 提示词必须指名 dashi-ppt 的预览服务:只说"启动 http 服务"会诱导 AI 用
       // python -m http.server 等静态服务器,那正是 no-service 场景的事故根源。
-      startPrompt: () => window.__deckI18n.ui('帮我用 dashiai-ppt 的预览服务启动这个 PPT 的预览 {dir}', {dir: deckLocalDirForPrompt()}),
+      startPrompt: () => window.__deckI18n.ui('帮我用 dashi-ppt 的预览服务启动这个 PPT 的预览 {dir}', {dir: deckLocalDirForPrompt()}),
     },
     'no-service': {
       title: window.__deckI18n.ui('当前服务不支持导出'),
       desc: window.__deckI18n.ui('这个地址后面没有可用的导出服务(可能是一个纯静态文件服务器,或预览服务已退出)。把下面的提示词发给 AI,让它用 Dashi PPT 自带的预览服务重新启动:'),
       startLabel: window.__deckI18n.ui('发送给 AI,重启预览服务:'),
-      startPrompt: () => window.__deckI18n.ui('帮我用 dashiai-ppt 的预览服务重新启动这个 PPT 的预览'),
+      startPrompt: () => window.__deckI18n.ui('帮我用 dashi-ppt 的预览服务重新启动这个 PPT 的预览'),
     },
   };
   function showExportServiceRequired(mode){

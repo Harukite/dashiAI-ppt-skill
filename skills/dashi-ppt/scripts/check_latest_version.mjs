@@ -13,7 +13,7 @@ const SOURCE_PACKAGE = path.join(SKILL_ROOT, 'package.json');
 const REMOTE_VERSION_ENDPOINTS = [
   { url: 'https://registry.npmmirror.com/dashi-ppt-skill/latest', pick: (json) => json.version },
   { url: 'https://registry.npmjs.org/dashi-ppt-skill/latest', pick: (json) => json.version },
-  { url: 'https://raw.githubusercontent.com/chuspeeism/dashi-ppt-skill/main/skills/dashiai-ppt/project/package.json', pick: (json) => json.version },
+  { url: 'https://raw.githubusercontent.com/chuspeeism/dashi-ppt-skill/main/skills/dashi-ppt/project/package.json', pick: (json) => json.version },
 ];
 const REQUEST_TIMEOUT_MS = 5000;
 

@@ -4,7 +4,7 @@ export const LOCAL_OUTPUT_ASSET_ROOTS = ['assets', 'images', 'uploads'];
 
 export const RUNTIME_ASSET_PATHS = [
   RUNTIME_TEMPLATE,
-  'assets/skill/dashiai-ppt-favicon.png',
+  'assets/skill/dashi-ppt-favicon.png',
   'assets/ui-icons/sidebar.svg',
   'assets/social-icons/github.svg',
   'assets/social-icons/douyin.svg',
