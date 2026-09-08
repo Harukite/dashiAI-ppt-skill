@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "version": "0.4.12",
+  "version": "0.4.13",
   "source": {
-    "commit": "8e3d7e3d92e628deb5f28c51f454cf796c5b3beb",
+    "commit": "7be240f7fbdef6dc1a35c49774187130e3b933d7",
     "dirty": false,
-    "inputSha256": "b0b038cf2cb44d170b90089071d6fa7afb10e9eb5621425620b7a1abb0ea4258"
+    "inputSha256": "b6a45d1254c2bba253f1956781631d3d59fc63b3066d65758b86bc97c91b8604"
   },
-  "contentSha256": "c097e97b72b730162c3ef5b1d8966fcd36d230ad22880497111cfaa7d51519e5",
+  "contentSha256": "477bd2124e2d2f4915aec52a11754354f9f998205b934b71334433a7c04ac556",
   "fingerprintExcludes": [
     "project/distribution-source.json",
     ".gitignore",

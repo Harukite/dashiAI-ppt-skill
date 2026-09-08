@@ -173,15 +173,17 @@ function runGoal(goalArg, options = {}) {
       variantIndex,
       variantId,
     } = entry;
-    if (getVariantKind(slide) === 'bespoke') {
+    const kind = getVariantKind(slide);
+    // 结构投影的 props 由目标校验临时计算,不写回目标。
+    if (kind === 'bespoke' || slide?.projection?.structure) {
       return {
         ...entry,
         normalizedSlide: slide,
         result: {
           slide: slideIndex + 1,
           ...(variantIndex == null ? {} : { variant: variantId }),
-          kind: 'bespoke',
-          layout: null,
+          kind,
+          layout: kind === 'bespoke' ? null : slide?.layout || null,
           warningCount: 0,
           errorCount: 0,
         },
